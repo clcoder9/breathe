@@ -252,6 +252,62 @@
     .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .icon-btn svg { width: 15px; height: 15px; }
 
+    /* VOLUME SLIDERS */
+    .setting-item input[type="range"] {
+      width: 100%; height: 31px; margin: 0; padding: 0;
+      accent-color: var(--color-inhale);
+      background: transparent; cursor: pointer;
+    }
+    .setting-item input[type="range"]:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* FEELING RATING (session complete) */
+    #feeling-row {
+      display: flex; align-items: center; gap: 10px;
+      margin-top: 4px;
+    }
+    #feeling-label {
+      font-size: 0.8rem; color: var(--color-text-secondary);
+      letter-spacing: 0.06em;
+    }
+    .feeling-btn {
+      width: 44px; height: 44px; border-radius: 50%;
+      border: 1px solid var(--color-border);
+      background: var(--color-surface-raised);
+      font-size: 1.3rem; cursor: pointer; padding: 0;
+      transition: transform 0.15s ease, border-color 0.2s ease, opacity 0.2s ease;
+    }
+    .feeling-btn:hover { transform: scale(1.12); border-color: var(--color-text-secondary); }
+    .feeling-btn.selected {
+      border-color: var(--color-complete);
+      box-shadow: 0 0 0 2px var(--color-complete);
+    }
+    #feeling-row.rated .feeling-btn:not(.selected) { opacity: 0.35; }
+
+    /* ZEN MODE — chrome slides away during active practice */
+    #settings-panel { transition: transform 0.35s ease, opacity 0.35s ease; }
+    #safety-footer  { transition: transform 0.35s ease, opacity 0.35s ease; }
+    #theme-toggle, #stats-toggle { transition: background 200ms ease, color 200ms ease, opacity 0.3s ease; }
+    body.zen #settings-panel {
+      position: fixed; top: 0; left: 0; right: 0;
+      transform: translateY(-105%); opacity: 0; pointer-events: none;
+    }
+    body.zen.zen-peek #settings-panel {
+      transform: none; opacity: 1; pointer-events: auto;
+    }
+    body.zen #safety-footer { transform: translateY(110%); opacity: 0; }
+    body.zen #theme-toggle, body.zen #stats-toggle { opacity: 0; pointer-events: none; }
+    #zen-strip {
+      position: fixed; top: 0; left: 0; right: 0; height: 24px;
+      z-index: 250; display: none; cursor: pointer;
+    }
+    body.zen #zen-strip { display: block; }
+    body.zen.zen-peek #zen-strip { display: none; }
+    #zen-strip::after {
+      content: ''; position: absolute; left: 50%; top: 8px;
+      width: 40px; height: 4px; margin-left: -20px; border-radius: 2px;
+      background: var(--color-border); opacity: 0.7;
+    }
+
     /* SETTINGS PANEL */
     #settings-panel {
       position: sticky; top: 0; z-index: 100;
@@ -614,6 +670,25 @@
         <input type="number" id="cfg-pause-exhale" min="0" max="10" step="0.5" value="0">
       </div>
       <div class="setting-item">
+        <label for="cfg-recovery-hold">Recovery (s)</label>
+        <input type="number" id="cfg-recovery-hold" min="5" max="60" step="1" value="15">
+      </div>
+      <div class="setting-item">
+        <label for="cfg-ramp">Tempo Ramp</label>
+        <select id="cfg-ramp">
+          <option value="off">Off</option>
+          <option value="speedup">Speed up</option>
+          <option value="slowdown">Slow down</option>
+        </select>
+      </div>
+      <div class="setting-item">
+        <label for="cfg-hold-mode">Hold Target</label>
+        <select id="cfg-hold-mode">
+          <option value="fixed">Fixed</option>
+          <option value="adaptive">Adaptive</option>
+        </select>
+      </div>
+      <div class="setting-item">
         <label for="cfg-voice">Voice</label>
         <select id="cfg-voice">
           <option value="smart">Smart cues</option>
@@ -628,6 +703,25 @@
           <option value="on">On</option>
           <option value="off">Off</option>
         </select>
+      </div>
+      <div class="setting-item">
+        <label for="cfg-ambience">Ambience</label>
+        <select id="cfg-ambience">
+          <option value="off">Off</option>
+          <option value="on">Ocean</option>
+        </select>
+      </div>
+      <div class="setting-item">
+        <label for="cfg-vol-voice">Voice Vol</label>
+        <input type="range" id="cfg-vol-voice" min="0" max="100" step="5" value="90">
+      </div>
+      <div class="setting-item">
+        <label for="cfg-vol-cues">Cue Vol</label>
+        <input type="range" id="cfg-vol-cues" min="0" max="100" step="5" value="70">
+      </div>
+      <div class="setting-item">
+        <label for="cfg-vol-amb">Ambience Vol</label>
+        <input type="range" id="cfg-vol-amb" min="0" max="100" step="5" value="50">
       </div>
       <div class="settings-buttons">
         <button class="btn btn-start" id="btn-start">START</button>
@@ -667,9 +761,18 @@
         </div>
       </div>
     </div>
+    <div id="feeling-row" class="hidden">
+      <span id="feeling-label">How did it feel?</span>
+      <button class="feeling-btn" data-feel="1" aria-label="Calm">&#128524;</button>
+      <button class="feeling-btn" data-feel="2" aria-label="Good">&#128578;</button>
+      <button class="feeling-btn" data-feel="3" aria-label="Dizzy">&#128565;</button>
+    </div>
     <div id="phase-announce"   class="sr-only" aria-live="assertive" aria-atomic="true"></div>
     <div id="counter-announce" class="sr-only" aria-live="polite"    aria-atomic="true"></div>
   </main>
+
+  <!-- ZEN MODE PEEK HANDLE -->
+  <div id="zen-strip" title="Show controls" aria-hidden="true"></div>
 
   <!-- SAFETY FOOTER -->
   <footer id="safety-footer" role="contentinfo">
@@ -702,7 +805,6 @@
   };
   var GET_READY_DUR = 3;
   var RECOVERY_BREATH_DUR = 3;
-  var RECOVERY_HOLD_DUR   = 15;
   var ROUND_SUMMARY_DUR   = 3;
 
   /* ======== App.Config ======== */
@@ -712,17 +814,24 @@
       breathsPerRound:30, holdStartTime:60, holdIncrement:15,
       rounds:3, inhaleDuration:2, exhaleDuration:3,
       pauseAfterInhale:0, pauseAfterExhale:0,
-      voiceMode:'smart', vibration:'on'
+      recoveryHold:15, ramp:'off', holdMode:'fixed',
+      voiceMode:'smart', vibration:'on', ambience:'off',
+      volVoice:90, volCues:70, volAmbience:50
     };
     var ranges = {
       breathsPerRound:{min:10,max:60}, holdStartTime:{min:0,max:300},
       holdIncrement:{min:0,max:60},    rounds:{min:1,max:10},
       inhaleDuration:{min:1,max:10},   exhaleDuration:{min:1,max:10},
-      pauseAfterInhale:{min:0,max:10}, pauseAfterExhale:{min:0,max:10}
+      pauseAfterInhale:{min:0,max:10}, pauseAfterExhale:{min:0,max:10},
+      recoveryHold:{min:5,max:60},
+      volVoice:{min:0,max:100}, volCues:{min:0,max:100}, volAmbience:{min:0,max:100}
     };
     var allowed = {
       voiceMode:['smart','every','phases','off'],
-      vibration:['on','off']
+      vibration:['on','off'],
+      ramp:['off','speedup','slowdown'],
+      holdMode:['fixed','adaptive'],
+      ambience:['on','off']
     };
     var v = {};
     Object.keys(defaults).forEach(function(k) { v[k] = defaults[k]; });
@@ -751,8 +860,12 @@
       holdIncrement:'cfg-hold-incr', rounds:'cfg-rounds',
       inhaleDuration:'cfg-inhale',   exhaleDuration:'cfg-exhale',
       pauseAfterInhale:'cfg-pause-inhale', pauseAfterExhale:'cfg-pause-exhale',
-      voiceMode:'cfg-voice', vibration:'cfg-vibration'
+      recoveryHold:'cfg-recovery-hold', ramp:'cfg-ramp', holdMode:'cfg-hold-mode',
+      voiceMode:'cfg-voice', vibration:'cfg-vibration', ambience:'cfg-ambience',
+      volVoice:'cfg-vol-voice', volCues:'cfg-vol-cues', volAmbience:'cfg-vol-amb'
     };
+    /* settings the user may adjust while a session is running */
+    var LIVE_KEYS = ['voiceMode','vibration','ambience','volVoice','volCues','volAmbience'];
     function readFromInputs() {
       Object.keys(inputMap).forEach(function(k) {
         var el = document.getElementById(inputMap[k]);
@@ -767,7 +880,7 @@
     }
     function setInputsDisabled(dis) {
       Object.keys(inputMap).forEach(function(k) {
-        if(k === 'voiceMode' || k === 'vibration') return; /* adjustable mid-session */
+        if(LIVE_KEYS.indexOf(k) >= 0) return;
         var el = document.getElementById(inputMap[k]);
         if(el) el.disabled = dis;
       });
@@ -776,9 +889,44 @@
         if(el) el.disabled = dis;
       });
     }
-    function getHoldTarget(round) { return v.holdStartTime + (round-1)*v.holdIncrement; }
+
+    function getHoldTarget(round) {
+      if(v.holdMode === 'adaptive' && App.History) {
+        var base = App.History.recentBest(5);
+        if(base > 0) {
+          /* aim: final round tries to beat your recent best by 5s,
+             first round starts at 70% of that */
+          var finalT = Math.round(base + 5);
+          var t = v.rounds > 1 ? (round-1)/(v.rounds-1) : 1;
+          return Math.max(10, Math.round(finalT * (0.7 + 0.3*t)));
+        }
+      }
+      return v.holdStartTime + (round-1)*v.holdIncrement;
+    }
+
+    /* Tempo ramp: multiply inhale/exhale durations per round (±30% across the session) */
+    function getRampFactor(round) {
+      if(v.ramp !== 'speedup' && v.ramp !== 'slowdown') return 1;
+      var t = v.rounds > 1 ? (round-1)/(v.rounds-1) : 0;
+      return v.ramp === 'speedup' ? 1 - 0.3*t : 1 + 0.3*t;
+    }
+
+    function estimateSeconds() {
+      var total = GET_READY_DUR;
+      for(var r = 1; r <= v.rounds; r++) {
+        var f = getRampFactor(r);
+        total += v.breathsPerRound *
+          ((v.inhaleDuration + v.exhaleDuration)*f + v.pauseAfterInhale + v.pauseAfterExhale);
+        var target = getHoldTarget(r);
+        if(target > 0) total += target + 2*RECOVERY_BREATH_DUR + v.recoveryHold;
+        if(r < v.rounds) total += ROUND_SUMMARY_DUR;
+      }
+      return total;
+    }
+
     return { load:load, save:save, readFromInputs:readFromInputs, populateInputs:populateInputs,
              setInputsDisabled:setInputsDisabled, getHoldTarget:getHoldTarget,
+             getRampFactor:getRampFactor, estimateSeconds:estimateSeconds,
              get:function(k){ return v[k]; } };
   })();
 
@@ -788,37 +936,53 @@
       pranayama: {
         breathsPerRound:30, holdStartTime:60, holdIncrement:15,
         rounds:5, inhaleDuration:2, exhaleDuration:2,
-        pauseAfterInhale:0, pauseAfterExhale:0
+        pauseAfterInhale:0, pauseAfterExhale:0,
+        recoveryHold:15, ramp:'off', holdMode:'fixed'
       },
       box: {
         breathsPerRound:50, holdStartTime:0, holdIncrement:0,
         rounds:1, inhaleDuration:4, exhaleDuration:4,
-        pauseAfterInhale:4, pauseAfterExhale:4
+        pauseAfterInhale:4, pauseAfterExhale:4,
+        recoveryHold:15, ramp:'off', holdMode:'fixed'
       },
       a52: {
         breathsPerRound:50, holdStartTime:0, holdIncrement:0,
         rounds:1, inhaleDuration:5, exhaleDuration:5,
-        pauseAfterInhale:0, pauseAfterExhale:2
+        pauseAfterInhale:0, pauseAfterExhale:2,
+        recoveryHold:15, ramp:'off', holdMode:'fixed'
       },
       fourSevenEight: {
         breathsPerRound:50, holdStartTime:0, holdIncrement:0,
         rounds:1, inhaleDuration:4, exhaleDuration:8,
-        pauseAfterInhale:7, pauseAfterExhale:0
+        pauseAfterInhale:7, pauseAfterExhale:0,
+        recoveryHold:15, ramp:'off', holdMode:'fixed'
       }
     };
     var CUSTOM_SK = 'whm_custom_presets';
     var PARAM_KEYS = ['breathsPerRound','holdStartTime','holdIncrement','rounds',
-                      'inhaleDuration','exhaleDuration','pauseAfterInhale','pauseAfterExhale'];
+                      'inhaleDuration','exhaleDuration','pauseAfterInhale','pauseAfterExhale',
+                      'recoveryHold','ramp','holdMode'];
+    /* fill for presets saved before these keys existed */
+    var PARAM_FILL = { recoveryHold:15, ramp:'off', holdMode:'fixed' };
     var inputMap = {
       breathsPerRound:'cfg-breaths', holdStartTime:'cfg-hold-start',
       holdIncrement:'cfg-hold-incr', rounds:'cfg-rounds',
       inhaleDuration:'cfg-inhale', exhaleDuration:'cfg-exhale',
-      pauseAfterInhale:'cfg-pause-inhale', pauseAfterExhale:'cfg-pause-exhale'
+      pauseAfterInhale:'cfg-pause-inhale', pauseAfterExhale:'cfg-pause-exhale',
+      recoveryHold:'cfg-recovery-hold', ramp:'cfg-ramp', holdMode:'cfg-hold-mode'
     };
     var selectEl, saveBtn, deleteBtn;
 
     function loadCustom() {
-      try { return JSON.parse(localStorage.getItem(CUSTOM_SK)) || {}; } catch(e) { return {}; }
+      try {
+        var c = JSON.parse(localStorage.getItem(CUSTOM_SK)) || {};
+        Object.keys(c).forEach(function(n) {
+          Object.keys(PARAM_FILL).forEach(function(k) {
+            if(c[n][k] === undefined) c[n][k] = PARAM_FILL[k];
+          });
+        });
+        return c;
+      } catch(e) { return {}; }
     }
     function saveCustom(c) {
       try { localStorage.setItem(CUSTOM_SK, JSON.stringify(c)); } catch(e) {}
@@ -1014,7 +1178,8 @@
     function getCtx() { return ctx; }
     function beep(freq, dur, t, vol) {
       if(!ctx) return;
-      vol = vol||0.3;
+      vol = (vol||0.3) * (App.Config.get('volCues') / 100);
+      if(vol <= 0) return;
       try {
         var o=ctx.createOscillator(), g=ctx.createGain();
         o.connect(g); g.connect(ctx.destination);
@@ -1084,6 +1249,7 @@
       var buf = buffers[name];
       if(!c || !buf) return;
       App.Audio.resume();
+      gain.gain.value = App.Config.get('volVoice') / 100;
       var now = c.currentTime;
       if(name === lastName && (now - lastTime) < 0.3) return;
       if(current) { try { current.stop(); } catch(e) {} }
@@ -1116,6 +1282,112 @@
       holdEnd:   function() { buzz([60,50,60,50,60]); },
       complete:  function() { buzz([100,80,100,80,220]); }
     };
+  })();
+
+  /* ======== App.Ambience ========
+     Generated soundscape (WebAudio, no assets): filtered brown noise
+     ("ocean") + a soft two-tone pad. The filter opens with the inhale
+     and closes with the exhale; everything calms during holds. */
+  App.Ambience = (function() {
+    var nodes = null, running = false;
+
+    function baseGain() { return 0.5 * (App.Config.get('volAmbience') / 100); }
+
+    function start() {
+      if(running) return;
+      if(App.Config.get('ambience') !== 'on') return;
+      var c = App.Audio.getCtx();
+      if(!c) return;
+      try {
+        var master = c.createGain();
+        master.gain.setValueAtTime(0.0001, c.currentTime);
+        master.gain.exponentialRampToValueAtTime(Math.max(0.0001, baseGain()), c.currentTime + 2);
+        master.connect(c.destination);
+
+        /* brown-ish noise loop */
+        var len = 2 * c.sampleRate;
+        var buf = c.createBuffer(1, len, c.sampleRate);
+        var d = buf.getChannelData(0);
+        var last = 0;
+        for(var i = 0; i < len; i++) {
+          var w = Math.random()*2 - 1;
+          last = (last + 0.02*w) / 1.02;
+          d[i] = last * 3.5;
+        }
+        var noise = c.createBufferSource();
+        noise.buffer = buf; noise.loop = true;
+        var filter = c.createBiquadFilter();
+        filter.type = 'lowpass'; filter.frequency.value = 450; filter.Q.value = 0.7;
+        var noiseGain = c.createGain(); noiseGain.gain.value = 0.5;
+        noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
+
+        /* soft pad: root + fifth, barely audible */
+        var o1 = c.createOscillator(); o1.type = 'sine'; o1.frequency.value = 110;
+        var o2 = c.createOscillator(); o2.type = 'sine'; o2.frequency.value = 164.8;
+        var padGain = c.createGain(); padGain.gain.value = 0.10;
+        o1.connect(padGain); o2.connect(padGain); padGain.connect(master);
+
+        noise.start(); o1.start(); o2.start();
+        nodes = { master:master, noise:noise, filter:filter, o1:o1, o2:o2 };
+        running = true;
+      } catch(e) { nodes = null; running = false; }
+    }
+
+    function stop() {
+      if(!running || !nodes) { running = false; return; }
+      var c = App.Audio.getCtx();
+      try {
+        var t = c.currentTime;
+        nodes.master.gain.cancelScheduledValues(t);
+        nodes.master.gain.setValueAtTime(Math.max(0.0001, nodes.master.gain.value), t);
+        nodes.master.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+        var n = nodes;
+        setTimeout(function() {
+          try { n.noise.stop(); n.o1.stop(); n.o2.stop(); n.master.disconnect(); } catch(e) {}
+        }, 1400);
+      } catch(e) {}
+      nodes = null; running = false;
+    }
+
+    /* breath progress 0 (empty) → 1 (full): open/close the filter */
+    function setBreath(p) {
+      if(!running || !nodes) return;
+      var c = App.Audio.getCtx();
+      try { nodes.filter.frequency.setTargetAtTime(350 + 750*p, c.currentTime, 0.12); } catch(e) {}
+    }
+
+    /* calm setting for holds: filter low and steady */
+    function setCalm() {
+      if(!running || !nodes) return;
+      var c = App.Audio.getCtx();
+      try { nodes.filter.frequency.setTargetAtTime(300, c.currentTime, 0.8); } catch(e) {}
+    }
+
+    function duck(on) {
+      if(!running || !nodes) return;
+      var c = App.Audio.getCtx();
+      try {
+        nodes.master.gain.setTargetAtTime(on ? baseGain()*0.2 : baseGain(), c.currentTime, 0.4);
+      } catch(e) {}
+    }
+
+    function applyVolume() {
+      if(!running || !nodes) return;
+      var c = App.Audio.getCtx();
+      try { nodes.master.gain.setTargetAtTime(baseGain(), c.currentTime, 0.15); } catch(e) {}
+    }
+
+    /* start/stop according to config + session state (called on setting change) */
+    function sync() {
+      var wanted = App.Session && App.Session.isActive() &&
+                   App.Session.getState() !== STATES.PAUSED &&
+                   App.Config.get('ambience') === 'on';
+      if(wanted) { start(); applyVolume(); }
+      else stop();
+    }
+
+    return { start:start, stop:stop, setBreath:setBreath, setCalm:setCalm,
+             duck:duck, applyVolume:applyVolume, sync:sync };
   })();
 
   /* ======== App.WakeLock ======== */
@@ -1154,6 +1426,19 @@
     function bestHold(s) {
       return s.holds && s.holds.length ? Math.max.apply(null, s.holds) : 0;
     }
+    /* best hold across the last n sessions that had holds (adaptive targets) */
+    function recentBest(n) {
+      var withHolds = loadAll().filter(function(s) { return bestHold(s) > 0; }).slice(-n);
+      return withHolds.length
+        ? Math.max.apply(null, withHolds.map(bestHold))
+        : 0;
+    }
+    function setLastFeeling(feel) {
+      var all = loadAll();
+      if(!all.length) return;
+      all[all.length-1].feeling = feel;
+      try { localStorage.setItem(SK, JSON.stringify(all)); } catch(e) {}
+    }
     function stats() {
       var all = loadAll();
       var withHolds = all.filter(function(s) { return bestHold(s) > 0; });
@@ -1164,7 +1449,8 @@
         : 0;
       return { sessions: all.length, best: best, avgBest: avg, all: all };
     }
-    return { record:record, stats:stats, bestHold:bestHold };
+    return { record:record, stats:stats, bestHold:bestHold,
+             recentBest:recentBest, setLastFeeling:setLastFeeling };
   })();
 
   /* ======== App.Liquid ========
@@ -1541,7 +1827,7 @@
       cueBreath(true);
       App.Haptics.inhale();
       App.Audio.playBreathTick();
-      var durMs = App.Config.get('inhaleDuration') * 1000;
+      var durMs = App.Config.get('inhaleDuration') * App.Config.getRampFactor(currentRound) * 1000;
       var pauseInhale = App.Config.get('pauseAfterInhale');
       var nextFn = pauseInhale > 0 ? beginPauseAfterInhale : beginBreathingOut;
       App.Timer.startPhase(durMs, nextFn, function(elapsed) {
@@ -1554,7 +1840,7 @@
       cueBreath(false);
       App.Haptics.exhale();
       var last = breathCount >= App.Config.get('breathsPerRound');
-      var durMs = App.Config.get('exhaleDuration') * 1000;
+      var durMs = App.Config.get('exhaleDuration') * App.Config.getRampFactor(currentRound) * 1000;
       var pauseExhale = App.Config.get('pauseAfterExhale');
       var nextFn;
       if (last) {
@@ -1597,6 +1883,7 @@
       App.Audio.playHoldStart();
       App.Voice.speak('hold');
       App.Haptics.holdStart();
+      App.Ambience.setCalm();
       App.Timer.startPhase(null, null, function(elapsed) {
         App.UI.updateHoldTimer(Math.floor(elapsed/1000), holdTarget);
       });
@@ -1623,12 +1910,13 @@
 
     function beginRecoveryHold() {
       transition(STATES.RECOVERY_HOLD);
-      var durMs = RECOVERY_HOLD_DUR * 1000;
+      App.Ambience.setCalm();
+      var holdSec = App.Config.get('recoveryHold');
       App.Timer.startPhase(
-        durMs,
+        holdSec * 1000,
         beginRecoveryOut,
         function(elapsed) {
-          var rem = Math.max(0, RECOVERY_HOLD_DUR - Math.floor(elapsed/1000));
+          var rem = Math.max(0, holdSec - Math.floor(elapsed/1000));
           App.UI.updateRecoveryCountdown(rem);
         }
       );
@@ -1674,6 +1962,7 @@
       App.Voice.speak('wellDone');
       App.Haptics.complete();
       App.WakeLock.release();
+      App.Ambience.stop();
       App.History.record({
         ts: Date.now(),
         preset: App.Presets.getCurrentLabel(),
@@ -1707,6 +1996,7 @@
         sessionStartMs = performance.now();
         holdTarget = App.Config.getHoldTarget(1);
         App.WakeLock.request();
+        App.Ambience.start();
         beginGetReady();
       },
       pause: function() {
@@ -1714,6 +2004,7 @@
         stateBeforePause = state;
         App.Timer.pause();
         App.Voice.speak('pause');
+        App.Ambience.duck(true);
         transition(STATES.PAUSED);
         App.UI.setStartButton('resume');
       },
@@ -1725,10 +2016,12 @@
         App.UI.setStartButton('pause');
         App.Timer.resume();
         App.WakeLock.request();
+        App.Ambience.duck(false);
       },
       reset: function() {
         App.Timer.stop();
         App.WakeLock.release();
+        App.Ambience.stop();
         currentRound=0; breathCount=0; holdAchieved=0;
         roundHolds=[]; stateBeforePause=null;
         App.Config.setInputsDisabled(false);
@@ -1828,6 +2121,24 @@
       e.circleGlow.classList.remove('glow-pause');
       e.circleGlow.classList.remove('glow-complete');
 
+      /* Zen mode: hide chrome while actively practicing */
+      var zen = state !== STATES.IDLE && state !== STATES.SESSION_COMPLETE
+             && state !== STATES.PAUSED;
+      document.body.classList.toggle('zen', zen);
+      if(!zen) document.body.classList.remove('zen-peek');
+
+      /* Feeling rating only on the session-complete screen */
+      var feelingRow = document.getElementById('feeling-row');
+      if(feelingRow) {
+        feelingRow.classList.toggle('hidden', state !== STATES.SESSION_COMPLETE);
+        if(state !== STATES.SESSION_COMPLETE) {
+          feelingRow.classList.remove('rated');
+          feelingRow.querySelectorAll('.feeling-btn').forEach(function(b) {
+            b.classList.remove('selected');
+          });
+        }
+      }
+
       switch(state) {
 
         case STATES.IDLE:
@@ -1837,7 +2148,7 @@
           showOnly(['idle-title','idle-subtitle']);
           e.roundIndicator.textContent = '';
           e.idleTitle.textContent    = App.Presets.getCurrentLabel();
-          e.idleSubtitle.textContent = 'Configure settings and press START';
+          e.idleSubtitle.textContent = estimateText();
           setRingProgress(0);
           makeTappable(false);
           App.Liquid.set(COLORS.IDLE, {mode:'drift', scale:0.45, amp:0.05, speed:0.15, agitation:0.3});
@@ -1970,11 +2281,11 @@
           setScale('scale-recovery-hold');
           showOnly(['phase-label','recovery-countdown']);
           e.phaseLabel.textContent        = 'HOLD';
-          e.recoveryCountdown.textContent = RECOVERY_HOLD_DUR;
+          e.recoveryCountdown.textContent = cfg.get('recoveryHold');
           e.roundIndicator.textContent    = roundText;
           makeTappable(false);
           App.Liquid.set(COLORS.RECOVERY_HOLD, {mode:'fixed', scale:1, agitation:0.15});
-          announce('Hold your breath for 15 seconds.');
+          announce('Hold your breath for ' + cfg.get('recoveryHold') + ' seconds.');
           break;
 
         case STATES.RECOVERY_OUT:
@@ -2034,8 +2345,9 @@
       var progress = Math.min(1, elapsed / durationMs);
       /* Inhale: ring fills 0→1; Exhale: ring empties 1→0 */
       setRingProgress(isInhale ? progress : 1 - progress);
-      /* Liquid blob tracks the same progress (frame-locked to the timer) */
+      /* Liquid blob + ambience track the same progress (frame-locked to the timer) */
       App.Liquid.setBreath(isInhale ? progress : 1 - progress);
+      App.Ambience.setBreath(isInhale ? progress : 1 - progress);
       /* Update time remaining */
       var remaining = Math.max(0, (durationMs - elapsed) / 1000);
       if(e.breathTimeRemaining) {
@@ -2096,10 +2408,19 @@
         e.summaryNext.textContent = 'Next round in ' + secs + '...';
     }
 
+    function estimateText() {
+      var mins = Math.round(App.Config.estimateSeconds() / 60);
+      return 'Est. ~' + (mins < 1 ? '<1' : mins) + ' min · press START';
+    }
+
     function refreshIdleTitle() {
       if(!e.idleTitle) return;
       if(e.idleTitle.classList.contains('hidden')) return;
       e.idleTitle.textContent = App.Presets.getCurrentLabel();
+      if(e.idleSubtitle && !e.idleSubtitle.classList.contains('hidden')
+          && App.Session.getState() === STATES.IDLE) {
+        e.idleSubtitle.textContent = estimateText();
+      }
     }
 
     return { init:init, render:render, updateHoldTimer:updateHoldTimer,
@@ -2257,6 +2578,24 @@
       tiles.appendChild(tile(st.avgBest ? Math.round(st.avgBest) + 's' : '–', 'Avg best hold'));
       body.appendChild(tiles);
 
+      /* streak / practice totals */
+      var dayset = {};
+      st.all.forEach(function(s) { dayset[new Date(s.ts).toDateString()] = true; });
+      var streak = 0, cursor = new Date();
+      if(!dayset[cursor.toDateString()]) cursor.setDate(cursor.getDate() - 1);
+      while(dayset[cursor.toDateString()]) { streak++; cursor.setDate(cursor.getDate() - 1); }
+      var totalSec = st.all.reduce(function(a, s) { return a + (s.durationSec || 0); }, 0);
+      var totalTxt = totalSec >= 3600
+        ? Math.floor(totalSec/3600) + 'h ' + Math.round(totalSec%3600/60) + 'm'
+        : Math.round(totalSec/60) + 'm';
+      var weekAgo = Date.now() - 7*864e5;
+      var thisWeek = st.all.filter(function(s) { return s.ts >= weekAgo; }).length;
+      var tiles2 = el('div', 'stats-summary');
+      tiles2.appendChild(tile(streak + (streak === 1 ? ' day' : ' days'), 'Streak'));
+      tiles2.appendChild(tile(totalTxt, 'Total practice'));
+      tiles2.appendChild(tile(String(thisWeek), 'This week'));
+      body.appendChild(tiles2);
+
       var series = st.all
         .filter(function(s) { return App.History.bestHold(s) > 0; })
         .slice(-30)
@@ -2270,15 +2609,17 @@
       var table = document.createElement('table');
       var thead = document.createElement('thead');
       var hr = document.createElement('tr');
-      ['Date','Preset','Rounds','Best hold'].forEach(function(h) {
+      ['Date','Preset','Rounds','Feel','Best hold'].forEach(function(h) {
         var th = document.createElement('th'); th.textContent = h; hr.appendChild(th);
       });
       thead.appendChild(hr); table.appendChild(thead);
+      var FEELS = {1:'😌', 2:'🙂', 3:'😵'};
       var tbody = document.createElement('tbody');
       st.all.slice(-10).reverse().forEach(function(s) {
         var tr = document.createElement('tr');
         var best = App.History.bestHold(s);
         [fmtDate(s.ts), s.preset || 'Custom', String(s.rounds || '–'),
+         FEELS[s.feeling] || '–',
          best ? Math.round(best) + 's' : '–'].forEach(function(c) {
           var td = document.createElement('td'); td.textContent = c; tr.appendChild(td);
         });
@@ -2330,15 +2671,49 @@
 
     /* Settings input listeners */
     ['cfg-breaths','cfg-hold-start','cfg-hold-incr','cfg-rounds','cfg-inhale','cfg-exhale',
-     'cfg-pause-inhale','cfg-pause-exhale','cfg-voice','cfg-vibration']
+     'cfg-pause-inhale','cfg-pause-exhale','cfg-recovery-hold','cfg-ramp','cfg-hold-mode',
+     'cfg-voice','cfg-vibration','cfg-ambience']
       .forEach(function(id) {
         var el = document.getElementById(id);
         if(el) el.addEventListener('change', function() {
           App.Config.readFromInputs();
           App.Config.save();
           App.Presets.updateSelect();
+          App.Ambience.sync();
         });
       });
+    /* Volume sliders apply live while dragging */
+    ['cfg-vol-voice','cfg-vol-cues','cfg-vol-amb'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if(el) el.addEventListener('input', function() {
+        App.Config.readFromInputs();
+        App.Config.save();
+        App.Ambience.applyVolume();
+      });
+    });
+
+    /* Feeling rating (session complete) */
+    var feelingRow = document.getElementById('feeling-row');
+    feelingRow.addEventListener('click', function(ev) {
+      var btn = ev.target.closest ? ev.target.closest('.feeling-btn') : null;
+      if(!btn) return;
+      if(App.Session.getState() !== STATES.SESSION_COMPLETE) return;
+      App.History.setLastFeeling(Number(btn.getAttribute('data-feel')));
+      feelingRow.classList.add('rated');
+      feelingRow.querySelectorAll('.feeling-btn').forEach(function(b) {
+        b.classList.toggle('selected', b === btn);
+      });
+    });
+
+    /* Zen mode peek handle */
+    var zenTimeout = null;
+    document.getElementById('zen-strip').addEventListener('click', function() {
+      document.body.classList.add('zen-peek');
+      clearTimeout(zenTimeout);
+      zenTimeout = setTimeout(function() {
+        document.body.classList.remove('zen-peek');
+      }, 6000);
+    });
 
     /* START / PAUSE / RESUME button */
     document.getElementById('btn-start').addEventListener('click', function() {
