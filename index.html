@@ -16,6 +16,7 @@
       try { t = localStorage.getItem('pranayama_theme'); } catch(e){}
       if(!t) t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
       if(t === 'light') document.documentElement.setAttribute('data-theme','light');
+      else if(t === 'oled') document.documentElement.setAttribute('data-theme','oled');
     })();
   </script>
   <style>
@@ -61,6 +62,17 @@
       --color-warning:  #B45309;
       --current-phase-color: #475569;
     }
+
+    /* OLED TRUE-BLACK THEME */
+    html[data-theme="oled"] {
+      --color-bg:             #000000;
+      --color-surface:        #0A0A0D;
+      --color-surface-raised: #16161B;
+      --color-border:         #2A2A31;
+    }
+    html[data-theme="oled"] #settings-panel { background: rgba(4,4,6,0.97); }
+    html[data-theme="oled"] #safety-footer  { background: rgba(0,0,0,0.96); }
+    html[data-theme="oled"] #atmosphere     { opacity: 0.12; }
 
     /* Theme transition — only active after initial render */
     html.theme-ready,
@@ -291,6 +303,9 @@
       will-change: transform;
     }
     html[data-theme="light"] #atmosphere { opacity: 0.10; }
+    #scene-canvas {
+      position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    }
 
     /* PHASE LABEL TRANSITIONS */
     @keyframes label-swap-anim {
@@ -610,6 +625,10 @@
     </svg>
     <svg id="theme-icon-sun" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+    <svg id="theme-icon-oled" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="9"/>
+      <circle cx="12" cy="12" r="4.5" fill="currentColor" stroke="none"/>
     </svg>
   </button>
 
@@ -1210,36 +1229,34 @@
   /* ======== App.Theme ======== */
   App.Theme = (function() {
     var SK = 'pranayama_theme';
+    var ORDER = ['dark', 'light', 'oled'];
+    var LABELS = { dark: 'light', light: 'OLED black', oled: 'dark' };
     var current = 'dark';
-    var moonIcon, sunIcon, btn;
+    var btn, icons = {};
 
     function apply(theme) {
       current = theme;
-      if(theme === 'light') {
-        document.documentElement.setAttribute('data-theme', 'light');
-      } else {
+      if(theme === 'dark') {
         document.documentElement.removeAttribute('data-theme');
+      } else {
+        document.documentElement.setAttribute('data-theme', theme);
       }
       updateToggle();
     }
 
     function updateToggle() {
       if(!btn) return;
-      moonIcon = moonIcon || document.getElementById('theme-icon-moon');
-      sunIcon  = sunIcon  || document.getElementById('theme-icon-sun');
-      if(current === 'light') {
-        moonIcon.classList.add('hidden');
-        sunIcon.classList.remove('hidden');
-        btn.setAttribute('aria-label', 'Switch to dark mode');
-      } else {
-        moonIcon.classList.remove('hidden');
-        sunIcon.classList.add('hidden');
-        btn.setAttribute('aria-label', 'Switch to light mode');
-      }
+      icons.dark  = icons.dark  || document.getElementById('theme-icon-moon');
+      icons.light = icons.light || document.getElementById('theme-icon-sun');
+      icons.oled  = icons.oled  || document.getElementById('theme-icon-oled');
+      ORDER.forEach(function(t) {
+        if(icons[t]) icons[t].classList.toggle('hidden', t !== current);
+      });
+      btn.setAttribute('aria-label', 'Switch to ' + LABELS[current] + ' mode');
     }
 
     function toggle() {
-      var next = current === 'dark' ? 'light' : 'dark';
+      var next = ORDER[(ORDER.indexOf(current) + 1) % ORDER.length];
       apply(next);
       try { localStorage.setItem(SK, next); } catch(e) {}
     }
@@ -1249,7 +1266,7 @@
       // Read stored or system preference (already applied in <head> for flash prevention)
       var stored = null;
       try { stored = localStorage.getItem(SK); } catch(e) {}
-      if(stored === 'light' || stored === 'dark') {
+      if(ORDER.indexOf(stored) >= 0) {
         current = stored;
       } else {
         current = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
@@ -1513,10 +1530,12 @@
         noise.start();
         nodes = { type:type, master:master, noise:noise, filter:filter, extras:extras, timers:timers };
         running = true;
+        App.Scene.start(type);
       } catch(e) { nodes = null; running = false; }
     }
 
     function stop() {
+      App.Scene.stop();
       if(!running || !nodes) { running = false; return; }
       var c = App.Audio.getCtx();
       try {
@@ -1624,6 +1643,118 @@
     return { play:play };
   })();
 
+  /* ======== App.Scene ========
+     Ambience-matched visual layers on a lightweight 2D canvas behind the
+     app: rain streaks, ocean caustic light, wind wisps. Runs only while
+     the matching soundscape is playing. */
+  App.Scene = (function() {
+    var canvas = null, ctx = null, rafId = null, type = null, lastT = 0;
+    var items = [], W = 0, H = 0;
+
+    function ensureCanvas() {
+      if(canvas) return;
+      canvas = document.createElement('canvas');
+      canvas.id = 'scene-canvas';
+      canvas.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(canvas);
+      ctx = canvas.getContext('2d');
+    }
+    function resize() {
+      if(!canvas) return;
+      W = canvas.width  = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+    function spawn(anywhere) {
+      if(type === 'rain') return {
+        x: Math.random()*W, y: anywhere ? Math.random()*H : -30,
+        len: 10 + Math.random()*18, sp: 380 + Math.random()*320,
+        a: 0.06 + Math.random()*0.10, drift: 20 + Math.random()*30
+      };
+      if(type === 'wind') return {
+        x: anywhere ? Math.random()*W : -12, y: Math.random()*H,
+        sp: 60 + Math.random()*120, amp: 12 + Math.random()*30,
+        ph: Math.random()*6.28, r: 0.8 + Math.random()*1.6,
+        a: 0.05 + Math.random()*0.09
+      };
+      return { /* ocean caustic blob */
+        x: Math.random()*W, y: Math.random()*H, r: 90 + Math.random()*190,
+        vx: (Math.random()-0.5)*14, vy: (Math.random()-0.5)*9,
+        ph: Math.random()*6.28, a: 0.028 + Math.random()*0.030
+      };
+    }
+    function initItems() {
+      items = [];
+      var n = type === 'rain' ? 70 : type === 'wind' ? 44 : 6;
+      for(var i = 0; i < n; i++) items.push(spawn(true));
+    }
+    function frame(now) {
+      rafId = null;
+      if(!type) return;
+      var dt = Math.min(0.08, (now - lastT) / 1000);
+      lastT = now;
+      ctx.clearRect(0, 0, W, H);
+      var light = document.documentElement.getAttribute('data-theme') === 'light';
+      var col = light ? '30,70,100' : '160,200,235';
+      for(var i = 0; i < items.length; i++) {
+        var it = items[i];
+        if(type === 'rain') {
+          it.y += it.sp*dt; it.x += it.drift*dt;
+          if(it.y > H + 30) { items[i] = it = spawn(false); }
+          ctx.strokeStyle = 'rgba(' + col + ',' + it.a + ')';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(it.x, it.y);
+          ctx.lineTo(it.x - it.drift*0.05, it.y - it.len);
+          ctx.stroke();
+        } else if(type === 'wind') {
+          it.x += it.sp*dt; it.ph += dt*1.7;
+          if(it.x > W + 20) { items[i] = spawn(false); continue; }
+          var y = it.y + Math.sin(it.ph)*it.amp;
+          ctx.fillStyle = 'rgba(' + col + ',' + it.a + ')';
+          ctx.beginPath();
+          ctx.ellipse(it.x, y, it.r*3.4, it.r, 0, 0, 6.283);
+          ctx.fill();
+        } else { /* ocean */
+          it.x += it.vx*dt; it.y += it.vy*dt; it.ph += dt*0.5;
+          if(it.x < -it.r) it.x = W + it.r; if(it.x > W + it.r) it.x = -it.r;
+          if(it.y < -it.r) it.y = H + it.r; if(it.y > H + it.r) it.y = -it.r;
+          var rr = it.r * (1 + 0.15*Math.sin(it.ph));
+          var pulse = Math.max(0, 0.5 + 0.5*Math.sin(it.ph*1.3));
+          var g = ctx.createRadialGradient(it.x, it.y, rr*0.2, it.x, it.y, rr);
+          g.addColorStop(0, 'rgba(' + col + ',' + (it.a*pulse).toFixed(4) + ')');
+          g.addColorStop(1, 'rgba(' + col + ',0)');
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(it.x, it.y, rr, 0, 6.283);
+          ctx.fill();
+        }
+      }
+      rafId = requestAnimationFrame(frame);
+    }
+    function start(t) {
+      if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      ensureCanvas();
+      resize();
+      if(type === t) return;
+      type = t;
+      initItems();
+      if(rafId === null) { lastT = performance.now(); rafId = requestAnimationFrame(frame); }
+    }
+    function stop() {
+      type = null;
+      if(rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+      if(ctx) ctx.clearRect(0, 0, W, H);
+    }
+    function init() {
+      window.addEventListener('resize', resize);
+      document.addEventListener('visibilitychange', function() {
+        if(document.hidden) { if(rafId !== null) { cancelAnimationFrame(rafId); rafId = null; } }
+        else if(type) { lastT = performance.now(); rafId = requestAnimationFrame(frame); }
+      });
+    }
+    return { init:init, start:start, stop:stop };
+  })();
+
   /* ======== App.WakeLock ======== */
   App.WakeLock = (function() {
     var sentinel = null, wanted = false;
@@ -1709,6 +1840,7 @@
     var driftBase = 0.45, driftAmp = 0.04, driftSpeed = 0.18;
     var breathScale = 0, prevScale = 0.45;
 
+    var pressure = 0;   /* 0..1.3: retention-hold tension */
     var uniforms = {
       uTime: { value: 0 },
       uAmp:  { value: 0.06 },
@@ -1906,6 +2038,7 @@
     function applyLook() {
       var look = App.Config.get('material');
       var c = cur.color;
+      var eFac = 0.05 + 0.16 * pressure;
       if(look !== lookApplied) {
         lookApplied = look;
         material.iridescence = look === 'aurora' ? 1.0 : 0.0;
@@ -1918,16 +2051,16 @@
       }
       if(look === 'gold') {
         material.color.setRGB(0.97*0.85 + c[0]*0.15, 0.76*0.85 + c[1]*0.15, 0.31*0.85 + c[2]*0.15);
-        material.emissive.setRGB(c[0]*0.05, c[1]*0.05, c[2]*0.05);
+        material.emissive.setRGB(c[0]*eFac, c[1]*eFac, c[2]*eFac);
       } else if(look === 'lava') {
         material.color.setRGB(0.09, 0.07, 0.08);
         material.emissive.setRGB(c[0], c[1], c[2]);
       } else if(look === 'aurora') {
         material.color.setRGB(0.14 + c[0]*0.25, 0.16 + c[1]*0.25, 0.21 + c[2]*0.25);
-        material.emissive.setRGB(c[0]*0.06, c[1]*0.06, c[2]*0.06);
+        material.emissive.setRGB(c[0]*eFac, c[1]*eFac, c[2]*eFac);
       } else { /* chrome */
         material.color.setRGB(0.62 + c[0]*0.38, 0.64 + c[1]*0.36, 0.68 + c[2]*0.32);
-        material.emissive.setRGB(c[0]*0.05, c[1]*0.05, c[2]*0.05);
+        material.emissive.setRGB(c[0]*eFac, c[1]*eFac, c[2]*eFac);
       }
     }
 
@@ -2139,12 +2272,17 @@
       cur.agitation += (target.agitation - cur.agitation) * k;
       for(var i = 0; i < 3; i++) cur.color[i] += (target.color[i] - cur.color[i]) * k;
 
-      /* liquid motion: time advances faster when agitated */
-      timePhase += dt * (0.22 + 0.85 * cur.agitation);
+      /* liquid motion: time advances faster when agitated; retention
+         pressure adds tension and a heartbeat pulse near the target */
+      var agitEff = Math.min(1, cur.agitation + pressure * 0.35);
+      timePhase += dt * (0.22 + 0.85 * agitEff);
       uniforms.uTime.value = timePhase;
-      uniforms.uAmp.value  = 0.025 + 0.095 * cur.agitation;
+      uniforms.uAmp.value  = 0.025 + 0.095 * agitEff;
 
       var s = cur.scaleWorld();
+      if(pressure > 0.25) {
+        s *= 1 + 0.018 * pressure * Math.sin(nowMs * 0.0055);
+      }
       mesh.scale.setScalar(s);
       applyLook();
       syncEnv();
@@ -2253,6 +2391,7 @@
     /* Public API — set phase look; opts: {mode, scale, amp, speed, agitation} */
     function set(colorHex, opts) {
       opts = opts || {};
+      pressure = 0;
       target.color = hexToRgb(colorHex);
       if(opts.agitation !== undefined) target.agitation = opts.agitation;
       if(opts.mode) mode = opts.mode;
@@ -2273,7 +2412,12 @@
       breathScale = Math.min(1, Math.max(0, p));
     }
 
+    function setPressure(p) {
+      pressure = Math.min(1.3, Math.max(0, p));
+    }
+
     return { init:init, set:set, setBreath:setBreath, burst:burst,
+             setPressure:setPressure,
              isEnabled:function() { return enabled; } };
   })();
 
@@ -3030,6 +3174,7 @@
 
     function updateHoldTimer(secs, target) {
       if(e.holdTimer) e.holdTimer.textContent = secs;
+      App.Liquid.setPressure(target > 0 ? Math.min(1.2, secs / Math.max(1, target)) : 0.35);
       /* Fill ring toward target (guard: target can be 0 for no-hold presets) */
       if(target > 0) {
         setRingProgress(Math.min(1, secs / target));
@@ -3412,6 +3557,7 @@
     App.Config.populateInputs();
     App.Presets.init();
     App.Liquid.init();
+    App.Scene.init();
     Stats.init();
     initDisclaimer();
 
