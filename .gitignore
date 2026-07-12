@@ -1,0 +1,3 @@
+# local tooling artifacts
+.claude/
+.playwright-mcp/
