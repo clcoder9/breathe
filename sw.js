@@ -1,8 +1,9 @@
-var CACHE_NAME = 'pranayama-v4';
+var CACHE_NAME = 'pranayama-v5';
 var ASSETS = [
   './',
   './index.html',
   './manifest.json',
+  './three.module.min.js',
   './icon-192.png',
   './icon-512.png'
 ];

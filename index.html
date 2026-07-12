@@ -283,6 +283,22 @@
     }
     #feeling-row.rated .feeling-btn:not(.selected) { opacity: 0.35; }
 
+    /* ATMOSPHERE GLOW */
+    #atmosphere {
+      position: fixed; inset: -25%; z-index: -1; pointer-events: none;
+      background: radial-gradient(circle at 50% 46%, var(--current-phase-color) 0%, transparent 55%);
+      opacity: 0.16; transform: scale(0.9);
+      will-change: transform;
+    }
+    html[data-theme="light"] #atmosphere { opacity: 0.10; }
+
+    /* PHASE LABEL TRANSITIONS */
+    @keyframes label-swap-anim {
+      0%   { opacity: 0; transform: translateY(8px) scale(0.96); }
+      100% { opacity: 1; transform: none; }
+    }
+    .label-swap { animation: label-swap-anim 0.45s ease; }
+
     /* URGE-TO-BREATHE MARKER */
     #urge-btn {
       margin-top: 2px; padding: 10px 22px;
@@ -450,15 +466,15 @@
       text-shadow: 0 2px 14px rgba(255,255,255,0.75), 0 0 4px rgba(255,255,255,0.5);
     }
     .circle-track { fill: none; stroke: var(--color-surface-raised); stroke-width: 8; }
-    .circle-ring  {
-      fill: none; stroke: var(--current-phase-color);
+    .circle-ring, .circle-ring-glow {
+      fill: none; stroke: url(#ring-grad);
       stroke-width: 8; stroke-linecap: round;
-      transition: stroke 0.6s ease;
       stroke-dasharray: 552.92;
       stroke-dashoffset: 552.92;
       transform: rotate(-90deg);
       transform-origin: center;
     }
+    .circle-ring-glow { filter: url(#ring-glow-f); opacity: 0.55; stroke-width: 10; }
     .circle-content {
       position: absolute; inset: 0; z-index: 2;
       display: flex; flex-direction: column;
@@ -580,6 +596,8 @@
         transition: none !important; animation: none !important;
       }
       .tap-animate, .glow-complete { animation: none !important; opacity: 1 !important; }
+      .label-swap { animation: none !important; }
+      #atmosphere { display: none !important; }
     }
   </style>
 </head>
@@ -594,6 +612,9 @@
       <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
     </svg>
   </button>
+
+  <!-- ATMOSPHERE GLOW -->
+  <div id="atmosphere" aria-hidden="true"></div>
 
   <!-- STATS TOGGLE -->
   <button id="stats-toggle" aria-label="Show session statistics">
@@ -793,7 +814,17 @@
       <div class="circle-wrapper" id="circle-wrapper">
         <canvas id="liquid-canvas" aria-hidden="true"></canvas>
         <svg class="circle-svg" viewBox="0 0 200 200" aria-hidden="true">
+          <defs>
+            <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop id="ring-stop-a" offset="0%" stop-color="#64748B"/>
+              <stop id="ring-stop-b" offset="100%" stop-color="#9BA9BC"/>
+            </linearGradient>
+            <filter id="ring-glow-f" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="3.2"/>
+            </filter>
+          </defs>
           <circle class="circle-track" cx="100" cy="100" r="88"/>
+          <circle class="circle-ring-glow" cx="100" cy="100" r="88"/>
           <circle class="circle-ring"  cx="100" cy="100" r="88"/>
         </svg>
         <div class="circle-content" id="circle-content">
@@ -1657,116 +1688,110 @@
   })();
 
   /* ======== App.Liquid ========
-     Raymarched liquid-metal blob (raw WebGL, no dependencies).
-     Expands/shrinks with the breath, recolors per phase, ripples with
-     configurable agitation. Falls back to the plain SVG circle when WebGL
-     is unavailable or prefers-reduced-motion is set. */
+     Liquid-metal blob rendered with Three.js (vendored ./three.module.min.js,
+     cached by the service worker): a noise-displaced icosphere with a PBR
+     metal material and a procedural studio environment map. Quality adapts
+     to measured frame times (resolution → geometry → bloom). Falls back to
+     the plain SVG circle when module import / WebGL fails or
+     prefers-reduced-motion is set. */
   App.Liquid = (function() {
-    var canvas, gl, prog, uni = {}, enabled = false, rafId = null, lastT = 0;
+    var THREE = null;
+    var canvas, renderer, scene, camera, mesh, material;
+    var geoHigh = null, geoLow = null;
+    var envRT = null, envIsLight = null;
+    var enabled = false, rafId = null, lastT = 0, timePhase = 0;
+    var atmosphereEl = null;
 
-    /* animated params */
+    /* animated params (same semantics as the previous engine) */
     var cur    = { scale:0.45, color:[0.39,0.45,0.55], agitation:0.3 };
     var target = { scale:0.45, color:[0.39,0.45,0.55], agitation:0.3 };
     var mode = 'drift';            /* 'drift' | 'breath' | 'fixed' */
     var driftBase = 0.45, driftAmp = 0.04, driftSpeed = 0.18;
-    var breathScale = 0;
+    var breathScale = 0, prevScale = 0.45;
 
-    var VS =
-      'attribute vec2 a_pos;' +
-      'void main(){ gl_Position = vec4(a_pos, 0.0, 1.0); }';
+    var uniforms = {
+      uTime: { value: 0 },
+      uAmp:  { value: 0.06 },
+      uFreq: { value: 1.65 },
+      uLava: { value: 0 }
+    };
 
-    var FS = [
-      '#ifdef GL_FRAGMENT_PRECISION_HIGH',
-      'precision highp float;',
-      '#else',
-      'precision mediump float;',
-      '#endif',
-      'uniform vec2  u_res;',
-      'uniform float u_time;',
-      'uniform float u_scale;',
-      'uniform vec3  u_color;',
-      'uniform float u_agitation;',
-      'uniform float u_theme;',
-      'uniform float u_material;',
-      'float hash(vec3 p){ p = fract(p*0.3183099 + 0.1); p *= 17.0;',
-      '  return fract(p.x*p.y*p.z*(p.x+p.y+p.z)); }',
-      'float noise(vec3 x){',
-      '  vec3 i = floor(x), f = fract(x);',
-      '  f = f*f*(3.0-2.0*f);',
-      '  return mix(mix(mix(hash(i+vec3(0,0,0)),hash(i+vec3(1,0,0)),f.x),',
-      '                 mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),',
-      '             mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),',
-      '                 mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);',
+    /* ---- adaptive quality ---- */
+    var TIERS = [
+      { dpr: 1.0,  low: true,  bloom: false },
+      { dpr: 1.5,  low: false, bloom: false },
+      { dpr: 2.0,  low: false, bloom: true  }
+    ];
+    var isMobile = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    var tier = isMobile ? 1 : 2;
+    var maxTier = isMobile ? 1 : 2;
+    var frameEMA = 16, evalCounter = 0;
+
+    /* ---- gyro / camera drift ---- */
+    var gyro = { x:0, y:0, tx:0, ty:0 };
+
+    /* ---- particles ---- */
+    var P_MAX = 220;
+    var pts = null, pData = null, pGeo = null;
+
+    /* ---- bloom (compact custom composer, high tier only) ---- */
+    var bloom = null;
+
+    var NOISE_GLSL = [
+      'vec3 permute3(vec3 x){ return mod(((x*34.0)+1.0)*x, 289.0); }',
+      'vec4 permute4(vec4 x){ return mod(((x*34.0)+1.0)*x, 289.0); }',
+      'vec4 taylorInvSqrt(vec4 r){ return 1.79284291400159 - 0.85373472095314 * r; }',
+      'float snoise(vec3 v){',
+      '  const vec2 C = vec2(1.0/6.0, 1.0/3.0);',
+      '  const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);',
+      '  vec3 i  = floor(v + dot(v, C.yyy));',
+      '  vec3 x0 = v - i + dot(i, C.xxx);',
+      '  vec3 g = step(x0.yzx, x0.xyz);',
+      '  vec3 l = 1.0 - g;',
+      '  vec3 i1 = min(g.xyz, l.zxy);',
+      '  vec3 i2 = max(g.xyz, l.zxy);',
+      '  vec3 x1 = x0 - i1 + 1.0*C.xxx;',
+      '  vec3 x2 = x0 - i2 + 2.0*C.xxx;',
+      '  vec3 x3 = x0 - 1.0 + 3.0*C.xxx;',
+      '  i = mod(i, 289.0);',
+      '  vec4 p = permute4(permute4(permute4(',
+      '        i.z + vec4(0.0, i1.z, i2.z, 1.0))',
+      '      + i.y + vec4(0.0, i1.y, i2.y, 1.0))',
+      '      + i.x + vec4(0.0, i1.x, i2.x, 1.0));',
+      '  float n_ = 1.0/7.0;',
+      '  vec3 ns = n_ * D.wyz - D.xzx;',
+      '  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);',
+      '  vec4 x_ = floor(j * ns.z);',
+      '  vec4 y_ = floor(j - 7.0 * x_);',
+      '  vec4 x = x_ * ns.x + ns.yyyy;',
+      '  vec4 y = y_ * ns.x + ns.yyyy;',
+      '  vec4 h = 1.0 - abs(x) - abs(y);',
+      '  vec4 b0 = vec4(x.xy, y.xy);',
+      '  vec4 b1 = vec4(x.zw, y.zw);',
+      '  vec4 s0 = floor(b0)*2.0 + 1.0;',
+      '  vec4 s1 = floor(b1)*2.0 + 1.0;',
+      '  vec4 sh = -step(h, vec4(0.0));',
+      '  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;',
+      '  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;',
+      '  vec3 p0 = vec3(a0.xy, h.x);',
+      '  vec3 p1 = vec3(a0.zw, h.y);',
+      '  vec3 p2 = vec3(a1.xy, h.z);',
+      '  vec3 p3 = vec3(a1.zw, h.w);',
+      '  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));',
+      '  p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;',
+      '  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);',
+      '  m = m * m;',
+      '  return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));',
       '}',
-      'float fbm(vec3 p){',
-      '  float a = 0.5, r = 0.0;',
-      '  for(int i=0;i<3;i++){ r += a*noise(p); p = p*2.13 + vec3(1.7); a *= 0.5; }',
+      'float liquidFbm(vec3 p){',
+      '  float a = 0.6, r = 0.0;',
+      '  for(int i = 0; i < 3; i++){ r += a * snoise(p); p = p*2.05 + vec3(11.3); a *= 0.5; }',
       '  return r;',
       '}',
-      'float sdf(vec3 p){',
-      '  float R   = mix(0.34, 0.72, u_scale);',
-      '  float amp = 0.015 + 0.075*u_agitation;',
-      '  float t   = u_time*(0.25 + 0.55*u_agitation);',
-      '  float n  = fbm(p*2.6 + vec3(t*0.7, t*0.5, t*0.3));',
-      '  float n2 = noise(p*5.5 - vec3(t*0.9, t*0.4, t*0.6));',
-      '  return length(p) - R - amp*(n-0.5)*2.0 - amp*0.35*(n2-0.5)*2.0;',
+      'float liquidNoise(vec3 p){',
+      '  return liquidFbm(p * uFreq + vec3(uTime*0.35, uTime*0.27, uTime*0.19));',
       '}',
-      'vec3 calcNormal(vec3 p){',
-      '  vec2 e = vec2(0.0035, 0.0);',
-      '  return normalize(vec3(',
-      '    sdf(p+e.xyy)-sdf(p-e.xyy),',
-      '    sdf(p+e.yxy)-sdf(p-e.yxy),',
-      '    sdf(p+e.yyx)-sdf(p-e.yyx)));',
-      '}',
-      'vec3 env(vec3 d){',
-      '  float g = smoothstep(-0.7, 0.9, d.y);',
-      '  vec3 darkSky  = mix(vec3(0.04,0.05,0.09), vec3(0.85,0.90,0.98), g);',
-      '  vec3 lightSky = mix(vec3(0.35,0.40,0.48), vec3(1.00,1.00,1.00), g);',
-      '  vec3 sky = mix(darkSky, lightSky, u_theme);',
-      '  float box1 = smoothstep(0.35,0.0,abs(d.y-0.45)) * smoothstep(0.9,0.2,abs(d.x));',
-      '  float box2 = smoothstep(0.25,0.0,abs(d.y+0.35)) * smoothstep(0.8,0.1,abs(d.x+0.4));',
-      '  return sky + vec3(1.2)*box1 + vec3(0.35)*box2;',
-      '}',
-      'void main(){',
-      '  vec2 uv = (gl_FragCoord.xy*2.0 - u_res) / min(u_res.x, u_res.y);',
-      '  vec3 ro = vec3(0.0, 0.0, 2.3);',
-      '  vec3 rd = normalize(vec3(uv, -2.1));',
-      '  float t = 1.0; float d; float minD = 1e9; bool hit = false;',
-      '  for(int i=0;i<56;i++){',
-      '    d = sdf(ro + rd*t);',
-      '    minD = min(minD, d);',
-      '    if(d < 0.0015){ hit = true; break; }',
-      '    t += d*0.85;',
-      '    if(t > 3.7) break;',
-      '  }',
-      '  if(!hit){',
-      '    float glow = 1.0 - smoothstep(0.0, 0.012, minD);',
-      '    gl_FragColor = vec4(u_color*glow*0.35, glow*0.4);',
-      '    return;',
-      '  }',
-      '  vec3 p = ro + rd*t;',
-      '  vec3 n = calcNormal(p);',
-      '  vec3 r = reflect(rd, n);',
-      '  float fres = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);',
-      '  vec3 tint = mix(vec3(0.75), u_color, 0.55);',
-      '  vec3 refl = env(r) * tint;',
-      '  vec3 keyDir = normalize(vec3(0.5, 0.8, 0.6));',
-      '  float spec = pow(max(dot(r, keyDir), 0.0), 60.0);',
-      '  float diff = max(dot(n, keyDir), 0.0);',
-      '  vec3 col = tint*0.06 + refl*(0.45 + 0.5*fres) + u_color*diff*0.18 + vec3(spec)*0.9;',
-      '  if(u_material > 0.5 && u_material < 1.5) {',
-      '    vec3 gold = vec3(1.0, 0.72, 0.30);',
-      '    col = gold*0.08 + env(r)*gold*(0.5 + 0.5*fres) + u_color*diff*0.10 + vec3(spec)*1.1;',
-      '  } else if(u_material > 1.5 && u_material < 2.5) {',
-      '    float crack = smoothstep(0.52, 0.72, fbm(p*3.5 + vec3(0.0, 0.0, u_time*0.05)));',
-      '    col = vec3(0.06, 0.05, 0.06) + refl*0.15 + u_color*crack*1.6 + vec3(spec)*0.3;',
-      '  } else if(u_material > 2.5) {',
-      '    vec3 iri = 0.5 + 0.5*cos(6.2832*(fres*1.5 + vec3(0.0, 0.33, 0.67)) + u_time*0.3);',
-      '    col = mix(iri, u_color, 0.35)*(0.35 + 0.65*fres) + refl*0.35 + vec3(spec)*0.8;',
-      '  }',
-      '  col = pow(col, vec3(0.4545));',
-      '  gl_FragColor = vec4(col, 1.0);',
-      '}'
+      'vec3 liquidOrth(vec3 v){ return abs(v.x) > 0.9 ? vec3(0.0,1.0,0.0) : vec3(1.0,0.0,0.0); }'
     ].join('\n');
 
     function hexToRgb(hex) {
@@ -1776,16 +1801,6 @@
         parseInt(h.substr(2,2),16)/255,
         parseInt(h.substr(4,2),16)/255
       ];
-    }
-
-    function compile(type, src) {
-      var s = gl.createShader(type);
-      gl.shaderSource(s, src);
-      gl.compileShader(s);
-      if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-        throw new Error(gl.getShaderInfoLog(s));
-      }
-      return s;
     }
 
     function wrapperClass(on) {
@@ -1800,17 +1815,303 @@
       wrapperClass(false);
     }
 
-    function resize() {
-      if(!gl || !canvas) return;
-      var dpr = Math.min(window.devicePixelRatio || 1, 2);
-      var rect = canvas.getBoundingClientRect();
-      var w = Math.max(1, Math.round(rect.width * dpr));
-      var h = Math.max(1, Math.round(rect.height * dpr));
-      if(canvas.width !== w || canvas.height !== h) {
-        canvas.width = w; canvas.height = h;
-        gl.viewport(0, 0, w, h);
+    /* procedural studio environment: gradient sky + softbox highlights */
+    function makeEnv(light) {
+      var cv = document.createElement('canvas');
+      cv.width = 512; cv.height = 256;
+      var ctx = cv.getContext('2d');
+      var g = ctx.createLinearGradient(0, 0, 0, 256);
+      if(light) {
+        g.addColorStop(0, '#f2f5fa'); g.addColorStop(0.45, '#ffffff'); g.addColorStop(1, '#96a4b8');
+      } else {
+        g.addColorStop(0, '#0a0d18'); g.addColorStop(0.45, '#4d5b78'); g.addColorStop(1, '#0c101c');
+      }
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 512, 256);
+      /* softboxes */
+      ctx.fillStyle = 'rgba(255,255,255,0.95)';
+      ctx.fillRect(64, 28, 140, 58);
+      ctx.fillStyle = 'rgba(255,255,255,' + (light ? '0.7' : '0.55') + ')';
+      ctx.fillRect(330, 52, 104, 38);
+      ctx.fillStyle = 'rgba(255,255,255,' + (light ? '0.35' : '0.25') + ')';
+      ctx.fillRect(0, 214, 512, 22);
+      ctx.fillStyle = 'rgba(255,255,255,' + (light ? '0.5' : '0.4') + ')';
+      ctx.fillRect(180, 120, 90, 30);
+      var tex = new THREE.CanvasTexture(cv);
+      tex.mapping = THREE.EquirectangularReflectionMapping;
+      tex.colorSpace = THREE.SRGBColorSpace;
+      var pm = new THREE.PMREMGenerator(renderer);
+      var rt = pm.fromEquirectangular(tex);
+      pm.dispose();
+      tex.dispose();
+      return rt;
+    }
+
+    function syncEnv() {
+      var light = document.documentElement.getAttribute('data-theme') === 'light';
+      if(envIsLight === light && envRT) return;
+      var old = envRT;
+      envRT = makeEnv(light);
+      envIsLight = light;
+      scene.environment = envRT.texture;
+      if(old) old.dispose();
+    }
+
+    function makeMaterial() {
+      var m = new THREE.MeshPhysicalMaterial({
+        color: 0xccd2da, metalness: 1.0, roughness: 0.16,
+        envMapIntensity: 1.5, clearcoat: 0.5, clearcoatRoughness: 0.25
+      });
+      m.onBeforeCompile = function(shader) {
+        shader.uniforms.uTime = uniforms.uTime;
+        shader.uniforms.uAmp  = uniforms.uAmp;
+        shader.uniforms.uFreq = uniforms.uFreq;
+        shader.uniforms.uLava = uniforms.uLava;
+        shader.vertexShader =
+          'uniform float uTime; uniform float uAmp; uniform float uFreq;\n' +
+          'varying float vLiquidNoise;\n' + NOISE_GLSL + '\n' +
+          shader.vertexShader
+            .replace('#include <beginnormal_vertex>', [
+              'float lqE = 0.14;',
+              'vec3 lqT1 = normalize(cross(normal, liquidOrth(normal)));',
+              'vec3 lqT2 = normalize(cross(normal, lqT1));',
+              'float lqF0 = liquidNoise(position);',
+              'float lqF1 = liquidNoise(position + lqT1*lqE);',
+              'float lqF2 = liquidNoise(position + lqT2*lqE);',
+              'vec3 lqP0 = position + normal * lqF0 * uAmp;',
+              'vec3 lqP1 = (position + lqT1*lqE) + normal * lqF1 * uAmp;',
+              'vec3 lqP2 = (position + lqT2*lqE) + normal * lqF2 * uAmp;',
+              'vec3 lqN = normalize(cross(lqP1 - lqP0, lqP2 - lqP0));',
+              'if(dot(lqN, normal) < 0.0) lqN = -lqN;',
+              'vLiquidNoise = lqF0 * 0.5 + 0.5;',
+              'vec3 objectNormal = lqN;',
+              '#ifdef USE_TANGENT',
+              'vec3 objectTangent = vec3( tangent.xyz );',
+              '#endif'
+            ].join('\n'))
+            .replace('#include <begin_vertex>',
+              'vec3 transformed = position + normal * lqF0 * uAmp;');
+        shader.fragmentShader =
+          'uniform float uLava;\nvarying float vLiquidNoise;\n' +
+          shader.fragmentShader
+            .replace('#include <emissivemap_fragment>',
+              '#include <emissivemap_fragment>\n' +
+              'totalEmissiveRadiance *= mix(1.0, smoothstep(0.42, 0.78, vLiquidNoise) * 2.2, uLava);');
+      };
+      return m;
+    }
+
+    /* map the configured look + current phase color onto the PBR material */
+    var lookApplied = '';
+    function applyLook() {
+      var look = App.Config.get('material');
+      var c = cur.color;
+      if(look !== lookApplied) {
+        lookApplied = look;
+        material.iridescence = look === 'aurora' ? 1.0 : 0.0;
+        material.iridescenceIOR = 1.6;
+        material.metalness = look === 'lava' ? 0.55 : 1.0;
+        material.roughness = look === 'lava' ? 0.5 : (look === 'gold' ? 0.18 : 0.15);
+        material.envMapIntensity = look === 'lava' ? 0.5 : 1.5;
+        uniforms.uLava.value = look === 'lava' ? 1 : 0;
+        material.needsUpdate = false;
+      }
+      if(look === 'gold') {
+        material.color.setRGB(0.97*0.85 + c[0]*0.15, 0.76*0.85 + c[1]*0.15, 0.31*0.85 + c[2]*0.15);
+        material.emissive.setRGB(c[0]*0.05, c[1]*0.05, c[2]*0.05);
+      } else if(look === 'lava') {
+        material.color.setRGB(0.09, 0.07, 0.08);
+        material.emissive.setRGB(c[0], c[1], c[2]);
+      } else if(look === 'aurora') {
+        material.color.setRGB(0.14 + c[0]*0.25, 0.16 + c[1]*0.25, 0.21 + c[2]*0.25);
+        material.emissive.setRGB(c[0]*0.06, c[1]*0.06, c[2]*0.06);
+      } else { /* chrome */
+        material.color.setRGB(0.62 + c[0]*0.38, 0.64 + c[1]*0.36, 0.68 + c[2]*0.32);
+        material.emissive.setRGB(c[0]*0.05, c[1]*0.05, c[2]*0.05);
       }
     }
+
+    /* ---- particles: breath mist + record burst ---- */
+    function makeParticleTexture() {
+      var cv = document.createElement('canvas');
+      cv.width = 64; cv.height = 64;
+      var ctx = cv.getContext('2d');
+      var g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+      g.addColorStop(0, 'rgba(255,255,255,1)');
+      g.addColorStop(0.4, 'rgba(255,255,255,0.45)');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 64, 64);
+      return new THREE.CanvasTexture(cv);
+    }
+
+    function initParticles() {
+      pGeo = new THREE.BufferGeometry();
+      var pos = new Float32Array(P_MAX * 3);
+      var col = new Float32Array(P_MAX * 3);
+      pGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      pGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      pData = [];
+      for(var i = 0; i < P_MAX; i++) {
+        pData.push({ x:0, y:0, z:0, vx:0, vy:0, vz:0, life:0, max:1, r:0, g:0, b:0 });
+        pos[i*3+1] = 9999;
+      }
+      var mat = new THREE.PointsMaterial({
+        size: 0.055, sizeAttenuation: true, map: makeParticleTexture(),
+        vertexColors: true, transparent: true, depthWrite: false,
+        blending: THREE.AdditiveBlending
+      });
+      pts = new THREE.Points(pGeo, mat);
+      pts.frustumCulled = false;
+      scene.add(pts);
+    }
+
+    function spawnParticle(outward, speed, colr, spread) {
+      for(var i = 0; i < P_MAX; i++) {
+        var p = pData[i];
+        if(p.life > 0) continue;
+        var th = Math.random()*Math.PI*2;
+        var ph = Math.acos(2*Math.random() - 1);
+        var dx = Math.sin(ph)*Math.cos(th), dy = Math.sin(ph)*Math.sin(th), dz = Math.cos(ph);
+        var r0 = outward ? cur.scaleWorld() : 2.0 + Math.random()*0.6;
+        p.x = dx*r0; p.y = dy*r0; p.z = dz*r0;
+        var v = (outward ? 1 : -1) * speed * (0.7 + Math.random()*0.6);
+        p.vx = dx*v + (Math.random()-0.5)*spread;
+        p.vy = dy*v + (Math.random()-0.5)*spread;
+        p.vz = dz*v + (Math.random()-0.5)*spread;
+        p.max = 1.1 + Math.random()*0.9;
+        p.life = p.max;
+        p.r = colr[0]; p.g = colr[1]; p.b = colr[2];
+        return;
+      }
+    }
+
+    function updateParticles(dt) {
+      if(!pGeo) return;
+      var pos = pGeo.attributes.position.array;
+      var col = pGeo.attributes.color.array;
+      for(var i = 0; i < P_MAX; i++) {
+        var p = pData[i];
+        if(p.life <= 0) { pos[i*3+1] = 9999; continue; }
+        p.life -= dt;
+        p.x += p.vx*dt; p.y += p.vy*dt; p.z += p.vz*dt;
+        pos[i*3] = p.x; pos[i*3+1] = p.y; pos[i*3+2] = p.z;
+        var a = Math.max(0, p.life / p.max) * 0.55;
+        col[i*3] = p.r*a; col[i*3+1] = p.g*a; col[i*3+2] = p.b*a;
+      }
+      pGeo.attributes.position.needsUpdate = true;
+      pGeo.attributes.color.needsUpdate = true;
+    }
+
+    /* golden celebration burst (new record) */
+    function burst() {
+      if(!enabled) return;
+      for(var i = 0; i < 130; i++) {
+        spawnParticle(true, 1.6 + Math.random()*1.2, [1.0, 0.84, 0.30], 0.5);
+      }
+    }
+
+    /* ---- compact bloom: scene RT → bright → blur ×2 → composite ---- */
+    function makeBloom(w, h) {
+      var rtScene = new THREE.WebGLRenderTarget(w, h, { samples: 2 });
+      var rtA = new THREE.WebGLRenderTarget(w>>2, h>>2);
+      var rtB = new THREE.WebGLRenderTarget(w>>2, h>>2);
+      var quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+      var quadGeo = new THREE.PlaneGeometry(2, 2);
+      function quad(fs, unis) {
+        var m = new THREE.ShaderMaterial({
+          uniforms: unis, depthTest: false, depthWrite: false, transparent: true,
+          vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+          fragmentShader: fs
+        });
+        var msh = new THREE.Mesh(quadGeo, m);
+        var sc = new THREE.Scene(); sc.add(msh);
+        return { scene: sc, mat: m };
+      }
+      var bright = quad(
+        'uniform sampler2D tex; varying vec2 vUv;' +
+        'void main(){ vec4 c = texture2D(tex, vUv);' +
+        '  float l = max(max(c.r, c.g), c.b);' +
+        '  float f = smoothstep(0.72, 1.15, l);' +
+        '  gl_FragColor = vec4(c.rgb*f, 1.0); }',
+        { tex: { value: rtScene.texture } });
+      var blur = quad(
+        'uniform sampler2D tex; uniform vec2 dir; varying vec2 vUv;' +
+        'void main(){ vec3 s = texture2D(tex, vUv).rgb * 0.227;' +
+        '  s += (texture2D(tex, vUv + dir*1.384).rgb + texture2D(tex, vUv - dir*1.384).rgb) * 0.316;' +
+        '  s += (texture2D(tex, vUv + dir*3.230).rgb + texture2D(tex, vUv - dir*3.230).rgb) * 0.070;' +
+        '  gl_FragColor = vec4(s, 1.0); }',
+        { tex: { value: rtA.texture }, dir: { value: new THREE.Vector2() } });
+      var combine = quad(
+        'uniform sampler2D tScene; uniform sampler2D tBloom; varying vec2 vUv;' +
+        'void main(){ vec4 c = texture2D(tScene, vUv);' +
+        '  vec3 b = texture2D(tBloom, vUv).rgb * 0.85;' +
+        '  float ba = max(max(b.r, b.g), b.b);' +
+        '  gl_FragColor = vec4(c.rgb + b, max(c.a, min(1.0, ba))); }',
+        { tScene: { value: rtScene.texture }, tBloom: { value: rtB.texture } });
+      return {
+        rtScene: rtScene, rtA: rtA, rtB: rtB, quadCam: quadCam,
+        bright: bright, blur: blur, combine: combine,
+        setSize: function(w2, h2) {
+          rtScene.setSize(w2, h2); rtA.setSize(w2>>2, h2>>2); rtB.setSize(w2>>2, h2>>2);
+        },
+        dispose: function() { rtScene.dispose(); rtA.dispose(); rtB.dispose(); }
+      };
+    }
+
+    function renderWithBloom() {
+      var w = renderer.domElement.width, h = renderer.domElement.height;
+      if(bloom.rtScene.width !== w || bloom.rtScene.height !== h) bloom.setSize(w, h);
+      renderer.setRenderTarget(bloom.rtScene);
+      renderer.setClearColor(0x000000, 0);
+      renderer.clear();
+      renderer.render(scene, camera);
+      renderer.setRenderTarget(bloom.rtA);
+      renderer.render(bloom.bright.scene, bloom.quadCam);
+      bloom.blur.mat.uniforms.tex.value = bloom.rtA.texture;
+      bloom.blur.mat.uniforms.dir.value.set(1/(w>>2), 0);
+      renderer.setRenderTarget(bloom.rtB);
+      renderer.render(bloom.blur.scene, bloom.quadCam);
+      bloom.blur.mat.uniforms.tex.value = bloom.rtB.texture;
+      bloom.blur.mat.uniforms.dir.value.set(0, 1/(h>>2));
+      renderer.setRenderTarget(bloom.rtA);
+      renderer.render(bloom.blur.scene, bloom.quadCam);
+      bloom.combine.mat.uniforms.tBloom.value = bloom.rtA.texture;
+      renderer.setRenderTarget(null);
+      renderer.render(bloom.combine.scene, bloom.quadCam);
+    }
+
+    /* ---- adaptive quality ---- */
+    function applyTier() {
+      var t = TIERS[tier];
+      var dpr = Math.min(window.devicePixelRatio || 1, t.dpr);
+      renderer.setPixelRatio(dpr);
+      resize(true);
+      if(mesh) mesh.geometry = t.low ? geoLow : geoHigh;
+    }
+
+    function evaluateQuality(dt) {
+      frameEMA += (dt*1000 - frameEMA) * 0.04;
+      if(++evalCounter < 120) return;
+      evalCounter = 0;
+      if(frameEMA > 25 && tier > 0) { tier--; applyTier(); }
+      else if(frameEMA < 11 && tier < maxTier) { tier++; applyTier(); }
+    }
+
+    function resize(force) {
+      if(!renderer || !canvas) return;
+      var rect = canvas.getBoundingClientRect();
+      var w = Math.max(1, Math.round(rect.width));
+      var h = Math.max(1, Math.round(rect.height));
+      var cw = renderer.domElement.width, dpr = renderer.getPixelRatio();
+      if(force || Math.abs(cw - w*dpr) > 1) {
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+      }
+    }
+
+    cur.scaleWorld = function() { return 0.40 + 0.45 * cur.scale; };
 
     function startLoop() {
       if(!enabled || rafId !== null || document.hidden) return;
@@ -1823,35 +2124,115 @@
 
     function frame(nowMs) {
       rafId = null;
-      if(!gl || !enabled) return;
+      if(!enabled) return;
       var dt = Math.min(0.1, (nowMs - lastT) / 1000);
       lastT = nowMs;
 
-      if(mode === 'breath') {
-        target.scale = breathScale;
-      } else if(mode === 'drift') {
+      if(mode === 'breath') target.scale = breathScale;
+      else if(mode === 'drift') {
         target.scale = driftBase + driftAmp * Math.sin(nowMs * 0.001 * driftSpeed * 6.283);
       }
       var k  = 1 - Math.exp(-dt * 4);
       var kS = mode === 'breath' ? 1 - Math.exp(-dt * 10) : k;
+      prevScale = cur.scale;
       cur.scale     += (target.scale - cur.scale) * kS;
       cur.agitation += (target.agitation - cur.agitation) * k;
       for(var i = 0; i < 3; i++) cur.color[i] += (target.color[i] - cur.color[i]) * k;
 
-      resize();
-      gl.uniform2f(uni.u_res, canvas.width, canvas.height);
-      gl.uniform1f(uni.u_time, nowMs * 0.001);
-      gl.uniform1f(uni.u_scale, cur.scale);
-      gl.uniform3f(uni.u_color, cur.color[0], cur.color[1], cur.color[2]);
-      gl.uniform1f(uni.u_agitation, cur.agitation);
-      gl.uniform1f(uni.u_theme,
-        document.documentElement.getAttribute('data-theme') === 'light' ? 1 : 0);
-      var MATS = { chrome:0, gold:1, lava:2, aurora:3 };
-      gl.uniform1f(uni.u_material, MATS[App.Config.get('material')] || 0);
-      gl.clearColor(0, 0, 0, 0);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      /* liquid motion: time advances faster when agitated */
+      timePhase += dt * (0.22 + 0.85 * cur.agitation);
+      uniforms.uTime.value = timePhase;
+      uniforms.uAmp.value  = 0.025 + 0.095 * cur.agitation;
+
+      var s = cur.scaleWorld();
+      mesh.scale.setScalar(s);
+      applyLook();
+      syncEnv();
+
+      /* camera: slow drift + gyro parallax */
+      gyro.x += (gyro.tx - gyro.x) * (1 - Math.exp(-dt * 3));
+      gyro.y += (gyro.ty - gyro.y) * (1 - Math.exp(-dt * 3));
+      var ct = nowMs * 0.001 * 0.05;
+      camera.position.set(
+        Math.sin(ct) * 0.22 + gyro.x,
+        Math.cos(ct * 0.8) * 0.15 + gyro.y,
+        4.1
+      );
+      camera.lookAt(0, 0, 0);
+
+      /* breath mist: emit while the blob is moving */
+      var delta = cur.scale - prevScale;
+      if(mode === 'breath' && Math.abs(delta) > 0.0004 && cur.agitation > 0.3) {
+        var outward = delta < 0;  /* shrinking blob = exhale = mist flows out */
+        if(Math.random() < 0.65) {
+          spawnParticle(outward, 0.55, cur.color, 0.25);
+        }
+      }
+      updateParticles(dt);
+
+      /* atmosphere breathes with the blob */
+      if(atmosphereEl) {
+        atmosphereEl.style.transform = 'scale(' + (0.85 + 0.3 * cur.scale).toFixed(3) + ')';
+      }
+
+      resize(false);
+      if(TIERS[tier].bloom && bloom) renderWithBloom();
+      else {
+        renderer.setRenderTarget(null);
+        renderer.render(scene, camera);
+      }
+      evaluateQuality(dt);
       rafId = requestAnimationFrame(frame);
+    }
+
+    function setup() {
+      renderer = new THREE.WebGLRenderer({
+        canvas: canvas, alpha: true, antialias: true, powerPreference: 'high-performance'
+      });
+      renderer.setClearColor(0x000000, 0);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.3;
+
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(32, 1, 0.1, 20);
+      camera.position.set(0, 0, 4.1);
+
+      geoHigh = new THREE.IcosahedronGeometry(1, 31);
+      geoLow  = new THREE.IcosahedronGeometry(1, 17);
+      material = makeMaterial();
+      mesh = new THREE.Mesh(geoHigh, material);
+      scene.add(mesh);
+
+      var key = new THREE.DirectionalLight(0xffffff, 2.2);
+      key.position.set(2.5, 4, 3);
+      scene.add(key);
+
+      syncEnv();
+      initParticles();
+      try { bloom = makeBloom(2, 2); } catch(e) { bloom = null; }
+
+      atmosphereEl = document.getElementById('atmosphere');
+
+      window.addEventListener('resize', function() { resize(true); });
+      document.addEventListener('visibilitychange', function() {
+        if(document.hidden) stopLoop(); else startLoop();
+      });
+      canvas.addEventListener('webglcontextlost', function(ev) {
+        ev.preventDefault();
+        disable();
+      });
+      /* gyro parallax (fires without permission on Android; iOS needs a
+         permission prompt we deliberately avoid) */
+      window.addEventListener('deviceorientation', function(ev) {
+        if(ev.gamma == null || ev.beta == null) return;
+        gyro.tx = Math.max(-0.3, Math.min(0.3, ev.gamma / 90));
+        gyro.ty = Math.max(-0.3, Math.min(0.3, (ev.beta - 45) / 120));
+      });
+
+      applyTier();
+      enabled = true;
+      wrapperClass(true);
+      startLoop();
     }
 
     function init() {
@@ -1861,44 +2242,12 @@
         disable();
         return;
       }
-      var opts = { alpha:true, antialias:true, premultipliedAlpha:true };
-      try {
-        gl = canvas.getContext('webgl', opts) || canvas.getContext('experimental-webgl', opts);
-      } catch(e) { gl = null; }
-      if(!gl) { disable(); return; }
-      try {
-        var vs = compile(gl.VERTEX_SHADER, VS);
-        var fs = compile(gl.FRAGMENT_SHADER, FS);
-        prog = gl.createProgram();
-        gl.attachShader(prog, vs);
-        gl.attachShader(prog, fs);
-        gl.linkProgram(prog);
-        if(!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-          throw new Error(gl.getProgramInfoLog(prog));
-        }
-      } catch(e) { disable(); gl = null; return; }
-      gl.useProgram(prog);
-      var buf = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
-      var loc = gl.getAttribLocation(prog, 'a_pos');
-      gl.enableVertexAttribArray(loc);
-      gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-      ['u_res','u_time','u_scale','u_color','u_agitation','u_theme','u_material'].forEach(function(n) {
-        uni[n] = gl.getUniformLocation(prog, n);
-      });
-      canvas.addEventListener('webglcontextlost', function(ev) {
-        ev.preventDefault();
-        disable();
-      });
-      document.addEventListener('visibilitychange', function() {
-        if(document.hidden) stopLoop(); else startLoop();
-      });
-      window.addEventListener('resize', resize);
-      enabled = true;
-      wrapperClass(true);
-      resize();
-      startLoop();
+      import('./three.module.min.js')
+        .then(function(mod) {
+          THREE = mod;
+          try { setup(); } catch(e) { disable(); }
+        })
+        .catch(function() { disable(); });
     }
 
     /* Public API — set phase look; opts: {mode, scale, amp, speed, agitation} */
@@ -1924,7 +2273,7 @@
       breathScale = Math.min(1, Math.max(0, p));
     }
 
-    return { init:init, set:set, setBreath:setBreath,
+    return { init:init, set:set, setBreath:setBreath, burst:burst,
              isEnabled:function() { return enabled; } };
   })();
 
@@ -2323,11 +2672,28 @@
       e.phaseAnnounce       = document.getElementById('phase-announce');
       e.breathTimeRemaining = document.getElementById('breath-time-remaining');
       e.circleRing          = document.querySelector('.circle-ring');
+      e.circleRingGlow      = document.querySelector('.circle-ring-glow');
       e.CIRCUMFERENCE       = 2 * Math.PI * 88; /* ≈ 552.92 */
     }
 
     function css(prop, val) {
       document.documentElement.style.setProperty(prop, val);
+    }
+
+    function lighten(hex, f) {
+      var c = hex.replace('#','');
+      var r = parseInt(c.substr(0,2),16), g = parseInt(c.substr(2,2),16), b = parseInt(c.substr(4,2),16);
+      r = Math.round(r + (255-r)*f); g = Math.round(g + (255-g)*f); b = Math.round(b + (255-b)*f);
+      return 'rgb(' + r + ',' + g + ',' + b + ')';
+    }
+
+    /* phase color drives CSS var + the ring gradient stops */
+    function setPhaseColor(color) {
+      css('--current-phase-color', color);
+      var a = document.getElementById('ring-stop-a');
+      var b = document.getElementById('ring-stop-b');
+      if(a) a.setAttribute('stop-color', color);
+      if(b) b.setAttribute('stop-color', lighten(color, 0.45));
     }
 
     function setScale(cls) {
@@ -2422,7 +2788,7 @@
       switch(state) {
 
         case STATES.IDLE:
-          css('--current-phase-color', COLORS.IDLE);
+          setPhaseColor( COLORS.IDLE);
           css('--phase-duration', '3s');
           setScale('scale-idle');
           showOnly(['idle-title','idle-subtitle']);
@@ -2436,7 +2802,7 @@
           break;
 
         case STATES.GET_READY:
-          css('--current-phase-color', COLORS.GET_READY);
+          setPhaseColor( COLORS.GET_READY);
           css('--phase-duration', '0.5s');
           setScale('scale-idle');
           showOnly(['phase-label','pause-countdown']);
@@ -2450,7 +2816,7 @@
           break;
 
         case STATES.PAUSED:
-          css('--current-phase-color', COLORS.PAUSED);
+          setPhaseColor( COLORS.PAUSED);
           css('--phase-duration', '0.5s');
           setScale('scale-idle');
           showOnly(['phase-label','idle-subtitle']);
@@ -2466,7 +2832,7 @@
         case STATES.BREATHING_IN:
           var breath1 = App.Session.getBreathCount();
           var max1    = cfg.get('breathsPerRound');
-          css('--current-phase-color', COLORS.BREATHING_IN);
+          setPhaseColor( COLORS.BREATHING_IN);
           css('--phase-duration', cfg.get('inhaleDuration') + 's');
           setScale('scale-inhale');
           showOnly(['phase-label','breath-counter','breath-time-remaining']);
@@ -2484,7 +2850,7 @@
         case STATES.BREATHING_OUT:
           var breath2 = App.Session.getBreathCount();
           var max2    = cfg.get('breathsPerRound');
-          css('--current-phase-color', COLORS.BREATHING_OUT);
+          setPhaseColor( COLORS.BREATHING_OUT);
           css('--phase-duration', cfg.get('exhaleDuration') + 's');
           setScale('scale-exhale');
           showOnly(['phase-label','breath-counter','breath-time-remaining']);
@@ -2497,7 +2863,7 @@
           break;
 
         case STATES.PAUSE_AFTER_INHALE:
-          css('--current-phase-color', COLORS.PAUSE_AFTER_INHALE);
+          setPhaseColor( COLORS.PAUSE_AFTER_INHALE);
           css('--phase-duration', '0.3s');
           setScale('scale-pause-inhale');
           showOnly(['phase-label','pause-countdown']);
@@ -2512,7 +2878,7 @@
           break;
 
         case STATES.PAUSE_AFTER_EXHALE:
-          css('--current-phase-color', COLORS.PAUSE_AFTER_EXHALE);
+          setPhaseColor( COLORS.PAUSE_AFTER_EXHALE);
           css('--phase-duration', '0.3s');
           setScale('scale-pause-exhale');
           showOnly(['phase-label','pause-countdown']);
@@ -2528,7 +2894,7 @@
 
         case STATES.HOLD:
           var target = cfg.getHoldTarget(round);
-          css('--current-phase-color', COLORS.HOLD);
+          setPhaseColor( COLORS.HOLD);
           css('--phase-duration', '0.5s');
           setScale('scale-hold');
           showOnly(['phase-label','hold-timer','hold-target-display','tap-prompt']);
@@ -2543,7 +2909,7 @@
           break;
 
         case STATES.RECOVERY_IN:
-          css('--current-phase-color', COLORS.RECOVERY_IN);
+          setPhaseColor( COLORS.RECOVERY_IN);
           css('--phase-duration', RECOVERY_BREATH_DUR + 's');
           setScale('scale-recovery-in');
           showOnly(['phase-label']);
@@ -2556,7 +2922,7 @@
           break;
 
         case STATES.RECOVERY_HOLD:
-          css('--current-phase-color', COLORS.RECOVERY_HOLD);
+          setPhaseColor( COLORS.RECOVERY_HOLD);
           css('--phase-duration', '0.5s');
           setScale('scale-recovery-hold');
           showOnly(['phase-label','recovery-countdown']);
@@ -2569,7 +2935,7 @@
           break;
 
         case STATES.RECOVERY_OUT:
-          css('--current-phase-color', COLORS.RECOVERY_OUT);
+          setPhaseColor( COLORS.RECOVERY_OUT);
           css('--phase-duration', RECOVERY_BREATH_DUR + 's');
           setScale('scale-recovery-out');
           showOnly(['phase-label']);
@@ -2581,7 +2947,7 @@
           break;
 
         case STATES.ROUND_COMPLETE:
-          css('--current-phase-color', COLORS.ROUND_COMPLETE);
+          setPhaseColor( COLORS.ROUND_COMPLETE);
           css('--phase-duration', '0.5s');
           setScale('scale-complete');
           showOnly(['round-summary']);
@@ -2591,7 +2957,7 @@
           break;
 
         case STATES.SESSION_COMPLETE:
-          css('--current-phase-color', COLORS.SESSION_COMPLETE);
+          setPhaseColor( COLORS.SESSION_COMPLETE);
           css('--phase-duration', '2s');
           setScale('scale-complete');
           e.circleGlow.classList.add('glow-complete');
@@ -2618,8 +2984,9 @@
           makeTappable(false);
           if(App.Session.isNewRecord()) {
             e.phaseLabel.textContent = '★ NEW RECORD ★';
-            css('--current-phase-color', '#FFD700');
+            setPhaseColor( '#FFD700');
             App.Liquid.set('#FFD700', {mode:'drift', scale:0.6, amp:0.08, speed:0.25, agitation:0.6});
+            App.Liquid.burst();
             announce('Session complete. New record!');
           } else {
             App.Liquid.set(COLORS.SESSION_COMPLETE, {mode:'drift', scale:0.55, amp:0.06, speed:0.12, agitation:0.35});
@@ -2627,13 +2994,24 @@
           }
           break;
       }
+
+      /* animate the phase label when its text changes */
+      var lblText = e.phaseLabel.textContent;
+      if(!e.phaseLabel.classList.contains('hidden') && lblText && lblText !== lastLabel) {
+        lastLabel = lblText;
+        e.phaseLabel.classList.remove('label-swap');
+        void e.phaseLabel.offsetWidth;
+        e.phaseLabel.classList.add('label-swap');
+      }
     }
+    var lastLabel = '';
 
     function setRingProgress(fraction) {
       /* fraction: 0 = empty, 1 = full ring */
       if(!e.circleRing) return;
       var offset = e.CIRCUMFERENCE * (1 - Math.min(1, Math.max(0, fraction)));
       e.circleRing.style.strokeDashoffset = offset;
+      if(e.circleRingGlow) e.circleRingGlow.style.strokeDashoffset = offset;
     }
 
     function updateBreathingProgress(elapsed, durationMs, isInhale) {
@@ -2655,8 +3033,9 @@
       /* Fill ring toward target (guard: target can be 0 for no-hold presets) */
       if(target > 0) {
         setRingProgress(Math.min(1, secs / target));
-        if(secs >= target) {
+        if(secs >= target && !e.circleWrapper.classList.contains('hold-target-reached')) {
           e.circleWrapper.classList.add('hold-target-reached');
+          setPhaseColor('#34D399');
         }
       } else {
         setRingProgress(0);
