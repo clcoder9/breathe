@@ -779,7 +779,7 @@
       </div>
       <div class="setting-item">
         <label for="cfg-breaths">Breaths / Round</label>
-        <input type="number" id="cfg-breaths" min="10" max="60" step="1" value="30">
+        <input type="number" id="cfg-breaths" min="1" max="200" step="1" value="30">
       </div>
       <div class="setting-item">
         <label for="cfg-hold-start">Hold Start (s)</label>
@@ -1063,7 +1063,7 @@
       sleepMode:'off', nightOled:'off'
     };
     var ranges = {
-      breathsPerRound:{min:10,max:60}, holdStartTime:{min:0,max:300},
+      breathsPerRound:{min:1,max:200}, holdStartTime:{min:0,max:300},
       holdIncrement:{min:0,max:60},    rounds:{min:1,max:10},
       inhaleDuration:{min:1,max:10},   exhaleDuration:{min:1,max:10},
       pauseAfterInhale:{min:0,max:10}, pauseAfterExhale:{min:0,max:10},
