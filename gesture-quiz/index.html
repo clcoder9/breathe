@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🖐️</text></svg>" />
+    <title>KI-Gesten-Quiz</title>
+  </head>
+  <body>
+    <video id="camera" playsinline muted></video>
+
+    <!-- Start -->
+    <section id="screen-start" class="screen">
+      <h1>🖐️ KI-Gesten-Quiz</h1>
+      <p class="lead">Beantworte Fragen zu KI-Lernkonzepten – nur mit deinem Zeigefinger!</p>
+      <ol class="howto">
+        <li>Erlaube den Zugriff auf deine Kamera.</li>
+        <li>Zeige mit dem Zeigefinger auf eine Antwort.</li>
+        <li>Halte den Finger dort ca. 1,5&nbsp;Sekunden, bis der Ring sich schließt.</li>
+      </ol>
+      <button id="btn-start">📷 Kamera starten</button>
+      <p id="start-error" class="error hidden"></p>
+    </section>
+
+    <!-- Loading -->
+    <section id="screen-loading" class="screen hidden">
+      <div class="spinner"></div>
+      <p>Kamera und Handerkennung werden gestartet …</p>
+    </section>
+
+    <!-- Quiz -->
+    <section id="screen-quiz" class="hidden">
+      <header id="question-banner">
+        <div id="progress"></div>
+        <h2 id="question-text"></h2>
+      </header>
+      <div id="answers">
+        <button class="answer dwell-target" data-index="0"></button>
+        <button class="answer dwell-target" data-index="1"></button>
+        <button class="answer dwell-target" data-index="2"></button>
+        <button class="answer dwell-target" data-index="3"></button>
+      </div>
+      <div id="feedback" class="hidden">
+        <p id="feedback-title"></p>
+        <p id="feedback-text"></p>
+      </div>
+    </section>
+
+    <!-- Ergebnis -->
+    <section id="screen-result" class="screen hidden">
+      <h1>🏁 Geschafft!</h1>
+      <p id="result-score"></p>
+      <button id="btn-restart" class="dwell-target">🔄 Nochmal spielen</button>
+      <p class="hint">Halte den Finger über den Button oder klicke ihn an.</p>
+    </section>
+
+    <!-- Finger-Cursor mit Dwell-Fortschrittsring -->
+    <div id="cursor" class="hidden">
+      <svg viewBox="0 0 48 48">
+        <circle class="ring-bg" cx="24" cy="24" r="20" />
+        <circle class="ring" cx="24" cy="24" r="20" />
+      </svg>
+      <div class="dot"></div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,5 @@
+node_modules
+dist
+# werden von scripts/prepare-assets.mjs erzeugt (npm install)
+public/wasm
+public/models
