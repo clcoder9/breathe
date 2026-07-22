@@ -36,6 +36,16 @@ export class DwellController {
     this.pointer = p
   }
 
+  /**
+   * Bestätigt das aktuell anvisierte Ziel sofort, ohne die Verweildauer
+   * abzuwarten (z. B. per Lächeln). Liefert true, wenn ein Ziel ausgelöst wurde.
+   */
+  confirmCurrent(): boolean {
+    if (!this.target) return false
+    this.select(this.target, performance.now())
+    return true
+  }
+
   start(): void {
     if (!this.raf) this.tick()
   }
@@ -73,16 +83,20 @@ export class DwellController {
     if (this.target) {
       progress = Math.min(1, (now - this.dwellStart) / DWELL_MS)
       if (progress >= 1) {
-        const el = this.target
-        el.classList.remove('hovered')
-        this.target = null
-        this.blockedTarget = el
-        this.cooldownUntil = now + COOLDOWN_MS
+        this.select(this.target, now)
         progress = 0
-        el.click()
       }
     }
     this.ringEl.style.strokeDashoffset = String(RING_CIRCUMFERENCE * (1 - progress))
+  }
+
+  private select(el: HTMLElement, now: number): void {
+    el.classList.remove('hovered')
+    this.target = null
+    this.blockedTarget = el
+    this.cooldownUntil = now + COOLDOWN_MS
+    this.ringEl.style.strokeDashoffset = String(RING_CIRCUMFERENCE)
+    el.click()
   }
 
   /** Nächstgelegenes sichtbares Ziel, dessen (erweiterte) Fläche den Punkt enthält */

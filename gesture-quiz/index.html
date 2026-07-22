@@ -12,12 +12,14 @@
     <!-- Start -->
     <section id="screen-start" class="screen">
       <h1>🖐️ KI-Gesten-Quiz</h1>
-      <p class="lead">Beantworte Fragen zu KI-Lernkonzepten – nur mit deinem Zeigefinger!</p>
+      <p class="lead">Beantworte Fragen zu System Prompts &amp; Prompt Injection – mit Finger und Mimik!</p>
       <ol class="howto">
         <li>Erlaube den Zugriff auf deine Kamera.</li>
         <li>Zeige mit dem Zeigefinger auf eine Antwort.</li>
-        <li>Halte den Finger dort ca. 1,5&nbsp;Sekunden, bis der Ring sich schließt.</li>
+        <li>Halte den Finger dort ca. 1,5&nbsp;Sekunden – oder <strong>lächle</strong>, um sofort zu bestätigen. 😄</li>
+        <li>Bei Wahr/Falsch-Fragen: <strong>Nicken</strong> = Wahr, <strong>Kopfschütteln</strong> = Falsch.</li>
       </ol>
+      <p class="hint">Die Mimik-Erkennung läuft komplett lokal in deinem Browser – es wird nichts gespeichert oder übertragen.</p>
       <button id="btn-start">📷 Kamera starten</button>
       <p id="start-error" class="error hidden"></p>
     </section>
@@ -25,7 +27,7 @@
     <!-- Loading -->
     <section id="screen-loading" class="screen hidden">
       <div class="spinner"></div>
-      <p>Kamera und Handerkennung werden gestartet …</p>
+      <p>Kamera, Hand- und Mimik-Erkennung werden gestartet …</p>
     </section>
 
     <!-- Quiz -->
@@ -40,6 +42,11 @@
         <button class="answer dwell-target" data-index="2"></button>
         <button class="answer dwell-target" data-index="3"></button>
       </div>
+      <div id="tf-answers" class="hidden">
+        <button class="answer tf dwell-target" data-tf="0">👍 Wahr</button>
+        <p id="tf-hint">Nicken = Wahr<br />Kopfschütteln = Falsch</p>
+        <button class="answer tf dwell-target" data-tf="1">👎 Falsch</button>
+      </div>
       <div id="feedback" class="hidden">
         <p id="feedback-title"></p>
         <p id="feedback-text"></p>
@@ -50,9 +57,16 @@
     <section id="screen-result" class="screen hidden">
       <h1>🏁 Geschafft!</h1>
       <p id="result-score"></p>
+      <p id="result-smiles" class="hint hidden"></p>
       <button id="btn-restart" class="dwell-target">🔄 Nochmal spielen</button>
       <p class="hint">Halte den Finger über den Button oder klicke ihn an.</p>
     </section>
+
+    <!-- Mimik-Spiegel: Emoji zeigt den aktuell erkannten Gesichtsausdruck -->
+    <div id="face-emoji" class="hidden">🙂</div>
+
+    <!-- Konfetti-Ebene (Smile-Bonus) -->
+    <div id="confetti"></div>
 
     <!-- Finger-Cursor mit Dwell-Fortschrittsring -->
     <div id="cursor" class="hidden">

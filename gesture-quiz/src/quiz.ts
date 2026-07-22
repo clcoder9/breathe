@@ -6,7 +6,7 @@ export class Quiz {
   score = 0
 
   constructor(private allQuestions: Question[]) {
-    this.questions = shuffle(allQuestions)
+    this.questions = shuffle(allQuestions).map(shuffleAnswers)
   }
 
   get current(): Question {
@@ -28,9 +28,20 @@ export class Quiz {
   }
 
   reset(): void {
-    this.questions = shuffle(this.allQuestions)
+    this.questions = shuffle(this.allQuestions).map(shuffleAnswers)
     this.index = 0
     this.score = 0
+  }
+}
+
+/** Mischt die Antwortpositionen einer Auswahlfrage (Wahr/Falsch bleibt fix) */
+function shuffleAnswers(q: Question): Question {
+  if (q.type === 'truefalse') return q
+  const order = shuffle(q.answers.map((_, i) => i))
+  return {
+    ...q,
+    answers: order.map((i) => q.answers[i]),
+    correctIndex: order.indexOf(q.correctIndex),
   }
 }
 
