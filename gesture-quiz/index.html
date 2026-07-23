@@ -58,11 +58,16 @@
       <h1>🏁 Geschafft!</h1>
       <p id="result-score"></p>
       <p id="result-smiles" class="hint hidden"></p>
+      <p id="avatar-credit" class="credit hidden">
+        3D-Roboter: „Animated Robot Pack“ von
+        <a href="https://quaternius.com" target="_blank" rel="noopener">Quaternius</a> (CC0)
+      </p>
       <button id="btn-restart" class="dwell-target">🔄 Nochmal spielen</button>
       <p class="hint">Halte den Finger über den Button oder klicke ihn an.</p>
     </section>
 
-    <!-- Mimik-Spiegel: Emoji zeigt den aktuell erkannten Gesichtsausdruck -->
+    <!-- Mimik-Spiegel: 3D-Maskottchen (falls models/avatar.glb vorhanden), sonst Emoji -->
+    <div id="avatar" class="hidden"></div>
     <div id="face-emoji" class="hidden">🙂</div>
 
     <!-- Konfetti-Ebene (Smile-Bonus) -->

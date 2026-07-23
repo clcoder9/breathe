@@ -12,6 +12,11 @@ Die Mimik-Erkennung läuft komplett lokal im Browser (MediaPipe Blendshapes):
 Es werden nur flüchtige Scores pro Frame ausgewertet („Lächeln: 0.8“) – nichts
 wird gespeichert oder übertragen, es findet keine Identifikation statt.
 
+Oben rechts sitzt ein **3D-Roboter** (Three.js) als Maskottchen: Er dreht den
+Kopf des Spielers mit und reagiert auf Antworten mit Animationen (Daumen hoch,
+Kopfschütteln, Tanz, …) – siehe [3D-Maskottchen](#3d-maskottchen). Fehlt die
+Modelldatei oder WebGL, übernimmt automatisch ein Emoji-Spiegel.
+
 **Live:** https://clcoder9.github.io/breathe/gesture-quiz/dist/
 
 ## Starten
@@ -61,6 +66,29 @@ Ein Emoji oben rechts spiegelt live die erkannte Mimik. Fällt die
 Mimik-Erkennung aus, läuft das Quiz normal mit Finger/Dwell weiter.
 Fallback: Alle Antworten sind auch per Maus/Touch klickbar.
 
+## 3D-Maskottchen
+
+Der Avatar liegt als `public/models/avatar.glb` bei: der **„Animated Robot
+Pack“-Roboter von [Quaternius](https://quaternius.com)** (Lizenz **CC0** /
+Public Domain), aus dem Original-FBX konvertiert mit `FBX2glTF` (npm-Paket
+`fbx2gltf`). Er nutzt den `Head`-Bone für die Kopfdrehung und die
+mitgelieferten Clips für Reaktionen: richtig → zufällig ThumbsUp/Yes/Dance/
+Wave/Jump, falsch → No (Kopfschütteln)/Death/Sitting, dazwischen Idle.
+
+**Modell austauschen:** einfach eine andere GLB-Datei als
+`public/models/avatar.glb` ablegen. Die Zuordnung (Mimik → Shapekeys wie
+`Eyes_Happy`/ARKit-Blendshapes, Reaktionen → Clips per Namensmuster) matcht
+tolerant in `src/avatar3d.ts`; die Browser-Konsole listet beim Start alle
+gefundenen Morphs/Clips (`3D-Avatar geladen – …`). Modelle mit
+Gesichts-Blendshapes spiegeln zusätzlich Lächeln/Blinzeln des Spielers.
+Zum Pipeline-Test ohne Modell: `node scripts/make-test-avatar.mjs` erzeugt
+einen Platzhalter (danach löschen, nicht deployen).
+
+Hinweis Netzwerk/Beschaffung: Sketchfab & Co. sind im Firmennetz teils
+geblockt; erreichbar sind u. a. quaternius.com (CC0-Packs, Downloads via
+Google Drive) und raw.githubusercontent.com (z. B. `facecap.glb` aus dem
+three.js-Repo mit vollen ARKit-Morphs).
+
 ## Debug-Modus ohne Kamera
 
 `http://localhost:5173/?mouse` — die Maus ersetzt den Finger-Cursor
@@ -90,10 +118,15 @@ src/
 ├─ main.ts          Bootstrap, Screens, Quiz-Rendering, Mimik-Verdrahtung
 ├─ camera.ts        getUserMedia + Video-Setup
 ├─ handTracking.ts  MediaPipe HandLandmarker + Cursor-Glättung
-├─ faceTracking.ts  MediaPipe FaceLandmarker (Blendshapes + Nasenspitze)
+├─ faceTracking.ts  MediaPipe FaceLandmarker (Blendshapes, Nase, Kopfmatrix)
 ├─ expressions.ts   SmileTrigger + HeadGestureDetector (Nicken/Schütteln)
+├─ avatar3d.ts      Optionales 3D-Maskottchen (Three.js, lazy geladen)
 ├─ overlay.ts       DwellController (Cursor, Fortschrittsring, Hit-Test)
 ├─ quiz.ts          Quiz-Zustand (Fragen, Punkte, Shuffle inkl. Antworten)
 ├─ questions.json   Fragenkatalog (deutsch): System Prompt & Prompt Injection
 └─ style.css        Overlay-Styling
 ```
+
+**Credits:** 3D-Roboter: „Animated Robot Pack“ von
+[Quaternius](https://quaternius.com), Lizenz
+[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) (Public Domain).

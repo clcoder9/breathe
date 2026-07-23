@@ -25,7 +25,10 @@ export interface FaceState {
   jawOpen: number
   browUp: number
   browDown: number
+  eyeBlink: number
   /** Nasenspitze in normalisierten Videokoordinaten (für Nick-/Schüttelerkennung) */
   noseX: number
   noseY: number
+  /** 4x4-Kopftransformation (column-major) für die Avatar-Kopfdrehung */
+  headMatrix?: ArrayLike<number>
 }

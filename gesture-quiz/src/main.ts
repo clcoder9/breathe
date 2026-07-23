@@ -36,6 +36,8 @@ const resultSmiles = $('#result-smiles')
 const startError = $('#start-error')
 const faceEmojiEl = $('#face-emoji')
 const confettiEl = $('#confetti')
+const avatarEl = $('#avatar')
+const avatarCredit = $('#avatar-credit')
 
 const FEEDBACK_MS = 3000
 
@@ -48,8 +50,10 @@ const useMouse = new URLSearchParams(location.search).has('mouse')
 const smileTrigger = new SmileTrigger()
 const headGestures = new HeadGestureDetector()
 
+let avatar: import('./avatar3d').Avatar3D | undefined
 let locked = false
 let faceEnabled = false
+let avatarLoaded = false
 let smileCount = 0
 /** Während des Feedbacks zu einer richtigen Antwort wartet ein Smile-Bonus */
 let smileBonusPending = false
@@ -59,12 +63,40 @@ function show(name: keyof typeof screens): void {
   for (const [key, el] of Object.entries(screens)) {
     el.classList.toggle('hidden', key !== name)
   }
+  if (avatarLoaded) avatar!.setVisible(name === 'quiz')
+}
+
+/**
+ * Optionales 3D-Maskottchen (models/avatar.glb). Fehlt die Datei oder schlägt
+ * WebGL fehl, bleibt der Emoji-Spiegel als Fallback aktiv. Three.js wird per
+ * Code-Splitting erst geladen, wenn die Modelldatei wirklich existiert.
+ */
+async function initAvatar(): Promise<void> {
+  const modelUrl = 'models/avatar.glb'
+  try {
+    const head = await fetch(modelUrl, { method: 'HEAD' })
+    if (!head.ok || head.headers.get('content-type')?.includes('text/html')) {
+      console.info('Kein 3D-Avatar (models/avatar.glb) – Emoji-Fallback aktiv.')
+      return
+    }
+    const { Avatar3D } = await import('./avatar3d')
+    avatar = new Avatar3D(avatarEl)
+    await avatar.load(modelUrl)
+    avatarLoaded = true
+    avatarCredit.classList.remove('hidden')
+    document.body.classList.add('has-avatar')
+    avatar.setVisible(!screens.quiz.classList.contains('hidden'))
+    console.info('3D-Avatar geladen –', avatar.describe())
+  } catch (err) {
+    console.warn('3D-Avatar konnte nicht geladen werden – Emoji-Fallback aktiv.', err)
+  }
 }
 
 async function begin(): Promise<void> {
   show('loading')
   startError.classList.add('hidden')
   try {
+    void initAvatar() // lädt parallel; blockiert den Kamerastart nicht
     if (useMouse) {
       window.addEventListener('mousemove', (e) =>
         dwell.setPointer({ x: e.clientX, y: e.clientY, visible: true }),
@@ -133,7 +165,12 @@ function onFace(f: FaceState): void {
   const now = performance.now()
   smileTrigger.update(f.smile, now)
   headGestures.update(f, now)
-  updateEmoji(f)
+  if (avatarLoaded) {
+    avatar!.applyFace(f)
+    faceEmojiEl.classList.add('hidden')
+  } else {
+    updateEmoji(f)
+  }
 }
 
 /** Mimik-Spiegel: kleines Emoji zeigt, was die Erkennung gerade „sieht“ */
@@ -209,6 +246,8 @@ function onAnswer(answerIndex: number): void {
   feedbackText.textContent = q.explanation
   feedbackEl.classList.remove('hidden')
   feedbackEl.classList.toggle('is-correct', correct)
+
+  if (avatarLoaded) avatar!.react(correct ? 'correct' : 'wrong')
 
   if (correct && (faceEnabled || useMouse)) {
     // Wer schon strahlt, bekommt den Bonus sofort – sonst bis zum Feedback-Ende warten

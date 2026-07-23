@@ -10,6 +10,7 @@ const NO_FACE: FaceState = {
   jawOpen: 0,
   browUp: 0,
   browDown: 0,
+  eyeBlink: 0,
   noseX: 0,
   noseY: 0,
 }
@@ -38,6 +39,7 @@ export class FaceTracker {
       runningMode: 'VIDEO',
       numFaces: 1,
       outputFaceBlendshapes: true,
+      outputFacialTransformationMatrixes: true,
     })
   }
 
@@ -74,8 +76,10 @@ export class FaceTracker {
       jawOpen: get('jawOpen'),
       browUp: get('browInnerUp'),
       browDown: (get('browDownLeft') + get('browDownRight')) / 2,
+      eyeBlink: (get('eyeBlinkLeft') + get('eyeBlinkRight')) / 2,
       noseX: nose.x,
       noseY: nose.y,
+      headMatrix: result.facialTransformationMatrixes?.[0]?.data,
     })
   }
 }
