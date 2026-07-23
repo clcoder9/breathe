@@ -41,6 +41,9 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  /* Auf kleinen Displays scrollbar, ohne dass der Anfang abgeschnitten wird */
+  justify-content: safe center;
+  overflow-y: auto;
   gap: 1.4rem;
   padding: 2rem;
   text-align: center;
