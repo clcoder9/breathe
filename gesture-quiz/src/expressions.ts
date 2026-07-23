@@ -1,11 +1,11 @@
 import type { FaceState } from './types'
 
-/** Ab diesem Blendshape-Score gilt der Mund als Lächeln */
-const SMILE_ON = 0.55
+/** Ab diesem Blendshape-Score gilt der Mund als Lächeln (reale Werte oft nur 0.3–0.5) */
+const SMILE_ON = 0.35
 /** Erst unter diesem Score wird der Trigger wieder scharfgestellt */
-const SMILE_OFF = 0.35
+const SMILE_OFF = 0.2
 /** So lange muss das Lächeln stabil anliegen, bevor ausgelöst wird */
-const SMILE_HOLD_MS = 250
+const SMILE_HOLD_MS = 200
 const SMILE_COOLDOWN_MS = 1000
 
 /**

@@ -253,6 +253,139 @@ body.has-avatar #question-banner {
   color: #9fb4ff;
 }
 
+/* ---------- Zuordnungsfragen (Drag & Drop) ---------- */
+
+#match-area {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 2vw;
+  padding: 3vh 3vw 5vh;
+}
+
+.drop-zone {
+  width: 28vw;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 1rem;
+  border: 3px dashed rgba(255, 255, 255, 0.45);
+  border-radius: 1.2rem;
+  background: rgba(8, 10, 18, 0.6);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.drop-zone.zone-hover {
+  border-color: #ffd54a;
+  background: rgba(38, 44, 82, 0.85);
+}
+
+.drop-zone.flash-good {
+  border-color: #3fd97f;
+  background: rgba(19, 112, 58, 0.6);
+}
+
+.drop-zone.flash-bad {
+  border-color: #ff5f6d;
+  background: rgba(146, 28, 40, 0.6);
+}
+
+.zone-title {
+  font-size: clamp(1.1rem, 2vw, 1.6rem);
+  font-weight: 700;
+  text-align: center;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+}
+
+.zone-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+#match-middle {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2rem;
+}
+
+#chip-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.term-chip {
+  z-index: 60;
+  max-width: 30vw;
+  padding: 0.8rem 1.3rem;
+  border: 3px solid rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  background: rgba(8, 10, 18, 0.88);
+  font-size: clamp(0.95rem, 1.6vw, 1.25rem);
+  font-weight: 600;
+  text-align: center;
+  cursor: grab;
+  user-select: none;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+
+.term-chip.chip-hover {
+  transform: scale(1.08);
+  border-color: #ffd54a;
+  box-shadow: 0 0 22px rgba(255, 213, 74, 0.35);
+}
+
+.term-chip.chip-carrying {
+  transform: scale(1.12);
+  border-color: #ffd54a;
+  background: rgba(38, 44, 82, 0.95);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.term-chip.chip-correct {
+  border-color: #3fd97f;
+  background: rgba(19, 112, 58, 0.9);
+}
+
+.term-chip.chip-wrong {
+  border-color: #ff5f6d;
+  background: rgba(146, 28, 40, 0.9);
+}
+
+#match-hint {
+  max-width: 24rem;
+  padding: 0.6rem 1rem;
+  border-radius: 0.8rem;
+  background: rgba(8, 10, 18, 0.7);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  text-align: center;
+  color: #c6d0f5;
+}
+
+/* ---------- Mimik-Debug (?facedebug) ---------- */
+
+#face-debug {
+  position: fixed;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 200;
+  padding: 0.7rem 1rem;
+  border-radius: 0.6rem;
+  background: rgba(0, 0, 0, 0.8);
+  font-family: Consolas, monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #8ff0a4;
+}
+
 /* ---------- Mimik-Spiegel (Emoji oben rechts) ---------- */
 
 #face-emoji {

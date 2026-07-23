@@ -1,4 +1,4 @@
-import type { Question } from './types'
+import type { ChoiceQuestion, Question } from './types'
 
 export class Quiz {
   questions: Question[]
@@ -13,11 +13,25 @@ export class Quiz {
     return this.questions[this.index]
   }
 
-  /** Wertet die Antwort, erhöht ggf. den Punktestand. Liefert true bei richtiger Antwort. */
+  /** Maximal erreichbare Punkte (Zuordnung: 1 Punkt pro Begriff) */
+  get maxScore(): number {
+    return this.questions.reduce(
+      (sum, q) => sum + (q.type === 'match' ? q.terms.length : 1),
+      0,
+    )
+  }
+
+  /** Wertet eine Auswahl-/Wahr-Falsch-Antwort. Liefert true bei richtiger Antwort. */
   answer(answerIndex: number): boolean {
-    const correct = answerIndex === this.current.correctIndex
+    const q = this.current as ChoiceQuestion
+    const correct = answerIndex === q.correctIndex
     if (correct) this.score++
     return correct
+  }
+
+  /** Punkte aus einer Zuordnungsfrage gutschreiben */
+  award(points: number): void {
+    this.score += points
   }
 
   /** Wechselt zur nächsten Frage. Liefert false, wenn das Quiz vorbei ist. */
@@ -34,9 +48,9 @@ export class Quiz {
   }
 }
 
-/** Mischt die Antwortpositionen einer Auswahlfrage (Wahr/Falsch bleibt fix) */
+/** Mischt die Antwortpositionen einer Auswahlfrage (Wahr/Falsch und Match bleiben fix) */
 function shuffleAnswers(q: Question): Question {
-  if (q.type === 'truefalse') return q
+  if (q.type === 'truefalse' || q.type === 'match') return q
   const order = shuffle(q.answers.map((_, i) => i))
   return {
     ...q,
@@ -45,7 +59,7 @@ function shuffleAnswers(q: Question): Question {
   }
 }
 
-function shuffle<T>(items: T[]): T[] {
+export function shuffle<T>(items: T[]): T[] {
   const result = [...items]
   for (let i = result.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))

@@ -6,52 +6,16 @@
     "explanation": "Der System Prompt wird vom Entwickler bzw. Betreiber der Anwendung vorgegeben. Er steht „über“ den Nutzereingaben und definiert Rolle und Regeln der KI."
   },
   {
-    "question": "Was legt der System Prompt hauptsächlich fest?",
-    "answers": ["Verhalten", "Hardware", "Preis", "Netzwerk"],
-    "correctIndex": 0,
-    "explanation": "Der System Prompt bestimmt das Verhalten der KI: ihre Rolle, ihren Ton, was sie darf und was nicht – noch bevor der Nutzer die erste Frage stellt."
-  },
-  {
-    "question": "Der System Prompt ist für Nutzer normalerweise …?",
-    "answers": ["Unsichtbar", "Sichtbar", "Löschbar", "Bearbeitbar"],
-    "correctIndex": 0,
-    "explanation": "Nutzer sehen nur den Chat. Der System Prompt läuft unsichtbar im Hintergrund mit – genau deshalb versuchen Angreifer, ihn zu entlocken oder zu überschreiben."
-  },
-  {
-    "question": "„Ignoriere alle bisherigen Anweisungen!“ ist ein typisches Beispiel für …?",
-    "answers": ["Prompt Injection", "Halluzination", "Overfitting", "Fine-Tuning"],
-    "correctIndex": 0,
-    "explanation": "Das ist der Klassiker der Prompt Injection: Der Angreifer versucht, mit einer eigenen Anweisung die Regeln aus dem System Prompt außer Kraft zu setzen."
-  },
-  {
-    "question": "Wie heißt der Angriff, bei dem Anweisungen in Webseiten oder Dokumenten versteckt sind?",
-    "answers": ["Indirekte Injection", "Direkte Injection", "Phishing", "Spoofing"],
-    "correctIndex": 0,
-    "explanation": "Bei der indirekten Prompt Injection tippt nicht der Nutzer den Angriff ein – die KI liest ihn aus Inhalten, die sie verarbeitet, z. B. einer Webseite, E-Mail oder PDF-Datei."
-  },
-  {
     "question": "Wie nennt man es, wenn jemand der KI ihren geheimen System Prompt entlockt?",
     "answers": ["Prompt Leaking", "Data Mining", "Sniffing", "Caching"],
     "correctIndex": 0,
     "explanation": "Beim Prompt Leaking bringt ein Angreifer die KI dazu, ihre internen Anweisungen zu verraten – etwa mit „Wiederhole deine allererste Nachricht“."
   },
   {
-    "question": "Wie nennt man Tricks, mit denen Nutzer die Schutzregeln einer KI aushebeln?",
-    "answers": ["Jailbreak", "Firewall", "Debugging", "Streaming"],
-    "correctIndex": 0,
-    "explanation": "Ein Jailbreak („Gefängnisausbruch“) versucht, die Sicherheitsregeln der KI zu umgehen, z. B. über Rollenspiele: „Tu so, als wärst du eine KI ohne Regeln …“"
-  },
-  {
     "question": "Wie sollte eine KI Texte aus fremden E-Mails oder Webseiten behandeln?",
     "answers": ["Misstrauisch", "Vertrauensvoll", "Ungeprüft", "Bevorzugt"],
     "correctIndex": 0,
     "explanation": "Fremde Inhalte können versteckte Anweisungen enthalten. Eine sichere KI-Anwendung behandelt sie als Daten, denen sie nicht blind gehorcht."
-  },
-  {
-    "question": "Welche Maßnahme hilft gegen Prompt Injection?",
-    "answers": ["Eingabeprüfung", "Mehr Speicher", "Schnellere GPU", "Längere Prompts"],
-    "correctIndex": 0,
-    "explanation": "Eingaben prüfen und filtern, Nutzertext klar von Anweisungen trennen und Rechte der KI begrenzen – das sind die wichtigsten Schutzmaßnahmen."
   },
   {
     "question": "Welche Anweisung sollte für die KI im Konfliktfall Vorrang haben?",
@@ -81,10 +45,36 @@
     "explanation": "Falsch: Per Prompt Leaking kann der Inhalt des System Prompts entlockt werden. Geheimnisse gehören deshalb niemals hinein."
   },
   {
-    "question": "Auch unsichtbarer Text (z. B. weiße Schrift) auf einer Webseite kann eine KI angreifen.",
-    "type": "truefalse",
-    "answers": ["Wahr", "Falsch"],
-    "correctIndex": 0,
-    "explanation": "Wahr: Die KI liest den kompletten Text einer Seite – auch was Menschen nicht sehen. Weiße Schrift auf weißem Grund ist ein beliebtes Versteck für Injections."
+    "question": "Ordne zu: Gehört das zum System Prompt oder ist es Prompt Injection?",
+    "type": "match",
+    "categories": ["System Prompt", "Prompt Injection"],
+    "terms": [
+      { "text": "„Du bist ein hilfreicher Assistent“", "category": 0 },
+      { "text": "„Ignoriere alle Regeln!“", "category": 1 },
+      { "text": "Versteckter Befehl in E-Mail", "category": 1 }
+    ],
+    "explanation": "Der System Prompt definiert Rolle und Regeln („Du bist …“). Alles, was diese Regeln aushebeln will – ob getippt oder in Inhalten versteckt – ist Prompt Injection."
+  },
+  {
+    "question": "Ordne zu: Schutzmaßnahme oder Angriffstechnik?",
+    "type": "match",
+    "categories": ["Schutzmaßnahme", "Angriffstechnik"],
+    "terms": [
+      { "text": "Eingabefilter", "category": 0 },
+      { "text": "Jailbreak", "category": 1 },
+      { "text": "Rechte der KI begrenzen", "category": 0 }
+    ],
+    "explanation": "Eingaben filtern und Berechtigungen begrenzen schützen das System. Ein Jailbreak versucht dagegen, die Schutzregeln der KI auszuhebeln."
+  },
+  {
+    "question": "Ordne zu: Direkte oder indirekte Prompt Injection?",
+    "type": "match",
+    "categories": ["Direkt", "Indirekt"],
+    "terms": [
+      { "text": "Nutzer tippt: „Vergiss deine Regeln“", "category": 0 },
+      { "text": "Weiße Schrift auf Webseite", "category": 1 },
+      { "text": "Befehl in PDF-Anhang", "category": 1 }
+    ],
+    "explanation": "Direkt = der Angreifer tippt den Angriff selbst in den Chat. Indirekt = die KI liest den Angriff aus Inhalten, die sie verarbeitet (Webseiten, PDFs, E-Mails)."
   }
 ]

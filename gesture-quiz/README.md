@@ -92,8 +92,14 @@ three.js-Repo mit vollen ARKit-Morphs).
 ## Debug-Modus ohne Kamera
 
 `http://localhost:5173/?mouse` — die Maus ersetzt den Finger-Cursor
-(praktisch zum Testen der Dwell-Logik ohne Webcam). Tasten simulieren Mimik:
-**L** = Lächeln, **J** = Nicken (Wahr), **N** = Kopfschütteln (Falsch).
+(praktisch zum Testen der Dwell-Logik ohne Webcam); gedrückte Maustaste =
+Pinch-Geste (Drag & Drop). Tasten simulieren Mimik: **L** = Lächeln (Impuls),
+**K** = Lächeln halten (Avatar-Mund), **J** = Nicken (Wahr),
+**N** = Kopfschütteln (Falsch).
+
+`?facedebug` blendet die Live-Messwerte der Mimik-Erkennung ein
+(Lächeln/Blinzeln/Kopfwinkel) — zum Kalibrieren der Schwellwerte in
+`src/expressions.ts`.
 
 ## Technik
 

@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🖐️</text></svg>" />
     <title>KI-Gesten-Quiz</title>
-    <script type="module" crossorigin src="./assets/index-DWQgpRY4.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-CwjOPbCm.css">
+    <script type="module" crossorigin src="./assets/index-BngaB-QY.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-B5Xxhke8.css">
   </head>
   <body>
     <video id="camera" playsinline muted></video>
@@ -20,6 +20,7 @@
         <li>Zeige mit dem Zeigefinger auf eine Antwort.</li>
         <li>Halte den Finger dort ca. 1,5&nbsp;Sekunden – oder <strong>lächle</strong>, um sofort zu bestätigen. 😄</li>
         <li>Bei Wahr/Falsch-Fragen: <strong>Nicken</strong> = Wahr, <strong>Kopfschütteln</strong> = Falsch.</li>
+        <li>Bei Zuordnungsfragen: Begriff mit <strong>Daumen + Zeigefinger greifen</strong> und in die passende Kategorie ziehen (oder 1&nbsp;s darüber halten).</li>
       </ol>
       <p class="hint">Die Mimik-Erkennung läuft komplett lokal in deinem Browser – es wird nichts gespeichert oder übertragen.</p>
       <button id="btn-start">📷 Kamera starten</button>
@@ -49,6 +50,20 @@
         <p id="tf-hint">Nicken = Wahr<br />Kopfschütteln = Falsch</p>
         <button class="answer tf dwell-target" data-tf="1">👎 Falsch</button>
       </div>
+      <div id="match-area" class="hidden">
+        <div class="drop-zone" data-zone="0">
+          <p class="zone-title"></p>
+          <div class="zone-items"></div>
+        </div>
+        <div id="match-middle">
+          <div id="chip-stack"></div>
+          <p id="match-hint">Greifen: Daumen + Zeigefinger zusammen<br />oder 1&nbsp;s über Begriff halten</p>
+        </div>
+        <div class="drop-zone" data-zone="1">
+          <p class="zone-title"></p>
+          <div class="zone-items"></div>
+        </div>
+      </div>
       <div id="feedback" class="hidden">
         <p id="feedback-title"></p>
         <p id="feedback-text"></p>
@@ -74,6 +89,9 @@
 
     <!-- Konfetti-Ebene (Smile-Bonus) -->
     <div id="confetti"></div>
+
+    <!-- Live-Messwerte der Mimik-Erkennung (nur mit ?facedebug) -->
+    <pre id="face-debug" class="hidden"></pre>
 
     <!-- Finger-Cursor mit Dwell-Fortschrittsring -->
     <div id="cursor" class="hidden">

@@ -1,8 +1,11 @@
 import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision'
 import type { Pointer } from './types'
 
-/** Landmark-Index der Zeigefingerspitze im MediaPipe-Handmodell */
+/** Landmark-Indizes im MediaPipe-Handmodell */
 const INDEX_FINGER_TIP = 8
+const THUMB_TIP = 4
+const WRIST = 0
+const MIDDLE_MCP = 9
 /** Gewicht neuer Messwerte bei der exponentiellen Glättung (0..1) */
 const SMOOTHING = 0.35
 /** Nach so vielen Frames ohne Hand wird der Cursor ausgeblendet */
@@ -53,7 +56,14 @@ export class HandTracker {
     const landmarks = result.landmarks[0]
     if (landmarks) {
       const tip = landmarks[INDEX_FINGER_TIP]
-      const { x, y } = this.toViewport(tip.x, tip.y)
+      const thumb = landmarks[THUMB_TIP]
+      // Pinch: Abstand Daumen-/Zeigefingerspitze relativ zur Handgröße
+      const handSize = dist(landmarks[WRIST], landmarks[MIDDLE_MCP])
+      const pinch = handSize > 0 ? dist(thumb, tip) / handSize : 1
+      // Beim Greifen den Mittelpunkt von Daumen+Zeigefinger nehmen (stabiler)
+      const cx = pinch < 0.45 ? (tip.x + thumb.x) / 2 : tip.x
+      const cy = pinch < 0.45 ? (tip.y + thumb.y) / 2 : tip.y
+      const { x, y } = this.toViewport(cx, cy)
       if (this.hasPrev) {
         this.sx += (x - this.sx) * SMOOTHING
         this.sy += (y - this.sy) * SMOOTHING
@@ -63,7 +73,7 @@ export class HandTracker {
         this.hasPrev = true
       }
       this.missedFrames = 0
-      this.onPointer({ x: this.sx, y: this.sy, visible: true })
+      this.onPointer({ x: this.sx, y: this.sy, visible: true, pinch })
     } else if (++this.missedFrames > MAX_MISSED_FRAMES) {
       this.hasPrev = false
       this.onPointer({ x: this.sx, y: this.sy, visible: false })
@@ -84,4 +94,8 @@ export class HandTracker {
     const py = ny * dispH + (vh - dispH) / 2
     return { x: vw - px, y: py }
   }
+}
+
+function dist(a: { x: number; y: number }, b: { x: number; y: number }): number {
+  return Math.hypot(a.x - b.x, a.y - b.y)
 }
