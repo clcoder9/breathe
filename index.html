@@ -43,16 +43,16 @@
       --font-stack: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     }
 
-    /* LIGHT THEME */
+    /* LIGHT THEME — rich jewel tones and soft ambient depth */
     html[data-theme="light"] {
-      --color-bg:             #F0F4F8;
+      --color-bg:             #F1F5F9;
       --color-surface:        #FFFFFF;
-      --color-surface-raised: #E8EDF2;
-      --color-border:         #C8D0DA;
+      --color-surface-raised: #E2E8F0;
+      --color-border:         #CBD5E1;
       --color-text-primary:   #0F172A;
       --color-text-secondary: #334155;
       --color-text-muted:     #64748B;
-      --color-inhale:   #0891B2;
+      --color-inhale:   #0284C7;
       --color-exhale:   #0369A1;
       --color-hold:     #D97706;
       --color-recovery: #7C3AED;
@@ -62,17 +62,21 @@
       --color-warning:  #B45309;
       --current-phase-color: #475569;
     }
+    html[data-theme="light"] #atmosphere { opacity: 0.08; filter: blur(55px); }
+    html[data-theme="light"] .circle-glow { opacity: 0.12; filter: blur(36px); }
 
-    /* OLED TRUE-BLACK THEME */
+    /* OLED TRUE-BLACK THEME — pure zero-nit blacks & hairline borders */
     html[data-theme="oled"] {
       --color-bg:             #000000;
-      --color-surface:        #0A0A0D;
-      --color-surface-raised: #16161B;
-      --color-border:         #2A2A31;
+      --color-surface:        #000000;
+      --color-surface-raised: #0D0D11;
+      --color-border:         rgba(255, 255, 255, 0.08);
     }
-    html[data-theme="oled"] #settings-panel { background: rgba(4,4,6,0.97); }
-    html[data-theme="oled"] #safety-footer  { background: rgba(0,0,0,0.96); }
-    html[data-theme="oled"] #atmosphere     { opacity: 0.12; }
+    html[data-theme="oled"] #settings-panel { background: rgba(0,0,0,0.98); border-bottom-color: rgba(255,255,255,0.08); }
+    html[data-theme="oled"] #safety-footer  { background: rgba(0,0,0,0.98); border-top-color: rgba(255,255,255,0.08); }
+    html[data-theme="oled"] #atmosphere     { opacity: 0.10; }
+    html[data-theme="oled"] .settings-drawer { background: #000000; border-color: rgba(255,255,255,0.08); }
+    html[data-theme="oled"] .setting-card { background: #09090D; border-color: rgba(255,255,255,0.06); }
 
     /* Theme transition — only active after initial render */
     html.theme-ready,
@@ -380,10 +384,10 @@
     }
     #btn-end-sleep:hover { border-color: rgba(148,163,184,0.6); color: rgba(148,163,184,0.85); }
 
-    /* ZEN MODE — chrome slides away during active practice */
+    /* ZEN MODE — chrome slides away, action bar becomes subtle emergency floating pill */
     #settings-panel { transition: transform 0.35s ease, opacity 0.35s ease; }
     #safety-footer  { transition: transform 0.35s ease, opacity 0.35s ease; }
-    #action-bar     { transition: transform 0.35s ease, opacity 0.35s ease; }
+    #action-bar     { transition: transform 0.35s ease, opacity 0.35s ease, background 0.3s ease; }
     body.zen #settings-panel {
       position: fixed; top: 0; left: 0; right: 0;
       transform: translateY(-105%); opacity: 0; pointer-events: none;
@@ -392,7 +396,43 @@
       transform: none; opacity: 1; pointer-events: auto;
     }
     body.zen #safety-footer { transform: translateY(110%); opacity: 0; }
-    body.zen #action-bar    { transform: translateY(130%); opacity: 0; pointer-events: none; }
+    body.zen #action-bar {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%);
+      opacity: 0.38; z-index: 200; pointer-events: auto;
+      background: rgba(17, 24, 39, 0.65);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 5px 12px; border-radius: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      max-width: 260px; margin-top: 0;
+    }
+    body.zen #action-bar:hover,
+    body.zen #action-bar:focus-within {
+      opacity: 0.95;
+      transform: translateX(-50%) translateY(-2px);
+      background: rgba(17, 24, 39, 0.92);
+    }
+    body.zen.zen-peek #action-bar {
+      opacity: 1; transform: translateX(-50%);
+    }
+    body.zen #action-bar .btn {
+      min-height: 38px; padding: 6px 14px; font-size: 0.85rem;
+    }
+    html[data-theme="light"] body.zen #action-bar {
+      background: rgba(255, 255, 255, 0.75);
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.1);
+    }
+    html[data-theme="light"] body.zen #action-bar:hover,
+    html[data-theme="light"] body.zen #action-bar:focus-within {
+      background: rgba(255, 255, 255, 0.95);
+    }
+    html[data-theme="oled"] body.zen #action-bar {
+      background: rgba(0, 0, 0, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+    }
     #zen-strip {
       position: fixed; top: 0; left: 0; right: 0; height: 24px;
       z-index: 250; display: none; cursor: pointer;
@@ -412,7 +452,7 @@
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--color-border);
-      padding: 10px 16px 8px;
+      padding: 10px 16px;
     }
     .header-content {
       display: flex;
@@ -431,15 +471,18 @@
     }
     .header-center {
       flex: 1 1 auto;
-      max-width: 320px;
       min-width: 0;
       display: flex;
       justify-content: center;
+      align-items: center;
     }
-    .header-sub {
-      display: flex;
-      justify-content: center;
-      margin-top: 6px;
+    .app-brand-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      letter-spacing: 0.24em;
+      color: var(--color-text-primary);
+      text-transform: uppercase;
+      opacity: 0.9;
     }
     .quick-summary-pill {
       display: inline-flex;
@@ -448,13 +491,14 @@
       background: var(--color-surface-raised);
       border: 1px solid var(--color-border);
       border-radius: 20px;
-      padding: 3px 12px;
-      font-size: 0.72rem;
+      padding: 4px 14px;
+      font-size: 0.75rem;
       color: var(--color-text-secondary);
       cursor: pointer;
       transition: border-color 0.2s, color 0.2s, background 0.2s, transform 0.15s;
       font-family: var(--font-stack);
       line-height: 1.4;
+      margin-top: 6px;
     }
     .quick-summary-pill:hover {
       border-color: var(--color-inhale);
@@ -588,6 +632,18 @@
       border-radius: 12px;
       color: var(--color-inhale);
       font-weight: 600;
+    }
+    .drawer-preset-bar {
+      padding: 10px 18px 8px;
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .drawer-preset-bar .preset-row {
+      width: 100%;
     }
 
     /* Tab Bar */
@@ -741,6 +797,33 @@
       opacity: 0.35;
       cursor: not-allowed;
     }
+    .chip-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+    .chip-btn {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 3px 10px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      font-family: var(--font-stack);
+      transition: all 0.15s ease;
+    }
+    .chip-btn:hover:not(:disabled) {
+      border-color: var(--color-inhale);
+      color: var(--color-text-primary);
+      background: rgba(34, 211, 238, 0.08);
+      transform: translateY(-1px);
+    }
+    .chip-btn:active:not(:disabled) {
+      transform: scale(0.95);
+    }
 
     /* Drawer Footer */
     .drawer-footer {
@@ -853,22 +936,41 @@
       width: 100%; height: 100%;
       display: block; pointer-events: none; z-index: 0;
     }
+    /* Frosted glass scrim disc behind central typography for pristine legibility */
+    .circle-scrim {
+      position: absolute; inset: 16%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(10, 14, 26, 0.74) 0%, rgba(10, 14, 26, 0.42) 65%, transparent 100%);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 1; pointer-events: none;
+      transition: background 0.6s ease;
+    }
+    html[data-theme="light"] .circle-scrim {
+      background: radial-gradient(circle, rgba(241, 245, 249, 0.82) 0%, rgba(241, 245, 249, 0.45) 65%, transparent 100%);
+    }
+    html[data-theme="oled"] .circle-scrim {
+      background: radial-gradient(circle, rgba(0, 0, 0, 0.86) 0%, rgba(0, 0, 0, 0.5) 65%, transparent 100%);
+    }
     .circle-wrapper.liquid-on .circle-content > * {
       text-shadow: 0 2px 14px rgba(0,0,0,0.65), 0 0 4px rgba(0,0,0,0.4);
     }
     html[data-theme="light"] .circle-wrapper.liquid-on .circle-content > * {
       text-shadow: 0 2px 14px rgba(255,255,255,0.75), 0 0 4px rgba(255,255,255,0.5);
     }
-    .circle-track { fill: none; stroke: var(--color-surface-raised); stroke-width: 8; }
+    .circle-track { fill: none; stroke: var(--color-surface-raised); stroke-width: 7; }
     .circle-ring, .circle-ring-glow {
       fill: none; stroke: url(#ring-grad);
-      stroke-width: 8; stroke-linecap: round;
+      stroke-width: 7; stroke-linecap: round;
       stroke-dasharray: 552.92;
       stroke-dashoffset: 552.92;
       transform: rotate(-90deg);
       transform-origin: center;
     }
-    .circle-ring-glow { filter: url(#ring-glow-f); opacity: 0.55; stroke-width: 10; }
+    .circle-ring-glow { filter: url(#ring-glow-f); opacity: 0.45; stroke-width: 11; }
+    .circle-wrapper.scale-hold {
+      transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
     .circle-content {
       position: absolute; inset: 0; z-index: 2;
       display: flex; flex-direction: column;
@@ -902,9 +1004,14 @@
     }
 
     /* HOLD TIMER */
+    @keyframes hold-bloom-fade {
+      0%   { opacity: 0; transform: scale(0.92); filter: blur(4px); }
+      100% { opacity: 1; transform: scale(1); filter: blur(0); }
+    }
+    .hold-bloom { animation: hold-bloom-fade 0.85s cubic-bezier(0.16, 1, 0.3, 1); }
     #hold-timer {
       font-size: clamp(3.5rem, 14vw, 6rem);
-      font-weight: 200; color: var(--color-hold);
+      font-weight: 300; color: var(--color-hold);
       font-variant-numeric: tabular-nums; line-height: 1;
     }
     .hold-target-reached #hold-timer { color: var(--color-complete); }
@@ -1048,6 +1155,31 @@
       </button>
     </div>
 
+    <!-- PRESET SELECTION BAR -->
+    <div class="drawer-preset-bar">
+      <div class="settings-group-title" style="margin-bottom:6px">Active Preset</div>
+      <div class="preset-row">
+        <select id="cfg-preset" aria-label="Breathing Preset">
+          <option value="">Custom</option>
+          <option value="pranayama">Pranayama Style</option>
+          <option value="box">Box Breathing</option>
+          <option value="a52">A52</option>
+          <option value="fourSevenEight">4-7-8</option>
+        </select>
+        <button class="icon-btn" id="btn-save-preset" title="Save current settings as preset" aria-label="Save current settings as preset">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+          </svg>
+        </button>
+        <button class="icon-btn hidden" id="btn-delete-preset" title="Delete this custom preset" aria-label="Delete this custom preset">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
     <!-- TABS -->
     <nav class="settings-tab-bar" role="tablist" aria-label="Settings Categories">
       <button type="button" class="tab-btn active" role="tab" aria-selected="true" aria-controls="panel-pattern" id="tab-pattern" data-tab="pattern">
@@ -1084,6 +1216,12 @@
               <button type="button" class="stepper-btn btn-dec" data-target="cfg-breaths" aria-label="Decrease breaths">&minus;</button>
               <input type="number" id="cfg-breaths" min="1" max="200" step="1" value="30">
               <button type="button" class="stepper-btn btn-inc" data-target="cfg-breaths" aria-label="Increase breaths">&plus;</button>
+            </div>
+            <div class="chip-row">
+              <button type="button" class="chip-btn" data-target="cfg-breaths" data-val="20">20</button>
+              <button type="button" class="chip-btn" data-target="cfg-breaths" data-val="30">30</button>
+              <button type="button" class="chip-btn" data-target="cfg-breaths" data-val="40">40</button>
+              <button type="button" class="chip-btn" data-target="cfg-breaths" data-val="50">50</button>
             </div>
             <span class="setting-hint">Hyperventilation breaths before retention hold</span>
           </div>
@@ -1151,6 +1289,12 @@
               <input type="number" id="cfg-rounds" min="1" max="10" step="1" value="3">
               <button type="button" class="stepper-btn btn-inc" data-target="cfg-rounds" aria-label="Increase rounds">&plus;</button>
             </div>
+            <div class="chip-row">
+              <button type="button" class="chip-btn" data-target="cfg-rounds" data-val="1">1</button>
+              <button type="button" class="chip-btn" data-target="cfg-rounds" data-val="3">3</button>
+              <button type="button" class="chip-btn" data-target="cfg-rounds" data-val="4">4</button>
+              <button type="button" class="chip-btn" data-target="cfg-rounds" data-val="5">5</button>
+            </div>
             <span class="setting-hint">Total cycles in session</span>
           </div>
 
@@ -1160,6 +1304,12 @@
               <button type="button" class="stepper-btn btn-dec" data-target="cfg-hold-start" aria-label="Decrease hold start">&minus;</button>
               <input type="number" id="cfg-hold-start" min="0" max="300" step="5" value="60">
               <button type="button" class="stepper-btn btn-inc" data-target="cfg-hold-start" aria-label="Increase hold start">&plus;</button>
+            </div>
+            <div class="chip-row">
+              <button type="button" class="chip-btn" data-target="cfg-hold-start" data-val="30">30s</button>
+              <button type="button" class="chip-btn" data-target="cfg-hold-start" data-val="60">60s</button>
+              <button type="button" class="chip-btn" data-target="cfg-hold-start" data-val="90">90s</button>
+              <button type="button" class="chip-btn" data-target="cfg-hold-start" data-val="120">120s</button>
             </div>
             <span class="setting-hint">Round 1 retention target duration</span>
           </div>
@@ -1189,6 +1339,11 @@
               <button type="button" class="stepper-btn btn-dec" data-target="cfg-recovery-hold" aria-label="Decrease recovery hold">&minus;</button>
               <input type="number" id="cfg-recovery-hold" min="5" max="60" step="1" value="15">
               <button type="button" class="stepper-btn btn-inc" data-target="cfg-recovery-hold" aria-label="Increase recovery hold">&plus;</button>
+            </div>
+            <div class="chip-row">
+              <button type="button" class="chip-btn" data-target="cfg-recovery-hold" data-val="10">10s</button>
+              <button type="button" class="chip-btn" data-target="cfg-recovery-hold" data-val="15">15s</button>
+              <button type="button" class="chip-btn" data-target="cfg-recovery-hold" data-val="20">20s</button>
             </div>
             <span class="setting-hint">Post-retention recovery inhale hold</span>
           </div>
@@ -1369,26 +1524,7 @@
       </div>
 
       <div class="header-center">
-        <div class="preset-row">
-          <select id="cfg-preset" aria-label="Breathing Preset">
-            <option value="">Custom</option>
-            <option value="pranayama">Pranayama Style</option>
-            <option value="box">Box Breathing</option>
-            <option value="a52">A52</option>
-            <option value="fourSevenEight">4-7-8</option>
-          </select>
-          <button class="icon-btn" id="btn-save-preset" title="Save current settings as preset" aria-label="Save current settings as preset">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-              <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
-            </svg>
-          </button>
-          <button class="icon-btn hidden" id="btn-delete-preset" title="Delete this custom preset" aria-label="Delete this custom preset">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-            </svg>
-          </button>
-        </div>
+        <span class="app-brand-title">PRANAYAMA</span>
       </div>
 
       <div class="header-right">
@@ -1412,15 +1548,6 @@
         </button>
       </div>
     </div>
-    <div class="header-sub">
-      <button type="button" id="quick-summary-pill" class="quick-summary-pill" title="Tap to customize settings">
-        <span id="pill-breaths">30 breaths</span>
-        <span class="pill-dot">&bull;</span>
-        <span id="pill-hold">60s hold</span>
-        <span class="pill-dot">&bull;</span>
-        <span id="pill-rounds">3 rounds</span>
-      </button>
-    </div>
   </header>
 
   <!-- MAIN CONTENT -->
@@ -1430,6 +1557,7 @@
       <div class="circle-glow" aria-hidden="true"></div>
       <div class="circle-wrapper" id="circle-wrapper">
         <canvas id="liquid-canvas" aria-hidden="true"></canvas>
+        <div class="circle-scrim" aria-hidden="true"></div>
         <svg class="circle-svg" viewBox="0 0 200 200" aria-hidden="true">
           <defs>
             <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -1447,6 +1575,13 @@
         <div class="circle-content" id="circle-content">
           <div id="idle-title">Pranayama Breathing</div>
           <div id="idle-subtitle">Configure settings and press START</div>
+          <button type="button" id="quick-summary-pill" class="quick-summary-pill" title="Tap to customize settings">
+            <span id="pill-breaths">30 breaths</span>
+            <span class="pill-dot">&bull;</span>
+            <span id="pill-hold">60s hold</span>
+            <span class="pill-dot">&bull;</span>
+            <span id="pill-rounds">3 rounds</span>
+          </button>
           <div id="phase-label" class="hidden"></div>
           <div id="breath-counter" class="hidden"></div>
           <div id="breath-time-remaining" class="hidden"></div>
@@ -1632,7 +1767,7 @@
         var el = document.getElementById(id);
         if(el) el.disabled = dis;
       });
-      document.querySelectorAll('.stepper-btn').forEach(function(btn) {
+      document.querySelectorAll('.stepper-btn, .chip-btn').forEach(function(btn) {
         var targetId = btn.getAttribute('data-target');
         var input = document.getElementById(targetId);
         if(input) btn.disabled = input.disabled;
@@ -2474,7 +2609,7 @@
      app: rain streaks, ocean caustic light, wind wisps. Runs only while
      the matching soundscape is playing. */
   App.Scene = (function() {
-    var canvas = null, ctx = null, rafId = null, type = null, lastT = 0;
+    var canvas = null, ctx = null, rafId = null, type = null, lastT = 0, lastSceneT = 0;
     var items = [], W = 0, H = 0;
 
     function ensureCanvas() {
@@ -2529,6 +2664,19 @@
     function frame(now) {
       rafId = null;
       if(!type) return;
+
+      var st = (window.App && App.Session) ? App.Session.getState() : '';
+      if(st === STATES.SLEEPING) {
+        ctx.clearRect(0, 0, W, H);
+        rafId = requestAnimationFrame(frame);
+        return;
+      }
+      if(st === STATES.HOLD && (now - lastSceneT) < 55) {
+        rafId = requestAnimationFrame(frame);
+        return;
+      }
+      lastSceneT = now;
+
       var dt = Math.min(0.08, (now - lastT) / 1000);
       lastT = now;
       ctx.clearRect(0, 0, W, H);
@@ -2707,6 +2855,7 @@
     var mode = 'drift';            /* 'drift' | 'breath' | 'fixed' */
     var driftBase = 0.45, driftAmp = 0.04, driftSpeed = 0.18;
     var breathScale = 0, prevScale = 0.45;
+    var lastRenderT = 0;
 
     var pressure = 0;   /* 0..1.3: retention-hold tension */
     var uniforms = {
@@ -3126,6 +3275,15 @@
     function frame(nowMs) {
       rafId = null;
       if(!enabled) return;
+
+      var st = (window.App && App.Session) ? App.Session.getState() : '';
+      var isStatic = (st === STATES.HOLD || st === STATES.SLEEPING || st === STATES.PAUSED);
+      if(isStatic && (nowMs - lastRenderT) < 33) {
+        rafId = requestAnimationFrame(frame);
+        return;
+      }
+      lastRenderT = nowMs;
+
       var dt = Math.min(0.1, (nowMs - lastT) / 1000);
       lastT = nowMs;
 
@@ -3756,7 +3914,7 @@
     }
 
     var ALL_TOGGLES = [
-      'idle-title','idle-subtitle','phase-label','breath-counter','breath-time-remaining',
+      'idle-title','idle-subtitle','quick-summary-pill','phase-label','breath-counter','breath-time-remaining',
       'hold-timer','hold-target-display','tap-prompt','recovery-countdown','pause-countdown','round-summary'
     ];
 
@@ -3838,7 +3996,7 @@
           setPhaseColor( COLORS.IDLE);
           css('--phase-duration', '3s');
           setScale('scale-idle');
-          showOnly(['idle-title','idle-subtitle']);
+          showOnly(['idle-title','idle-subtitle','quick-summary-pill']);
           e.roundIndicator.textContent = '';
           e.idleTitle.textContent    = App.Presets.getCurrentLabel();
           e.idleSubtitle.textContent = estimateText();
@@ -3942,11 +4100,14 @@
         case STATES.HOLD:
           var target = cfg.getHoldTarget(round);
           setPhaseColor( COLORS.HOLD);
-          css('--phase-duration', '0.5s');
+          css('--phase-duration', '1.2s');
           setScale('scale-hold');
           showOnly(['phase-label','hold-timer','hold-target-display','tap-prompt']);
           e.phaseLabel.textContent       = 'HOLD';
           e.holdTimer.textContent        = '0';
+          e.holdTimer.classList.remove('hold-bloom');
+          void e.holdTimer.offsetWidth;
+          e.holdTimer.classList.add('hold-bloom');
           e.holdTargetDisplay.textContent = 'Target: ' + target + 's';
           e.roundIndicator.textContent    = roundText;
           setRingProgress(0);
@@ -4699,27 +4860,61 @@
 
   /* ======== App.Steppers ======== */
   App.Steppers = (function() {
+    var holdTimer = null, accelTimer = null;
+
+    function stepOnce(btn) {
+      var targetId = btn.getAttribute('data-target');
+      var input = document.getElementById(targetId);
+      if(!input || input.disabled) return;
+
+      var isInc = btn.classList.contains('btn-inc');
+      var min = input.min !== '' ? parseFloat(input.min) : -Infinity;
+      var max = input.max !== '' ? parseFloat(input.max) : Infinity;
+      var step = input.step !== '' && input.step !== 'any' ? parseFloat(input.step) : 1;
+      var cur = parseFloat(input.value);
+      if(isNaN(cur)) cur = min !== -Infinity ? min : 0;
+
+      var next = isInc ? (cur + step) : (cur - step);
+      var stepDecimals = (step.toString().split('.')[1] || '').length;
+      next = parseFloat(next.toFixed(stepDecimals || 1));
+      next = Math.max(min, Math.min(max, next));
+
+      input.value = next;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    function clearHold() {
+      if(holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+      if(accelTimer) { clearInterval(accelTimer); accelTimer = null; }
+    }
+
     function init() {
-      document.addEventListener('click', function(ev) {
+      /* Long-press auto-repeat acceleration */
+      document.addEventListener('pointerdown', function(ev) {
         var btn = ev.target.closest ? ev.target.closest('.stepper-btn') : null;
-        if(!btn) return;
-        var targetId = btn.getAttribute('data-target');
+        if(!btn || ev.button !== 0) return;
+        clearHold();
+        stepOnce(btn);
+        holdTimer = setTimeout(function() {
+          accelTimer = setInterval(function() {
+            stepOnce(btn);
+          }, 85);
+        }, 350);
+      });
+
+      document.addEventListener('pointerup', clearHold);
+      document.addEventListener('pointercancel', clearHold);
+      document.addEventListener('pointerleave', clearHold);
+
+      /* Quick selection chip buttons */
+      document.addEventListener('click', function(ev) {
+        var chip = ev.target.closest ? ev.target.closest('.chip-btn') : null;
+        if(!chip) return;
+        var targetId = chip.getAttribute('data-target');
+        var val = chip.getAttribute('data-val');
         var input = document.getElementById(targetId);
         if(!input || input.disabled) return;
-
-        var isInc = btn.classList.contains('btn-inc');
-        var min = input.min !== '' ? parseFloat(input.min) : -Infinity;
-        var max = input.max !== '' ? parseFloat(input.max) : Infinity;
-        var step = input.step !== '' && input.step !== 'any' ? parseFloat(input.step) : 1;
-        var cur = parseFloat(input.value);
-        if(isNaN(cur)) cur = min !== -Infinity ? min : 0;
-
-        var next = isInc ? (cur + step) : (cur - step);
-        var stepDecimals = (step.toString().split('.')[1] || '').length;
-        next = parseFloat(next.toFixed(stepDecimals || 1));
-        next = Math.max(min, Math.min(max, next));
-
-        input.value = next;
+        input.value = val;
         input.dispatchEvent(new Event('change', { bubbles: true }));
       });
     }

@@ -1,4 +1,4 @@
-var CACHE_NAME = 'pranayama-v9';
+var CACHE_NAME = 'pranayama-v10';
 var ASSETS = [
   './',
   './index.html',
@@ -30,9 +30,41 @@ self.addEventListener('activate', function(event) {
 });
 
 self.addEventListener('fetch', function(event) {
+  var req = event.request;
+  var url = new URL(req.url);
+
+  /* Stale-While-Revalidate for navigation & HTML: instant load + background update */
+  if (req.mode === 'navigate' || url.pathname.endsWith('index.html') || url.pathname.endsWith('/')) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then(function(cache) {
+        return cache.match(req).then(function(cachedResponse) {
+          var fetchPromise = fetch(req).then(function(networkResponse) {
+            if (networkResponse && networkResponse.status === 200) {
+              cache.put(req, networkResponse.clone());
+            }
+            return networkResponse;
+          }).catch(function() {
+            return cachedResponse;
+          });
+          return cachedResponse || fetchPromise;
+        });
+      })
+    );
+    return;
+  }
+
+  /* Cache-First with network fallback for versioned static assets */
   event.respondWith(
-    caches.match(event.request).then(function(cached) {
-      return cached || fetch(event.request);
+    caches.match(req).then(function(cached) {
+      return cached || fetch(req).then(function(networkResponse) {
+        if (networkResponse && networkResponse.status === 200) {
+          var clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then(function(cache) {
+            cache.put(req, clone);
+          });
+        }
+        return networkResponse;
+      });
     })
   );
 });
