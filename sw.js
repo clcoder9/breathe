@@ -1,4 +1,4 @@
-var CACHE_NAME = 'pranayama-v10';
+var CACHE_NAME = 'pranayama-v11';
 var ASSETS = [
   './',
   './index.html',
@@ -47,6 +47,27 @@ self.addEventListener('fetch', function(event) {
             return cachedResponse;
           });
           return cachedResponse || fetchPromise;
+        });
+      })
+    );
+    return;
+  }
+
+  /* Progressive streaming and caching for background music assets */
+  if (url.pathname.includes('/music/') || url.pathname.endsWith('.mp3')) {
+    event.respondWith(
+      caches.match(req, { ignoreSearch: true }).then(function(cached) {
+        if (cached) return cached;
+        return fetch(req).then(function(networkResponse) {
+          if (networkResponse && networkResponse.status === 200) {
+            var clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then(function(cache) {
+              cache.put(req, clone);
+            });
+          }
+          return networkResponse;
+        }).catch(function() {
+          return cached;
         });
       })
     );

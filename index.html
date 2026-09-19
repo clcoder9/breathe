@@ -1397,17 +1397,25 @@
             <div class="amb-row">
               <select id="cfg-ambience">
                 <option value="off">Off</option>
-                <option value="ocean">Ocean</option>
-                <option value="rain">Rain</option>
-                <option value="wind">Wind</option>
-                <option value="forest">Night Forest</option>
-                <option value="fire">Campfire</option>
-                <option value="stream">Stream</option>
-                <option value="noise">Deep Noise</option>
+                <optgroup label="Lyria Studio Music">
+                  <option value="wimhof">Dynamic Wim Hof (Adaptive)</option>
+                  <option value="ethereal">Ethereal Ambient (Relaxing)</option>
+                  <option value="active">Active Breathing Only</option>
+                  <option value="retention">Deep Retention Only</option>
+                </optgroup>
+                <optgroup label="Nature Soundscapes">
+                  <option value="ocean">Ocean</option>
+                  <option value="rain">Rain</option>
+                  <option value="wind">Wind</option>
+                  <option value="forest">Night Forest</option>
+                  <option value="fire">Campfire</option>
+                  <option value="stream">Stream</option>
+                  <option value="noise">Deep Noise</option>
+                </optgroup>
               </select>
               <button type="button" class="amb-preview" id="btn-amb-preview" title="Preview 5s" aria-label="Preview ambience">&#9654;</button>
             </div>
-            <span class="setting-hint">Base relaxing sound track</span>
+            <span class="setting-hint">Music or base soundscape</span>
           </div>
 
           <div class="setting-card">
@@ -1698,7 +1706,7 @@
       vibration:['on','off'],
       ramp:['off','speedup','slowdown'],
       holdMode:['fixed','adaptive'],
-      ambience:['off','ocean','rain','wind','forest','fire','stream','noise'],
+      ambience:['off','wimhof','ethereal','active','retention','ocean','rain','wind','forest','fire','stream','noise'],
       ambience2:['off','ocean','rain','wind','forest','fire','stream','noise'],
       pacer:['on','off'],
       fullscreen:['on','off'],
@@ -2451,51 +2459,286 @@
         return { slot:slot, type:type, gain:master, noise:noise, filter:filter, extras:extras, timers:timers };
     }
 
+    var MUSIC_TRACKS = {
+      active: './music/active-breathing.mp3',
+      retention: './music/retention.mp3',
+      ethereal: './music/ethereal-ambient.mp3'
+    };
+    var IS_MUSIC = { wimhof:true, ethereal:true, active:true, retention:true };
+
+    /* Music streaming deck manager (HTML5 audio streaming, low memory, equal-power crossfader) */
+    var music = (function() {
+      var deckA = null, deckB = null;
+      var gainA = 0, gainB = 0;
+      var activeTrackType = null;
+      var duckLevel = 1.0;
+      var duckRaf = null, crossfadeRaf = null, stoppingFadeRaf = null;
+      var isPaused = false;
+
+      function getMasterVol() {
+        return (App.Config.get('volAmbience') / 100);
+      }
+
+      function ensureDecks() {
+        if(!deckA) {
+          deckA = new Audio();
+          deckA.loop = true;
+          deckA.preload = 'auto';
+        }
+        if(!deckB) {
+          deckB = new Audio();
+          deckB.loop = true;
+          deckB.preload = 'auto';
+        }
+      }
+
+      function applyGains() {
+        var baseVol = getMasterVol() * duckLevel;
+        if(deckA) deckA.volume = Math.max(0, Math.min(1, baseVol * gainA));
+        if(deckB) deckB.volume = Math.max(0, Math.min(1, baseVol * gainB));
+      }
+
+      function stopFades() {
+        if(crossfadeRaf) { cancelAnimationFrame(crossfadeRaf); crossfadeRaf = null; }
+        if(duckRaf) { cancelAnimationFrame(duckRaf); duckRaf = null; }
+        if(stoppingFadeRaf) { cancelAnimationFrame(stoppingFadeRaf); stoppingFadeRaf = null; }
+      }
+
+      function start(type) {
+        ensureDecks();
+        stopFades();
+        activeTrackType = type;
+        isPaused = false;
+        duckLevel = 1.0;
+
+        if(type === 'wimhof') {
+          if(deckA.src.indexOf('active-breathing.mp3') === -1) {
+            deckA.src = MUSIC_TRACKS.active;
+          }
+          if(deckB.src.indexOf('retention.mp3') === -1) {
+            deckB.src = MUSIC_TRACKS.retention;
+          }
+          deckA.currentTime = 0;
+          deckB.currentTime = 0;
+          gainA = 1; gainB = 0;
+          applyGains();
+          deckA.play().catch(function(){});
+        } else if(type === 'ethereal') {
+          if(deckA.src.indexOf('ethereal-ambient.mp3') === -1) {
+            deckA.src = MUSIC_TRACKS.ethereal;
+          }
+          deckA.currentTime = 0;
+          gainA = 1; gainB = 0;
+          applyGains();
+          deckA.play().catch(function(){});
+        } else if(type === 'active') {
+          if(deckA.src.indexOf('active-breathing.mp3') === -1) {
+            deckA.src = MUSIC_TRACKS.active;
+          }
+          deckA.currentTime = 0;
+          gainA = 1; gainB = 0;
+          applyGains();
+          deckA.play().catch(function(){});
+        } else if(type === 'retention') {
+          if(deckA.src.indexOf('retention.mp3') === -1) {
+            deckA.src = MUSIC_TRACKS.retention;
+          }
+          deckA.currentTime = 0;
+          gainA = 1; gainB = 0;
+          applyGains();
+          deckA.play().catch(function(){});
+        }
+      }
+
+      function crossfade(toB, durationMs) {
+        if(!deckA || !deckB || activeTrackType !== 'wimhof') return;
+        if(crossfadeRaf) cancelAnimationFrame(crossfadeRaf);
+        var dur = durationMs || 1800;
+        var startTime = performance.now();
+        var targetGainA = toB ? 0 : 1;
+        var targetGainB = toB ? 1 : 0;
+
+        if(toB) {
+          deckB.play().catch(function(){});
+        } else {
+          deckA.play().catch(function(){});
+        }
+
+        function step(now) {
+          var progress = Math.min(1, (now - startTime) / dur);
+          var angle = progress * (Math.PI / 2);
+          if(toB) {
+            gainA = Math.cos(angle);
+            gainB = Math.sin(angle);
+          } else {
+            gainA = Math.sin(angle);
+            gainB = Math.cos(angle);
+          }
+          applyGains();
+          if(progress < 1) {
+            crossfadeRaf = requestAnimationFrame(step);
+          } else {
+            gainA = targetGainA;
+            gainB = targetGainB;
+            applyGains();
+            crossfadeRaf = null;
+            if(toB) {
+              deckA.pause();
+            } else {
+              deckB.pause();
+            }
+          }
+        }
+        crossfadeRaf = requestAnimationFrame(step);
+      }
+
+      function duck(on) {
+        if(!deckA) return;
+        if(duckRaf) cancelAnimationFrame(duckRaf);
+        var startLevel = duckLevel;
+        var targetLevel = on ? 0.35 : 1.0;
+        var startTime = performance.now();
+        var dur = 300;
+        function step(now) {
+          var p = Math.min(1, (now - startTime) / dur);
+          duckLevel = startLevel + (targetLevel - startLevel) * p;
+          applyGains();
+          if(p < 1) duckRaf = requestAnimationFrame(step);
+          else duckRaf = null;
+        }
+        duckRaf = requestAnimationFrame(step);
+      }
+
+      function pause() {
+        isPaused = true;
+        if(deckA) deckA.pause();
+        if(deckB) deckB.pause();
+      }
+
+      function resume() {
+        if(!isPaused) return;
+        isPaused = false;
+        if(gainA > 0.01 && deckA) deckA.play().catch(function(){});
+        if(gainB > 0.01 && deckB) deckB.play().catch(function(){});
+      }
+
+      function fadeOutAndStop(durationMs) {
+        stopFades();
+        if(!deckA && !deckB) return;
+        var dur = durationMs || 3000;
+        var startTime = performance.now();
+        var initDuck = duckLevel;
+        function step(now) {
+          var p = Math.min(1, (now - startTime) / dur);
+          var factor = Math.max(0, 1 - p);
+          duckLevel = initDuck * factor;
+          applyGains();
+          if(p < 1) {
+            stoppingFadeRaf = requestAnimationFrame(step);
+          } else {
+            stoppingFadeRaf = null;
+            duckLevel = 1.0;
+            stop();
+          }
+        }
+        stoppingFadeRaf = requestAnimationFrame(step);
+      }
+
+      function stop() {
+        stopFades();
+        if(deckA) { deckA.pause(); try { deckA.currentTime = 0; } catch(e){} }
+        if(deckB) { deckB.pause(); try { deckB.currentTime = 0; } catch(e){} }
+        gainA = 0; gainB = 0;
+        activeTrackType = null;
+      }
+
+      function onStateChange(state) {
+        if(activeTrackType !== 'wimhof') return;
+        if(state === STATES.HOLD) {
+          crossfade(true, 1800);
+        } else if(state === STATES.BREATHING_IN) {
+          if(gainB > 0.5) {
+            crossfade(false, 1500);
+          }
+        }
+      }
+
+      return {
+        start: start,
+        stop: stop,
+        pause: pause,
+        resume: resume,
+        duck: duck,
+        applyVolume: applyGains,
+        fadeOutAndStop: fadeOutAndStop,
+        onStateChange: onStateChange,
+        isPlaying: function() { return !!activeTrackType; }
+      };
+    })();
+
     function start() {
       var t1 = App.Config.get('ambience'), t2 = App.Config.get('ambience2');
       var key = t1 + '|' + t2;
       if(running && key === runningKey) return;
-      if(running) stop();
+      if(running) stop(true);
       if(t1 === 'off' && t2 === 'off') return;
+
+      var hasMusic = !!IS_MUSIC[t1];
+      if(hasMusic) {
+        music.start(t1);
+      }
+
       var c = App.Audio.getCtx();
-      if(!c) return;
-      try {
-        master = c.createGain();
-        master.gain.setValueAtTime(0.0001, c.currentTime);
-        master.gain.exponentialRampToValueAtTime(MASTER, c.currentTime + 2);
-        master.connect(c.destination);
-        scenes = [];
-        if(t1 !== 'off') scenes.push(buildScene(c, t1, 0));
-        if(t2 !== 'off') scenes.push(buildScene(c, t2, 1));
-        scenes.forEach(function(s) { s.gain.connect(master); });
-        running = true; runningKey = key;
+      if(c && (!hasMusic || t2 !== 'off')) {
+        try {
+          master = c.createGain();
+          master.gain.setValueAtTime(0.0001, c.currentTime);
+          master.gain.exponentialRampToValueAtTime(MASTER, c.currentTime + 2);
+          master.connect(c.destination);
+          scenes = [];
+          if(!hasMusic && t1 !== 'off') scenes.push(buildScene(c, t1, 0));
+          if(t2 !== 'off') scenes.push(buildScene(c, t2, 1));
+          scenes.forEach(function(s) { s.gain.connect(master); });
+        } catch(e) { scenes = []; master = null; }
+      }
+
+      running = true; runningKey = key;
+      if(hasMusic) {
+        App.Scene.start(t2 !== 'off' ? t2 : 'stardust');
+      } else {
         App.Scene.start(t1 !== 'off' ? t1 : t2);
-      } catch(e) { scenes = []; master = null; running = false; runningKey = null; }
+      }
     }
 
-    function stop() {
+    function stop(immediate) {
       App.Scene.stop();
+      if(music.isPlaying()) {
+        if(immediate) music.stop();
+        else music.fadeOutAndStop(3000);
+      }
       if(!running) { return; }
       var c = App.Audio.getCtx();
-      try {
-        scenes.forEach(function(s) {
-          s.timers.forEach(function(id) { clearInterval(id); clearTimeout(id); });
-        });
-        var t = c.currentTime;
-        master.gain.cancelScheduledValues(t);
-        master.gain.setValueAtTime(Math.max(0.0001, master.gain.value), t);
-        master.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
-        var oldScenes = scenes, oldMaster = master;
-        setTimeout(function() {
-          try {
-            oldScenes.forEach(function(s) {
-              try { s.noise.stop(); } catch(e) {}
-              s.extras.forEach(function(x) { try { x.stop(); } catch(e) {} });
-            });
-            oldMaster.disconnect();
-          } catch(e) {}
-        }, 1400);
-      } catch(e) {}
+      if(c && master) {
+        try {
+          scenes.forEach(function(s) {
+            s.timers.forEach(function(id) { clearInterval(id); clearTimeout(id); });
+          });
+          var t = c.currentTime;
+          master.gain.cancelScheduledValues(t);
+          master.gain.setValueAtTime(Math.max(0.0001, master.gain.value), t);
+          master.gain.exponentialRampToValueAtTime(0.0001, t + (immediate ? 0.3 : 1.2));
+          var oldScenes = scenes, oldMaster = master;
+          setTimeout(function() {
+            try {
+              oldScenes.forEach(function(s) {
+                try { s.noise.stop(); } catch(e) {}
+                s.extras.forEach(function(x) { try { x.stop(); } catch(e) {} });
+              });
+              oldMaster.disconnect();
+            } catch(e) {}
+          }, immediate ? 400 : 1400);
+        } catch(e) {}
+      }
       scenes = []; master = null; running = false; runningKey = null;
     }
 
@@ -2523,19 +2766,44 @@
     }
 
     function duck(on) {
+      if(music.isPlaying()) music.duck(on);
       if(!running || !master) return;
       var c = App.Audio.getCtx();
       try {
-        master.gain.setTargetAtTime(on ? MASTER*0.2 : MASTER, c.currentTime, 0.4);
+        master.gain.setTargetAtTime(on ? MASTER*0.35 : MASTER, c.currentTime, 0.3);
       } catch(e) {}
     }
 
     function applyVolume() {
-      if(!running) return;
+      if(music.isPlaying()) music.applyVolume();
+      if(!running || !master) return;
       var c = App.Audio.getCtx();
       scenes.forEach(function(s) {
         try { s.gain.setTargetAtTime(slotVol(s.slot), c.currentTime, 0.15); } catch(e) {}
       });
+    }
+
+    function pause() {
+      if(music.isPlaying()) music.pause();
+      duck(true);
+    }
+
+    function resume() {
+      if(music.isPlaying()) music.resume();
+      duck(false);
+    }
+
+    function onStateChange(newState) {
+      if(music.isPlaying()) music.onStateChange(newState);
+      if(newState === STATES.HOLD || newState === STATES.RECOVERY_HOLD) {
+        setCalm();
+      } else if(newState === STATES.SESSION_COMPLETE) {
+        if(App.Config.get('sleepMode') === 'on') {
+          setCalm();
+        } else {
+          stop(false);
+        }
+      }
     }
 
     /* start/stop/switch according to config + session state (called on setting change) */
@@ -2545,21 +2813,41 @@
                    (App.Config.get('ambience') !== 'off' ||
                     App.Config.get('ambience2') !== 'off');
       if(wanted) { start(); applyVolume(); }
-      else stop();
+      else stop(true);
     }
 
     /* 5s preview outside a session (settings button) */
     var previewTimer = null;
     function preview() {
       if(App.Session && App.Session.isActive()) return false;
+      if(previewTimer) {
+        stopPreview();
+        return false;
+      }
       start(); applyVolume();
       clearTimeout(previewTimer);
-      previewTimer = setTimeout(function() { previewTimer = null; sync(); }, 5000);
-      return running;
+      previewTimer = setTimeout(function() {
+        stopPreview();
+      }, 5000);
+      return running || music.isPlaying();
     }
 
-    return { start:start, stop:stop, setBreath:setBreath, setCalm:setCalm,
-             duck:duck, applyVolume:applyVolume, sync:sync, preview:preview };
+    function isPreviewing() {
+      return previewTimer !== null;
+    }
+
+    function stopPreview() {
+      if(previewTimer) {
+        clearTimeout(previewTimer);
+        previewTimer = null;
+      }
+      stop(true);
+      document.querySelectorAll('.amb-preview').forEach(function(b) { b.classList.remove('playing'); });
+    }
+
+    return { start:start, stop:stop, pause:pause, resume:resume, setBreath:setBreath, setCalm:setCalm,
+             duck:duck, applyVolume:applyVolume, sync:sync, preview:preview,
+             isPreviewing:isPreviewing, stopPreview:stopPreview, onStateChange:onStateChange };
   })();
 
   /* ======== App.Pacer ========
@@ -2626,6 +2914,15 @@
       H = canvas.height = window.innerHeight;
     }
     function spawn(anywhere) {
+      if(type === 'stardust') return {
+        x: Math.random()*W, y: anywhere ? Math.random()*H : H + 12,
+        r: 0.9 + Math.random()*1.8,
+        sp: 12 + Math.random()*22,
+        amp: 8 + Math.random()*20,
+        ph: Math.random()*6.28,
+        spP: 0.5 + Math.random()*1.2,
+        a: 0.18 + Math.random()*0.32
+      };
       if(type === 'rain') return {
         x: Math.random()*W, y: anywhere ? Math.random()*H : -30,
         len: 10 + Math.random()*18, sp: 380 + Math.random()*320,
@@ -2658,7 +2955,8 @@
     function initItems() {
       items = [];
       var n = type === 'rain' ? 70 : type === 'wind' ? 44
-            : type === 'forest' ? 18 : type === 'fire' ? 30 : 6;
+            : type === 'forest' ? 18 : type === 'fire' ? 30
+            : type === 'stardust' ? 42 : 6;
       for(var i = 0; i < n; i++) items.push(spawn(true));
     }
     function frame(now) {
@@ -2684,7 +2982,20 @@
       var col = light ? '30,70,100' : '160,200,235';
       for(var i = 0; i < items.length; i++) {
         var it = items[i];
-        if(type === 'rain') {
+        if(type === 'stardust') {
+          it.y -= it.sp*dt;
+          it.ph += dt*it.spP;
+          it.x += Math.sin(it.ph)*dt*14;
+          if(it.y < -15) { items[i] = it = spawn(false); }
+          if(it.x < -15) it.x = W + 15; if(it.x > W + 15) it.x = -15;
+          var pulse = 0.5 + 0.5 * Math.sin(it.ph);
+          var alpha = (it.a * (0.35 + 0.65 * pulse)).toFixed(4);
+          var glowCol = light ? '40,90,160' : '180,215,255';
+          ctx.fillStyle = 'rgba(' + glowCol + ',' + alpha + ')';
+          ctx.beginPath();
+          ctx.arc(it.x, it.y, it.r, 0, 6.283);
+          ctx.fill();
+        } else if(type === 'rain') {
           it.y += it.sp*dt; it.x += it.drift*dt;
           if(it.y > H + 30) { items[i] = it = spawn(false); }
           ctx.strokeStyle = 'rgba(' + col + ',' + it.a + ')';
@@ -2739,6 +3050,7 @@
       rafId = requestAnimationFrame(frame);
     }
     function start(t) {
+      if(t === 'wimhof' || t === 'ethereal' || t === 'active' || t === 'retention') t = 'stardust';
       if(t === 'noise') { stop(); return; }     /* deep noise: no visual */
       if(t === 'stream') t = 'ocean';           /* stream reuses caustics */
       if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -3535,6 +3847,7 @@
     function transition(newState) {
       state = newState;
       App.UI.render(newState);
+      if(App.Ambience && App.Ambience.onStateChange) App.Ambience.onStateChange(newState);
     }
 
     /* Voice cue for a breath, honoring the configured cue mode */
@@ -3736,7 +4049,7 @@
         App.Haptics.complete();
       }
       App.WakeLock.release();
-      App.Ambience.stop();
+      App.Ambience.stop(false);
       exitFullscreen();
       App.Config.setInputsDisabled(false);
       App.UI.setStartButton('start');
@@ -3812,7 +4125,7 @@
         stateBeforePause = state;
         App.Timer.pause();
         App.Voice.speak('pause');
-        App.Ambience.duck(true);
+        App.Ambience.pause();
         transition(STATES.PAUSED);
         App.UI.setStartButton('resume');
       },
@@ -3824,7 +4137,7 @@
         App.UI.setStartButton('pause');
         App.Timer.resume();
         App.WakeLock.request();
-        App.Ambience.duck(false);
+        App.Ambience.resume();
       },
       reset: function() {
         if(state === STATES.SLEEPING) {
@@ -3834,7 +4147,7 @@
         }
         App.Timer.stop();
         App.WakeLock.release();
-        App.Ambience.stop();
+        App.Ambience.stop(true);
         exitFullscreen();
         currentRound=0; breathCount=0; holdAchieved=0;
         roundHolds=[]; roundUrges=[]; stateBeforePause=null;
@@ -4974,12 +5287,17 @@
       });
     });
 
-    /* Ambience preview buttons: hear the current mix for 5 seconds */
+    /* Ambience preview buttons: hear the current mix for 5 seconds (or toggle off) */
     ['btn-amb-preview','btn-amb2-preview'].forEach(function(id) {
       var btn = document.getElementById(id);
       if(!btn) return;
       btn.addEventListener('click', function() {
         App.Audio.init();
+        if(App.Ambience.isPreviewing && App.Ambience.isPreviewing()) {
+          App.Ambience.stopPreview();
+          document.querySelectorAll('.amb-preview').forEach(function(b) { b.classList.remove('playing'); });
+          return;
+        }
         if(!App.Ambience.preview()) return;
         document.querySelectorAll('.amb-preview').forEach(function(b) { b.classList.add('playing'); });
         clearTimeout(btn._pt);
