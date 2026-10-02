@@ -1403,13 +1403,13 @@
                   <option value="active">Active Breathing Only</option>
                   <option value="retention">Deep Retention Only</option>
                 </optgroup>
-                <optgroup label="Nature Soundscapes">
-                  <option value="ocean">Ocean</option>
-                  <option value="rain">Rain</option>
-                  <option value="wind">Wind</option>
-                  <option value="forest">Night Forest</option>
-                  <option value="fire">Campfire</option>
-                  <option value="stream">Stream</option>
+                <optgroup label="Nature Soundscapes (HQ)">
+                  <option value="ocean">Ocean (HQ Waves)</option>
+                  <option value="rain">Rain (HQ Rainfall)</option>
+                  <option value="wind">Wind (HQ Mountain Breeze)</option>
+                  <option value="forest">Night Forest (HQ Crickets & Birds)</option>
+                  <option value="fire">Campfire (HQ Crackle)</option>
+                  <option value="stream">Stream (HQ Mountain Brook)</option>
                   <option value="noise">Deep Noise</option>
                 </optgroup>
               </select>
@@ -1429,12 +1429,12 @@
             <div class="amb-row">
               <select id="cfg-ambience2">
                 <option value="off">Off</option>
-                <option value="ocean">Ocean</option>
-                <option value="rain">Rain</option>
-                <option value="wind">Wind</option>
-                <option value="forest">Night Forest</option>
-                <option value="fire">Campfire</option>
-                <option value="stream">Stream</option>
+                <option value="ocean">Ocean (HQ Waves)</option>
+                <option value="rain">Rain (HQ Rainfall)</option>
+                <option value="wind">Wind (HQ Mountain Breeze)</option>
+                <option value="forest">Night Forest (HQ Crickets & Birds)</option>
+                <option value="fire">Campfire (HQ Crackle)</option>
+                <option value="stream">Stream (HQ Mountain Brook)</option>
                 <option value="noise">Deep Noise</option>
               </select>
               <button type="button" class="amb-preview" id="btn-amb2-preview" title="Preview 5s" aria-label="Preview ambience mix">&#9654;</button>
@@ -2222,6 +2222,64 @@
       return App.Config.get(slot === 0 ? 'volAmbience' : 'volAmbience2') / 100;
     }
 
+    var NATURE_TRACKS = {
+      rain: './music/rain.mp3',
+      ocean: './music/ocean.mp3',
+      wind: './music/wind.mp3',
+      forest: './music/forest.mp3',
+      fire: './music/fire.mp3',
+      stream: './music/stream.mp3'
+    };
+    var natureBuffers = {};
+    var loadingBuffers = {};
+
+    function preloadNatureBuffer(c, type, onReady) {
+      if(!NATURE_TRACKS[type]) return;
+      if(natureBuffers[type]) {
+        if(onReady) onReady(natureBuffers[type]);
+        return;
+      }
+      if(loadingBuffers[type]) {
+        if(onReady) {
+          var checkTimer = setInterval(function() {
+            if(natureBuffers[type]) { clearInterval(checkTimer); onReady(natureBuffers[type]); }
+            else if(!loadingBuffers[type]) { clearInterval(checkTimer); }
+          }, 60);
+        }
+        return;
+      }
+      loadingBuffers[type] = true;
+      fetch(NATURE_TRACKS[type])
+        .then(function(res) {
+          if(!res.ok) throw new Error('Fetch failed: ' + res.status);
+          return res.arrayBuffer();
+        })
+        .then(function(arr) {
+          c.decodeAudioData(arr, function(buf) {
+            natureBuffers[type] = buf;
+            loadingBuffers[type] = false;
+            if(onReady) onReady(buf);
+          }, function() {
+            loadingBuffers[type] = false;
+          });
+        })
+        .catch(function() {
+          loadingBuffers[type] = false;
+        });
+    }
+
+    function preload(type) {
+      var c = App.Audio.getCtx();
+      if(!c) return;
+      if(type) {
+        preloadNatureBuffer(c, type);
+      } else {
+        var t1 = App.Config.get('ambience'), t2 = App.Config.get('ambience2');
+        if(NATURE_TRACKS[t1]) preloadNatureBuffer(c, t1);
+        if(NATURE_TRACKS[t2]) preloadNatureBuffer(c, t2);
+      }
+    }
+
     function makeNoiseBuffer(c, brown) {
       var len = 2 * c.sampleRate;
       var buf = c.createBuffer(1, len, c.sampleRate);
@@ -2355,93 +2413,240 @@
         var extras = [];
 
         if(type === 'ocean') {
-          noise.buffer = makeNoiseBuffer(c, true); noise.loop = true;
-          filter.type = 'lowpass'; filter.frequency.value = 450; filter.Q.value = 0.7;
-          noiseGain.gain.value = 0.5;
-          noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
-          /* soft pad: root + fifth, barely audible */
-          var o1 = c.createOscillator(); o1.type = 'sine'; o1.frequency.value = 110;
-          var o2 = c.createOscillator(); o2.type = 'sine'; o2.frequency.value = 164.8;
-          var padGain = c.createGain(); padGain.gain.value = 0.10;
-          o1.connect(padGain); o2.connect(padGain); padGain.connect(master);
-          o1.start(); o2.start();
-          extras.push(o1, o2);
+          var hqOceanBuf = natureBuffers.ocean;
+          if(hqOceanBuf) {
+            noise.buffer = hqOceanBuf; noise.loop = true;
+            filter.type = 'lowpass'; filter.frequency.value = 1400; filter.Q.value = 0.5;
+            noiseGain.gain.value = 0.85;
+            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
+          } else {
+            noise.buffer = makeNoiseBuffer(c, true); noise.loop = true;
+            filter.type = 'lowpass'; filter.frequency.value = 450; filter.Q.value = 0.7;
+            noiseGain.gain.value = 0.5;
+            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
+            /* soft pad: root + fifth, barely audible */
+            var o1 = c.createOscillator(); o1.type = 'sine'; o1.frequency.value = 110;
+            var o2 = c.createOscillator(); o2.type = 'sine'; o2.frequency.value = 164.8;
+            var padGain = c.createGain(); padGain.gain.value = 0.10;
+            o1.connect(padGain); o2.connect(padGain); padGain.connect(master);
+            o1.start(); o2.start();
+            extras.push(o1, o2);
+            preloadNatureBuffer(c, 'ocean', function(buf) {
+              if(!running) return;
+              try {
+                var hq = c.createBufferSource();
+                hq.buffer = buf; hq.loop = true;
+                var hqGain = c.createGain();
+                hqGain.gain.setValueAtTime(0.0001, c.currentTime);
+                hqGain.gain.linearRampToValueAtTime(0.85, c.currentTime + 1.5);
+                hq.connect(filter); filter.frequency.setTargetAtTime(1400, c.currentTime, 0.5);
+                hqGain.connect(master);
+                hq.start();
+                noiseGain.gain.linearRampToValueAtTime(0.0001, c.currentTime + 1.2);
+                padGain.gain.linearRampToValueAtTime(0.0001, c.currentTime + 1.2);
+                extras.push(hq);
+              } catch(e) {}
+            });
+          }
         } else if(type === 'rain') {
-          noise.buffer = makeNoiseBuffer(c, false); noise.loop = true;
-          var hp = c.createBiquadFilter();
-          hp.type = 'highpass'; hp.frequency.value = 400; hp.Q.value = 0.5;
-          filter.type = 'lowpass'; filter.frequency.value = 3800; filter.Q.value = 0.4;
-          noiseGain.gain.value = 0.16;
-          noise.connect(hp); hp.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
-          /* droplet patter */
-          timers.push(setInterval(function() {
-            if(Math.random() < 0.75) droplet(c, master);
-          }, 120));
-          /* occasional distant thunder */
-          var scheduleThunder = function() {
-            timers.push(setTimeout(function() {
-              thunder(c, master);
-              scheduleThunder();
-            }, 15000 + Math.random()*30000));
-          };
-          scheduleThunder();
+          var hqRainBuf = natureBuffers.rain;
+          if(hqRainBuf) {
+            noise.buffer = hqRainBuf; noise.loop = true;
+            filter.type = 'lowpass'; filter.frequency.value = 5200; filter.Q.value = 0.4;
+            noiseGain.gain.value = 0.75;
+            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
+            /* occasional distant thunder adds natural ambiance */
+            var scheduleThunder = function() {
+              timers.push(setTimeout(function() {
+                thunder(c, master);
+                scheduleThunder();
+              }, 20000 + Math.random()*35000));
+            };
+            scheduleThunder();
+          } else {
+            noise.buffer = makeNoiseBuffer(c, false); noise.loop = true;
+            var hp = c.createBiquadFilter();
+            hp.type = 'highpass'; hp.frequency.value = 400; hp.Q.value = 0.5;
+            filter.type = 'lowpass'; filter.frequency.value = 3800; filter.Q.value = 0.4;
+            noiseGain.gain.value = 0.16;
+            noise.connect(hp); hp.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
+            /* droplet patter */
+            timers.push(setInterval(function() {
+              if(Math.random() < 0.75) droplet(c, master);
+            }, 120));
+            /* occasional distant thunder */
+            var scheduleThunder = function() {
+              timers.push(setTimeout(function() {
+                thunder(c, master);
+                scheduleThunder();
+              }, 15000 + Math.random()*30000));
+            };
+            scheduleThunder();
+            preloadNatureBuffer(c, 'rain', function(buf) {
+              if(!running) return;
+              try {
+                var hq = c.createBufferSource();
+                hq.buffer = buf; hq.loop = true;
+                var hqGain = c.createGain();
+                hqGain.gain.setValueAtTime(0.0001, c.currentTime);
+                hqGain.gain.linearRampToValueAtTime(0.75, c.currentTime + 1.5);
+                hq.connect(filter); filter.frequency.setTargetAtTime(5200, c.currentTime, 0.5);
+                hqGain.connect(master);
+                hq.start();
+                noiseGain.gain.linearRampToValueAtTime(0.0001, c.currentTime + 1.2);
+                extras.push(hq);
+              } catch(e) {}
+            });
+          }
         } else if(type === 'wind') {
-          noise.buffer = makeNoiseBuffer(c, true); noise.loop = true;
-          filter.type = 'bandpass'; filter.frequency.value = 500; filter.Q.value = 1.8;
-          noiseGain.gain.value = 0.9;
-          noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
-          /* slow wandering howl + gusts */
-          var lfo = c.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 0.07;
-          var lfoGain = c.createGain(); lfoGain.gain.value = 160;
-          lfo.connect(lfoGain); lfoGain.connect(filter.frequency);
-          var gust = c.createOscillator(); gust.type = 'sine'; gust.frequency.value = 0.13;
-          var gustGain = c.createGain(); gustGain.gain.value = 0.25;
-          gust.connect(gustGain); gustGain.connect(noiseGain.gain);
-          lfo.start(); gust.start();
-          extras.push(lfo, gust);
+          var hqWindBuf = natureBuffers.wind;
+          if(hqWindBuf) {
+            noise.buffer = hqWindBuf; noise.loop = true;
+            filter.type = 'lowpass'; filter.frequency.value = 1400; filter.Q.value = 0.6;
+            noiseGain.gain.value = 0.85;
+            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
+          } else {
+            noise.buffer = makeNoiseBuffer(c, true); noise.loop = true;
+            filter.type = 'bandpass'; filter.frequency.value = 500; filter.Q.value = 1.8;
+            noiseGain.gain.value = 0.9;
+            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
+            /* slow wandering howl + gusts */
+            var lfo = c.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 0.07;
+            var lfoGain = c.createGain(); lfoGain.gain.value = 160;
+            lfo.connect(lfoGain); lfoGain.connect(filter.frequency);
+            var gust = c.createOscillator(); gust.type = 'sine'; gust.frequency.value = 0.13;
+            var gustGain = c.createGain(); gustGain.gain.value = 0.25;
+            gust.connect(gustGain); gustGain.connect(noiseGain.gain);
+            lfo.start(); gust.start();
+            extras.push(lfo, gust);
+            preloadNatureBuffer(c, 'wind', function(buf) {
+              if(!running) return;
+              try {
+                var hq = c.createBufferSource();
+                hq.buffer = buf; hq.loop = true;
+                var hqGain = c.createGain();
+                hqGain.gain.setValueAtTime(0.0001, c.currentTime);
+                hqGain.gain.linearRampToValueAtTime(0.85, c.currentTime + 1.5);
+                hq.connect(filter); filter.frequency.setTargetAtTime(1400, c.currentTime, 0.5);
+                hqGain.connect(master);
+                hq.start();
+                noiseGain.gain.linearRampToValueAtTime(0.0001, c.currentTime + 1.2);
+                extras.push(hq);
+              } catch(e) {}
+            });
+          }
         } else if(type === 'forest') {
-          /* quiet night air + cricket chorus */
-          noise.buffer = makeNoiseBuffer(c, true); noise.loop = true;
-          filter.type = 'lowpass'; filter.frequency.value = 300; filter.Q.value = 0.5;
-          noiseGain.gain.value = 0.35;
-          noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
-          timers.push(setInterval(function() {
-            if(Math.random() < 0.6) cricket(c, master);
-          }, 700));
+          var hqForestBuf = natureBuffers.forest;
+          if(hqForestBuf) {
+            noise.buffer = hqForestBuf; noise.loop = true;
+            filter.type = 'lowpass'; filter.frequency.value = 4500; filter.Q.value = 0.4;
+            noiseGain.gain.value = 0.80;
+            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
+          } else {
+            /* quiet night air + cricket chorus */
+            noise.buffer = makeNoiseBuffer(c, true); noise.loop = true;
+            filter.type = 'lowpass'; filter.frequency.value = 300; filter.Q.value = 0.5;
+            noiseGain.gain.value = 0.35;
+            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
+            timers.push(setInterval(function() {
+              if(Math.random() < 0.6) cricket(c, master);
+            }, 700));
+            preloadNatureBuffer(c, 'forest', function(buf) {
+              if(!running) return;
+              try {
+                var hq = c.createBufferSource();
+                hq.buffer = buf; hq.loop = true;
+                var hqGain = c.createGain();
+                hqGain.gain.setValueAtTime(0.0001, c.currentTime);
+                hqGain.gain.linearRampToValueAtTime(0.80, c.currentTime + 1.5);
+                hq.connect(filter); filter.frequency.setTargetAtTime(4500, c.currentTime, 0.5);
+                hqGain.connect(master);
+                hq.start();
+                noiseGain.gain.linearRampToValueAtTime(0.0001, c.currentTime + 1.2);
+                extras.push(hq);
+              } catch(e) {}
+            });
+          }
         } else if(type === 'fire') {
-          /* warm low rumble with breathing flame + crackles */
-          noise.buffer = makeNoiseBuffer(c, true); noise.loop = true;
-          filter.type = 'lowpass'; filter.frequency.value = 400; filter.Q.value = 0.6;
-          noiseGain.gain.value = 0.55;
-          noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
-          var flame = c.createOscillator(); flame.type = 'sine'; flame.frequency.value = 0.11;
-          var flameGain = c.createGain(); flameGain.gain.value = 0.12;
-          flame.connect(flameGain); flameGain.connect(noiseGain.gain);
-          flame.start();
-          extras.push(flame);
-          timers.push(setInterval(function() {
-            if(Math.random() < 0.45) crackle(c, master);
-          }, 90));
+          var hqFireBuf = natureBuffers.fire;
+          if(hqFireBuf) {
+            noise.buffer = hqFireBuf; noise.loop = true;
+            filter.type = 'lowpass'; filter.frequency.value = 3200; filter.Q.value = 0.5;
+            noiseGain.gain.value = 0.80;
+            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
+          } else {
+            /* warm low rumble with breathing flame + crackles */
+            noise.buffer = makeNoiseBuffer(c, true); noise.loop = true;
+            filter.type = 'lowpass'; filter.frequency.value = 400; filter.Q.value = 0.6;
+            noiseGain.gain.value = 0.55;
+            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
+            var flame = c.createOscillator(); flame.type = 'sine'; flame.frequency.value = 0.11;
+            var flameGain = c.createGain(); flameGain.gain.value = 0.12;
+            flame.connect(flameGain); flameGain.connect(noiseGain.gain);
+            flame.start();
+            extras.push(flame);
+            timers.push(setInterval(function() {
+              if(Math.random() < 0.45) crackle(c, master);
+            }, 90));
+            preloadNatureBuffer(c, 'fire', function(buf) {
+              if(!running) return;
+              try {
+                var hq = c.createBufferSource();
+                hq.buffer = buf; hq.loop = true;
+                var hqGain = c.createGain();
+                hqGain.gain.setValueAtTime(0.0001, c.currentTime);
+                hqGain.gain.linearRampToValueAtTime(0.80, c.currentTime + 1.5);
+                hq.connect(filter); filter.frequency.setTargetAtTime(3200, c.currentTime, 0.5);
+                hqGain.connect(master);
+                hq.start();
+                noiseGain.gain.linearRampToValueAtTime(0.0001, c.currentTime + 1.2);
+                extras.push(hq);
+              } catch(e) {}
+            });
+          }
         } else if(type === 'stream') {
-          /* bright water bed + wandering gurgle band + burbles */
-          noise.buffer = makeNoiseBuffer(c, false); noise.loop = true;
-          filter.type = 'lowpass'; filter.frequency.value = 2400; filter.Q.value = 0.6;
-          noiseGain.gain.value = 0.20;
-          noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
-          var gurgle = c.createBufferSource();
-          gurgle.buffer = noise.buffer; gurgle.loop = true;
-          var gBand = c.createBiquadFilter();
-          gBand.type = 'bandpass'; gBand.frequency.value = 900; gBand.Q.value = 2;
-          var gGain = c.createGain(); gGain.gain.value = 0.25;
-          gurgle.connect(gBand); gBand.connect(gGain); gGain.connect(master);
-          var gLfo = c.createOscillator(); gLfo.type = 'sine'; gLfo.frequency.value = 0.3;
-          var gLfoGain = c.createGain(); gLfoGain.gain.value = 250;
-          gLfo.connect(gLfoGain); gLfoGain.connect(gBand.frequency);
-          gurgle.start(); gLfo.start();
-          extras.push(gurgle, gLfo);
-          timers.push(setInterval(function() {
-            if(Math.random() < 0.5) burble(c, master);
-          }, 250));
+          var hqStreamBuf = natureBuffers.stream;
+          if(hqStreamBuf) {
+            noise.buffer = hqStreamBuf; noise.loop = true;
+            filter.type = 'lowpass'; filter.frequency.value = 3500; filter.Q.value = 0.5;
+            noiseGain.gain.value = 0.75;
+            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
+          } else {
+            /* bright water bed + wandering gurgle band + burbles */
+            noise.buffer = makeNoiseBuffer(c, false); noise.loop = true;
+            filter.type = 'lowpass'; filter.frequency.value = 2400; filter.Q.value = 0.6;
+            noiseGain.gain.value = 0.20;
+            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
+            var gurgle = c.createBufferSource();
+            gurgle.buffer = noise.buffer; gurgle.loop = true;
+            var gBand = c.createBiquadFilter();
+            gBand.type = 'bandpass'; gBand.frequency.value = 900; gBand.Q.value = 2;
+            var gGain = c.createGain(); gGain.gain.value = 0.25;
+            gurgle.connect(gBand); gBand.connect(gGain); gGain.connect(master);
+            var gLfo = c.createOscillator(); gLfo.type = 'sine'; gLfo.frequency.value = 0.3;
+            var gLfoGain = c.createGain(); gLfoGain.gain.value = 250;
+            gLfo.connect(gLfoGain); gLfoGain.connect(gBand.frequency);
+            gurgle.start(); gLfo.start();
+            extras.push(gurgle, gLfo);
+            timers.push(setInterval(function() {
+              if(Math.random() < 0.5) burble(c, master);
+            }, 250));
+            preloadNatureBuffer(c, 'stream', function(buf) {
+              if(!running) return;
+              try {
+                var hq = c.createBufferSource();
+                hq.buffer = buf; hq.loop = true;
+                var hqGain = c.createGain();
+                hqGain.gain.setValueAtTime(0.0001, c.currentTime);
+                hqGain.gain.linearRampToValueAtTime(0.75, c.currentTime + 1.5);
+                hq.connect(filter); filter.frequency.setTargetAtTime(3500, c.currentTime, 0.5);
+                hqGain.connect(master);
+                hq.start();
+                noiseGain.gain.linearRampToValueAtTime(0.0001, c.currentTime + 1.2);
+                extras.push(hq);
+              } catch(e) {}
+            });
+          }
         } else { /* noise: deep featureless brown noise */
           noise.buffer = makeNoiseBuffer(c, true); noise.loop = true;
           filter.type = 'lowpass'; filter.frequency.value = 220; filter.Q.value = 0.4;
@@ -2683,6 +2888,8 @@
       if(running) stop(true);
       if(t1 === 'off' && t2 === 'off') return;
 
+      preload();
+
       var hasMusic = !!IS_MUSIC[t1];
       if(hasMusic) {
         music.start(t1);
@@ -2749,7 +2956,23 @@
       if(!running) return;
       var c = App.Audio.getCtx();
       scenes.forEach(function(s) {
-        var m = BREATH_F[s.type] || BREATH_F.ocean;
+        var isHQ = !!natureBuffers[s.type];
+        var m;
+        if(isHQ && s.type === 'ocean') {
+          m = [550, 1650];
+        } else if(isHQ && s.type === 'rain') {
+          m = [2500, 4000];
+        } else if(isHQ && s.type === 'wind') {
+          m = [600, 1800];
+        } else if(isHQ && s.type === 'forest') {
+          m = [1800, 3500];
+        } else if(isHQ && s.type === 'fire') {
+          m = [1200, 2600];
+        } else if(isHQ && s.type === 'stream') {
+          m = [1500, 3200];
+        } else {
+          m = BREATH_F[s.type] || BREATH_F.ocean;
+        }
         try { s.filter.frequency.setTargetAtTime(m[0] + m[1]*p, c.currentTime, 0.12); } catch(e) {}
       });
     }
@@ -2760,7 +2983,15 @@
       if(!running) return;
       var c = App.Audio.getCtx();
       scenes.forEach(function(s) {
-        var f = CALM_F[s.type] || CALM_F.ocean;
+        var isHQ = !!natureBuffers[s.type];
+        var f;
+        if(isHQ && s.type === 'ocean') f = 500;
+        else if(isHQ && s.type === 'rain') f = 2400;
+        else if(isHQ && s.type === 'wind') f = 550;
+        else if(isHQ && s.type === 'forest') f = 1600;
+        else if(isHQ && s.type === 'fire') f = 1000;
+        else if(isHQ && s.type === 'stream') f = 1400;
+        else f = CALM_F[s.type] || CALM_F.ocean;
         try { s.filter.frequency.setTargetAtTime(f, c.currentTime, 0.8); } catch(e) {}
       });
     }
@@ -2824,6 +3055,7 @@
         stopPreview();
         return false;
       }
+      preload();
       start(); applyVolume();
       clearTimeout(previewTimer);
       previewTimer = setTimeout(function() {
@@ -2846,7 +3078,7 @@
     }
 
     return { start:start, stop:stop, pause:pause, resume:resume, setBreath:setBreath, setCalm:setCalm,
-             duck:duck, applyVolume:applyVolume, sync:sync, preview:preview,
+             duck:duck, applyVolume:applyVolume, sync:sync, preview:preview, preload:preload,
              isPreviewing:isPreviewing, stopPreview:stopPreview, onStateChange:onStateChange };
   })();
 
@@ -5099,6 +5331,8 @@
       if(tabName) selectTab(tabName);
       updatePresetBadge();
       updateSummaryPill();
+      if(App.Audio) App.Audio.init();
+      if(App.Ambience && App.Ambience.preload) App.Ambience.preload();
       if(backdrop) backdrop.classList.remove('hidden');
       if(drawer)   drawer.classList.remove('hidden');
       if(drawer)   drawer.offsetHeight; /* trigger reflow */
@@ -5252,6 +5486,7 @@
     function primeAudio() {
       App.Audio.init();
       App.Voice.init();
+      if(App.Ambience && App.Ambience.preload) App.Ambience.preload();
       document.removeEventListener('pointerdown', primeAudio);
       document.removeEventListener('keydown', primeAudio);
     }
@@ -5270,6 +5505,7 @@
           App.Config.save();
           App.Presets.updateSelect();
           App.Ambience.sync();
+          if(App.Ambience && App.Ambience.preload) App.Ambience.preload();
           App.Theme.autoCheck();
           if(App.SettingsDrawer) {
             App.SettingsDrawer.updateSummaryPill();
