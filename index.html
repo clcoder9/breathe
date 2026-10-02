@@ -1446,7 +1446,7 @@
         <select id="cfg-preset" aria-label="Breathing Preset">
           <option value="">Custom</option>
           <optgroup label="Core Protocols">
-            <option value="pranayama">Classic Breath Hold (Wim Hof / Pranayama)</option>
+            <option value="pranayama">Pranayama</option>
             <option value="box">Box Breathing (4-4-4-4)</option>
             <option value="fourSevenEight">4-7-8 Relaxing Breath</option>
             <option value="a52">A52 Cadence (5-5-2)</option>
@@ -1525,7 +1525,7 @@
             <label for="cfg-inhale">Inhale Duration (s)</label>
             <div class="stepper-wrap">
               <button type="button" class="stepper-btn btn-dec" data-target="cfg-inhale" aria-label="Decrease inhale duration">&minus;</button>
-              <input type="number" id="cfg-inhale" min="1" max="10" step="0.5" value="2">
+              <input type="number" id="cfg-inhale" min="1" max="10" step="0.5" value="1.5">
               <button type="button" class="stepper-btn btn-inc" data-target="cfg-inhale" aria-label="Increase inhale duration">&plus;</button>
             </div>
             <span class="setting-hint">Seconds per breath expansion</span>
@@ -1535,7 +1535,7 @@
             <label for="cfg-exhale">Exhale Duration (s)</label>
             <div class="stepper-wrap">
               <button type="button" class="stepper-btn btn-dec" data-target="cfg-exhale" aria-label="Decrease exhale duration">&minus;</button>
-              <input type="number" id="cfg-exhale" min="1" max="10" step="0.5" value="3">
+              <input type="number" id="cfg-exhale" min="1" max="10" step="0.5" value="1.5">
               <button type="button" class="stepper-btn btn-inc" data-target="cfg-exhale" aria-label="Increase exhale duration">&plus;</button>
             </div>
             <span class="setting-hint">Seconds per breath release</span>
@@ -1702,7 +1702,7 @@
               <select id="cfg-ambience">
                 <option value="off">Off</option>
                 <optgroup label="Lyria Studio Music">
-                  <option value="wimhof">Dynamic Wim Hof (Adaptive)</option>
+                  <option value="pranayama">Dynamic Pranayama (Adaptive)</option>
                   <option value="ethereal">Ethereal Ambient (Relaxing)</option>
                   <option value="active">Active Breathing Only</option>
                   <option value="retention">Deep Retention Only</option>
@@ -2110,7 +2110,7 @@
     var SK = 'whm_config';
     var defaults = {
       breathsPerRound:30, holdStartTime:60, holdIncrement:15,
-      rounds:3, inhaleDuration:2, exhaleDuration:3,
+      rounds:5, inhaleDuration:1.5, exhaleDuration:1.5,
       pauseAfterInhale:0, pauseAfterExhale:0,
       recoveryHold:15, ramp:'off', holdMode:'fixed',
       voiceMode:'smart', vibration:'on', ambience:'off', ambience2:'off',
@@ -2132,7 +2132,7 @@
       vibration:['on','off'],
       ramp:['off','speedup','slowdown'],
       holdMode:['fixed','adaptive'],
-      ambience:['off','wimhof','ethereal','active','retention','ocean','rain','wind','forest','fire','stream','noise'],
+      ambience:['off','pranayama','wimhof','ethereal','active','retention','ocean','rain','wind','forest','fire','stream','noise'],
       ambience2:['off','ocean','rain','wind','forest','fire','stream','noise'],
       pacer:['on','off'],
       fullscreen:['on','off'],
@@ -2256,7 +2256,7 @@
     var presets = {
       pranayama: {
         breathsPerRound:30, holdStartTime:60, holdIncrement:15,
-        rounds:5, inhaleDuration:2, exhaleDuration:2,
+        rounds:5, inhaleDuration:1.5, exhaleDuration:1.5,
         pauseAfterInhale:0, pauseAfterExhale:0,
         recoveryHold:15, ramp:'off', holdMode:'fixed'
       },
@@ -3192,7 +3192,7 @@
       retention: './music/retention.mp3',
       ethereal: './music/ethereal-ambient.mp3'
     };
-    var IS_MUSIC = { wimhof:true, ethereal:true, active:true, retention:true };
+    var IS_MUSIC = { pranayama:true, wimhof:true, ethereal:true, active:true, retention:true };
 
     /* Music streaming deck manager (HTML5 audio streaming, low memory, equal-power crossfader) */
     var music = (function() {
@@ -3239,7 +3239,7 @@
         isPaused = false;
         duckLevel = 1.0;
 
-        if(type === 'wimhof') {
+        if(type === 'pranayama' || type === 'wimhof') {
           if(deckA.src.indexOf('active-breathing.mp3') === -1) {
             deckA.src = MUSIC_TRACKS.active;
           }
@@ -3279,7 +3279,7 @@
       }
 
       function crossfade(toB, durationMs) {
-        if(!deckA || !deckB || activeTrackType !== 'wimhof') return;
+        if(!deckA || !deckB || (activeTrackType !== 'pranayama' && activeTrackType !== 'wimhof')) return;
         if(crossfadeRaf) cancelAnimationFrame(crossfadeRaf);
         var dur = durationMs || 1800;
         var startTime = performance.now();
@@ -3381,7 +3381,7 @@
       }
 
       function onStateChange(state) {
-        if(activeTrackType !== 'wimhof') return;
+        if(activeTrackType !== 'pranayama' && activeTrackType !== 'wimhof') return;
         if(state === STATES.HOLD) {
           crossfade(true, 1800);
         } else if(state === STATES.BREATHING_IN) {
@@ -3805,7 +3805,7 @@
       rafId = requestAnimationFrame(frame);
     }
     function start(t) {
-      if(t === 'wimhof' || t === 'ethereal' || t === 'active' || t === 'retention') t = 'stardust';
+      if(t === 'pranayama' || t === 'wimhof' || t === 'ethereal' || t === 'active' || t === 'retention') t = 'stardust';
       if(t === 'noise') { stop(); return; }     /* deep noise: no visual */
       if(t === 'stream') t = 'ocean';           /* stream reuses caustics */
       if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
