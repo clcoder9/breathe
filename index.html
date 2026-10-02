@@ -1446,10 +1446,10 @@
         <select id="cfg-preset" aria-label="Breathing Preset">
           <option value="">Custom</option>
           <optgroup label="Core Protocols">
-            <option value="pranayama">Pranayama Style</option>
-            <option value="box">Box Breathing</option>
-            <option value="a52">A52</option>
-            <option value="fourSevenEight">4-7-8</option>
+            <option value="pranayama">Classic Breath Hold (Wim Hof / Pranayama)</option>
+            <option value="box">Box Breathing (4-4-4-4)</option>
+            <option value="fourSevenEight">4-7-8 Relaxing Breath</option>
+            <option value="a52">A52 Cadence (5-5-2)</option>
           </optgroup>
           <optgroup label="7-Day Journey">
             <option value="journey_d1">Day 1: Foundations</option>
@@ -2376,13 +2376,14 @@
 
     function rebuildCustomOptions() {
       if(!selectEl) return;
-      var og = selectEl.querySelector('optgroup');
+      var og = selectEl.querySelector('optgroup[data-custom="true"]') || selectEl.querySelector('optgroup[label="My Presets"]');
       if(og) og.remove();
       var custom = loadCustom();
       var names = Object.keys(custom);
       if(!names.length) return;
       og = document.createElement('optgroup');
       og.label = 'My Presets';
+      og.setAttribute('data-custom', 'true');
       names.sort().forEach(function(n) {
         var o = document.createElement('option');
         o.value = 'c:' + n;
