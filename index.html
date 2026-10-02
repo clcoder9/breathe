@@ -1085,6 +1085,290 @@
     @keyframes pause-glow  { 0%,100% { opacity: 0.12; } 50% { opacity: 0.35; } }
     .glow-pause     { animation: pause-glow 1s ease-in-out infinite; }
 
+    /* STREAK BADGE */
+    .streak-badge-btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 10px; border-radius: 20px;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      color: #F59E0B; font-size: 0.8rem; font-weight: 600;
+      cursor: pointer; transition: transform 0.15s, background 0.2s, border-color 0.2s;
+      font-family: var(--font-stack); line-height: 1; flex-shrink: 0;
+    }
+    .streak-badge-btn:hover {
+      background: rgba(245, 158, 11, 0.22);
+      transform: scale(1.05);
+    }
+    .streak-badge-btn.active-streak {
+      animation: streak-glow 2.5s ease-in-out infinite alternate;
+    }
+    @keyframes streak-glow {
+      from { box-shadow: 0 0 4px rgba(245, 158, 11, 0.2); }
+      to   { box-shadow: 0 0 12px rgba(245, 158, 11, 0.5); }
+    }
+    .streak-flame { font-size: 0.95rem; }
+
+    /* QUICK SOUND HUD */
+    .quick-sound-wrap { position: relative; }
+    .quick-sound-popover {
+      position: absolute; top: calc(100% + 10px); right: 0;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 12px; padding: 14px 16px;
+      min-width: 220px; box-shadow: 0 12px 32px rgba(0,0,0,0.55);
+      z-index: 120; display: flex; flex-direction: column; gap: 10px;
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    }
+    .quick-sound-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      font-size: 0.78rem; color: var(--color-text-secondary);
+    }
+    .quick-sound-row input[type="range"] { flex: 1; max-width: 120px; accent-color: var(--color-inhale); }
+    .qs-toggle-btn {
+      padding: 3px 10px; font-size: 0.72rem; border-radius: 12px;
+      border: 1px solid var(--color-border); background: var(--color-surface-raised);
+      color: var(--color-text-primary); cursor: pointer;
+    }
+    .qs-toggle-btn.muted { background: var(--color-warning); color: #000; font-weight: 600; }
+
+    /* GHOST TARGET PACER */
+    .ghost-pip {
+      fill: #22D3EE; stroke: #0A0E1A; stroke-width: 2;
+      filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.8));
+      transition: cx 0.2s ease, cy 0.2s ease;
+    }
+    .ghost-overtaken {
+      animation: ghost-flash 1s ease-out;
+    }
+    @keyframes ghost-flash {
+      0% { stroke: #22D3EE; stroke-width: 14; }
+      100% { stroke: url(#ring-grad); stroke-width: 7; }
+    }
+    .ghost-label {
+      font-size: 0.72rem; color: var(--color-inhale);
+      letter-spacing: 0.08em; text-transform: uppercase;
+      font-weight: 600; margin-top: 2px;
+    }
+
+    /* HOLD MILESTONE BANNER */
+    .hold-milestone-banner {
+      font-size: 0.78rem; font-weight: 600; color: #FFD700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      background: rgba(255, 215, 0, 0.12);
+      border: 1px solid rgba(255, 215, 0, 0.35);
+      border-radius: 14px; padding: 2px 10px;
+      margin-top: 4px; animation: milestone-pop 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes milestone-pop {
+      0% { opacity: 0; transform: scale(0.85); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* FLOW MODE INDICATOR */
+    .flow-indicator {
+      font-size: 0.74rem; font-weight: 600; letter-spacing: 0.12em;
+      text-transform: uppercase; border-radius: 12px; padding: 2px 8px;
+      margin-top: 3px; transition: opacity 0.3s, transform 0.2s;
+    }
+    .flow-perfect {
+      color: #34D399; background: rgba(52, 211, 153, 0.15);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+    }
+    .flow-good {
+      color: #22D3EE; background: rgba(34, 211, 238, 0.15);
+      border: 1px solid rgba(34, 211, 238, 0.4);
+    }
+    .flow-sync {
+      color: var(--color-text-secondary); background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--color-border);
+    }
+
+    /* VICTORY MODAL 2.0 */
+    #victory-overlay {
+      position: fixed; inset: 0; z-index: 950;
+      background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display: flex; align-items: center; justify-content: center; padding: 16px;
+    }
+    .victory-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 16px; padding: 24px;
+      max-width: 520px; width: 100%;
+      max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+      display: flex; flex-direction: column; gap: 16px;
+      animation: modal-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes modal-enter {
+      from { opacity: 0; transform: scale(0.94) translateY(12px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .victory-header { text-align: center; }
+    .victory-badge {
+      display: inline-block; font-size: 0.7rem; font-weight: 700;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      padding: 3px 12px; border-radius: 20px;
+      background: rgba(52, 211, 153, 0.12);
+      border: 1px solid rgba(52, 211, 153, 0.35);
+      color: var(--color-complete); margin-bottom: 6px;
+    }
+    .victory-badge.gold {
+      background: rgba(255, 215, 0, 0.15);
+      border-color: rgba(255, 215, 0, 0.5);
+      color: #FFD700;
+    }
+    .victory-card h2 {
+      font-size: 1.45rem; font-weight: 700; letter-spacing: 0.06em;
+      color: var(--color-text-primary);
+    }
+    .victory-subtitle {
+      font-size: 0.82rem; color: var(--color-text-secondary); margin-top: 4px;
+    }
+    .victory-metrics-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+    }
+    .v-metric-tile {
+      background: var(--color-surface-raised); border-radius: 10px;
+      padding: 10px 12px; border: 1px solid rgba(255,255,255,0.04);
+    }
+    .v-metric-val {
+      font-size: 1.35rem; font-weight: 300; color: var(--color-text-primary);
+      font-variant-numeric: tabular-nums;
+    }
+    .v-metric-lbl {
+      font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--color-text-secondary); margin-top: 2px;
+    }
+    .v-metric-sub {
+      font-size: 0.68rem; color: var(--color-text-muted); margin-top: 2px;
+    }
+    .victory-progression-wrap {
+      background: var(--color-surface-raised); border-radius: 10px;
+      padding: 12px; border: 1px solid rgba(255,255,255,0.04);
+    }
+    .v-section-title {
+      font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--color-text-secondary); font-weight: 600; margin-bottom: 8px;
+    }
+    .victory-rounds-bars {
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .v-round-bar-row {
+      display: flex; align-items: center; gap: 8px; font-size: 0.72rem;
+    }
+    .v-round-bar-lbl { width: 44px; color: var(--color-text-secondary); }
+    .v-round-bar-track {
+      flex: 1; height: 10px; background: rgba(255,255,255,0.06);
+      border-radius: 5px; overflow: hidden; position: relative;
+    }
+    .v-round-bar-fill {
+      height: 100%; border-radius: 5px;
+      background: linear-gradient(90deg, var(--color-inhale), var(--color-complete));
+      transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .v-round-bar-urge {
+      position: absolute; top: 0; bottom: 0; width: 2px;
+      background: #F59E0B; box-shadow: 0 0 4px #F59E0B;
+    }
+    .v-round-bar-val {
+      width: 48px; text-align: right; color: var(--color-text-primary);
+      font-variant-numeric: tabular-nums; font-weight: 500;
+    }
+    .victory-flow-wrap {
+      background: rgba(34, 211, 238, 0.08); border: 1px solid rgba(34, 211, 238, 0.2);
+      border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; gap: 8px;
+      font-size: 0.78rem; color: var(--color-inhale);
+    }
+    .v-feeling-row {
+      display: flex; gap: 8px; justify-content: center;
+    }
+    .v-feeling-row .feeling-btn {
+      flex: 1; padding: 8px 4px; display: flex; flex-direction: column;
+      align-items: center; gap: 4px; font-size: 1.3rem; border-radius: 10px;
+      background: var(--color-surface-raised); border: 1px solid var(--color-border);
+      color: var(--color-text-primary); cursor: pointer; transition: all 0.2s;
+    }
+    .v-feeling-row .feeling-btn span {
+      font-size: 0.65rem; color: var(--color-text-secondary);
+    }
+    .v-feeling-row .feeling-btn.selected {
+      border-color: var(--color-inhale); background: rgba(34, 211, 238, 0.12);
+      transform: scale(1.05);
+    }
+    .victory-actions {
+      display: flex; gap: 10px; margin-top: 6px;
+    }
+    .victory-actions button { flex: 1; }
+
+    /* TOASTS & ACHIEVEMENTS */
+    .achievement-toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(30px);
+      background: rgba(17, 24, 39, 0.95); border: 1px solid #FFD700;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 15px rgba(255, 215, 0, 0.3);
+      border-radius: 12px; padding: 12px 18px; display: flex; align-items: center;
+      gap: 12px; z-index: 2000; max-width: 90vw; width: 360px;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+      opacity: 0; pointer-events: none; backdrop-filter: blur(12px);
+    }
+    .achievement-toast.toast-in {
+      transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto;
+    }
+    .achieve-toast-icon { font-size: 1.8rem; }
+    .achieve-toast-content { flex: 1; }
+    .achieve-toast-title {
+      font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em;
+      color: #FFD700; font-weight: 700;
+    }
+    .achieve-toast-name {
+      font-size: 0.92rem; font-weight: 600; color: var(--color-text-primary);
+    }
+    .achieve-toast-desc {
+      font-size: 0.72rem; color: var(--color-text-secondary); margin-top: 1px;
+    }
+    .copy-toast {
+      position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+      background: var(--color-surface-raised); border: 1px solid var(--color-border);
+      color: var(--color-text-primary); padding: 6px 14px; border-radius: 20px;
+      font-size: 0.78rem; z-index: 2000; box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      animation: copy-toast-anim 2.5s forwards ease-in-out;
+    }
+    @keyframes copy-toast-anim {
+      0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+      15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+      85% { opacity: 1; transform: translateX(-50%) translateY(0); }
+      100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+    }
+
+    /* ACHIEVEMENTS GRID IN STATS */
+    .achievements-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px; margin-bottom: 20px;
+    }
+    .achieve-card {
+      background: var(--color-surface-raised); border: 1px solid var(--color-border);
+      border-radius: 10px; padding: 10px 8px; text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      position: relative; transition: transform 0.2s, border-color 0.2s;
+    }
+    .achieve-card.unlocked {
+      border-color: rgba(255, 215, 0, 0.4);
+      background: linear-gradient(180deg, rgba(255, 215, 0, 0.08) 0%, var(--color-surface-raised) 100%);
+    }
+    .achieve-card.locked { opacity: 0.45; filter: grayscale(0.8); }
+    .achieve-icon { font-size: 1.5rem; margin-bottom: 2px; }
+    .achieve-name {
+      font-size: 0.72rem; font-weight: 600; color: var(--color-text-primary);
+    }
+    .achieve-desc {
+      font-size: 0.6rem; color: var(--color-text-secondary); line-height: 1.25;
+    }
+    .stats-data-actions {
+      display: flex; gap: 10px; margin-top: 14px; padding-top: 14px;
+      border-top: 1px solid var(--color-border);
+    }
+    .stats-data-actions button { flex: 1; }
+
     /* RESPONSIVE */
     @media (max-width: 480px) {
       .header-content { gap: 4px; }
@@ -1161,10 +1445,21 @@
       <div class="preset-row">
         <select id="cfg-preset" aria-label="Breathing Preset">
           <option value="">Custom</option>
-          <option value="pranayama">Pranayama Style</option>
-          <option value="box">Box Breathing</option>
-          <option value="a52">A52</option>
-          <option value="fourSevenEight">4-7-8</option>
+          <optgroup label="Core Protocols">
+            <option value="pranayama">Pranayama Style</option>
+            <option value="box">Box Breathing</option>
+            <option value="a52">A52</option>
+            <option value="fourSevenEight">4-7-8</option>
+          </optgroup>
+          <optgroup label="7-Day Journey">
+            <option value="journey_d1">Day 1: Foundations</option>
+            <option value="journey_d3">Day 3: Expansion</option>
+            <option value="journey_d7">Day 7: Deep Dive</option>
+          </optgroup>
+          <optgroup label="Freediving Apnea Tables">
+            <option value="apnea_co2">CO2 Tolerance Table</option>
+            <option value="apnea_o2">O2 Endurance Table</option>
+          </optgroup>
         </select>
         <button class="icon-btn" id="btn-save-preset" title="Save current settings as preset" aria-label="Save current settings as preset">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1274,6 +1569,15 @@
               <option value="slowdown">Slow down</option>
             </select>
             <span class="setting-hint">Pacing progression across rounds</span>
+          </div>
+
+          <div class="setting-card">
+            <label for="cfg-flow">Interactive Flow Mode</label>
+            <select id="cfg-flow">
+              <option value="on">On (Hold to Inhale, Release to Exhale)</option>
+              <option value="off">Off (Standard passive pacer)</option>
+            </select>
+            <span class="setting-hint">Measures tactile rhythm synchronization</span>
           </div>
         </div>
       </section>
@@ -1529,6 +1833,10 @@
             <line x1="16" y1="20" x2="16" y2="10"/><line x1="22" y1="20" x2="22" y2="14"/>
           </svg>
         </button>
+        <button id="streak-badge-btn" class="streak-badge-btn" aria-label="Current daily streak" title="Daily Streak - Click for Stats">
+          <span class="streak-flame">🔥</span>
+          <span id="streak-badge-val">0</span>
+        </button>
       </div>
 
       <div class="header-center">
@@ -1536,6 +1844,39 @@
       </div>
 
       <div class="header-right">
+        <!-- QUICK SOUND HUD -->
+        <div class="quick-sound-wrap">
+          <button id="quick-sound-btn" class="header-icon-btn" aria-label="Quick sound controls" title="Quick Sound">
+            <svg id="sound-icon-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+            <svg id="sound-icon-mute" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <line x1="23" y1="9" x2="17" y2="15"></line>
+              <line x1="17" y1="9" x2="23" y2="15"></line>
+            </svg>
+          </button>
+          <div id="quick-sound-popover" class="quick-sound-popover hidden" role="region" aria-label="Quick Volume Controls">
+            <div class="quick-sound-row">
+              <span class="qs-label">Master Mute</span>
+              <button id="qs-btn-mute" class="qs-toggle-btn">Mute</button>
+            </div>
+            <div class="quick-sound-row">
+              <span class="qs-label">Voice</span>
+              <input type="range" id="qs-vol-voice" min="0" max="100" step="5" value="90">
+            </div>
+            <div class="quick-sound-row">
+              <span class="qs-label">Cues</span>
+              <input type="range" id="qs-vol-cues" min="0" max="100" step="5" value="70">
+            </div>
+            <div class="quick-sound-row">
+              <span class="qs-label">Ambience</span>
+              <input type="range" id="qs-vol-amb" min="0" max="100" step="5" value="50">
+            </div>
+          </div>
+        </div>
+
         <button id="theme-toggle" class="header-icon-btn" aria-label="Switch theme mode" title="Switch Theme">
           <svg id="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
@@ -1579,6 +1920,7 @@
           <circle class="circle-track" cx="100" cy="100" r="88"/>
           <circle class="circle-ring-glow" cx="100" cy="100" r="88"/>
           <circle class="circle-ring"  cx="100" cy="100" r="88"/>
+          <circle id="ghost-pip" class="ghost-pip hidden" cx="100" cy="12" r="5"/>
         </svg>
         <div class="circle-content" id="circle-content">
           <div id="idle-title">Pranayama Breathing</div>
@@ -1592,8 +1934,11 @@
           </button>
           <div id="phase-label" class="hidden"></div>
           <div id="breath-counter" class="hidden"></div>
+          <div id="flow-indicator" class="flow-indicator hidden"></div>
           <div id="breath-time-remaining" class="hidden"></div>
           <div id="hold-timer" class="hidden"></div>
+          <div id="ghost-label" class="ghost-label hidden"></div>
+          <div id="hold-milestone-banner" class="hold-milestone-banner hidden"></div>
           <div id="hold-target-display" class="hidden"></div>
           <div id="tap-prompt" class="hidden tap-animate">TAP TO BREATHE</div>
           <div id="recovery-countdown" class="hidden"></div>
@@ -1624,6 +1969,87 @@
     <div id="phase-announce"   class="sr-only" aria-live="assertive" aria-atomic="true"></div>
     <div id="counter-announce" class="sr-only" aria-live="polite"    aria-atomic="true"></div>
   </main>
+
+  <!-- VICTORY RECAP MODAL 2.0 -->
+  <div id="victory-overlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="victory-title">
+    <div class="victory-card">
+      <div class="victory-header">
+        <span class="victory-badge" id="victory-archetype">BREATH MASTER</span>
+        <h2 id="victory-title">SESSION COMPLETE</h2>
+        <div id="victory-subtitle" class="victory-subtitle">Well done! Practice finished.</div>
+      </div>
+      
+      <div class="victory-metrics-grid">
+        <div class="v-metric-tile">
+          <div class="v-metric-val" id="v-val-best">0s</div>
+          <div class="v-metric-lbl">Best Hold</div>
+          <div class="v-metric-sub" id="v-sub-best">Session Peak</div>
+        </div>
+        <div class="v-metric-tile">
+          <div class="v-metric-val" id="v-val-retention">0:00</div>
+          <div class="v-metric-lbl">Total Retention</div>
+          <div class="v-metric-sub" id="v-sub-breaths">90 Breaths</div>
+        </div>
+        <div class="v-metric-tile">
+          <div class="v-metric-val" id="v-val-streak">🔥 1</div>
+          <div class="v-metric-lbl">Day Streak</div>
+          <div class="v-metric-sub" id="v-sub-streak">Active</div>
+        </div>
+        <div class="v-metric-tile">
+          <div class="v-metric-val" id="v-val-co2">–</div>
+          <div class="v-metric-lbl">CO2 Tolerance</div>
+          <div class="v-metric-sub" id="v-sub-co2">First Urge</div>
+        </div>
+      </div>
+
+      <!-- Round progression bars -->
+      <div class="victory-progression-wrap">
+        <div class="v-section-title">Round Holds vs Targets</div>
+        <div id="victory-rounds-bars" class="victory-rounds-bars"></div>
+      </div>
+
+      <!-- Flow score banner if used -->
+      <div id="victory-flow-wrap" class="victory-flow-wrap hidden">
+        <span class="v-flow-icon">⚡</span>
+        <span id="victory-flow-text">Cadence Flow: 94% synchronized</span>
+      </div>
+
+      <!-- Feeling row integrated into victory card -->
+      <div class="v-feeling-section">
+        <div class="v-section-title">How do you feel?</div>
+        <div id="v-feeling-row" class="v-feeling-row">
+          <button class="feeling-btn" data-feel="1" aria-label="Calm" title="Calm">😌<span>Calm</span></button>
+          <button class="feeling-btn" data-feel="2" aria-label="Euphoric" title="Euphoric">✨<span>Euphoric</span></button>
+          <button class="feeling-btn" data-feel="3" aria-label="Energized" title="Energized">⚡<span>Energized</span></button>
+          <button class="feeling-btn" data-feel="4" aria-label="Focused" title="Focused">🎯<span>Focused</span></button>
+          <button class="feeling-btn" data-feel="5" aria-label="Dizzy" title="Dizzy">😵<span>Dizzy</span></button>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="victory-actions">
+        <button id="btn-victory-share" class="btn btn-secondary">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          Share
+        </button>
+        <button id="btn-victory-stats" class="btn btn-secondary">Stats & Badges</button>
+        <button id="btn-victory-close" class="btn btn-primary">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACHIEVEMENT UNLOCKED TOAST -->
+  <div id="achievement-toast" class="achievement-toast hidden" role="alert">
+    <div class="achieve-toast-icon" id="achieve-toast-icon">🏆</div>
+    <div class="achieve-toast-content">
+      <div class="achieve-toast-title">Achievement Unlocked!</div>
+      <div class="achieve-toast-name" id="achieve-toast-name">Bronze Lungs</div>
+      <div class="achieve-toast-desc" id="achieve-toast-desc">Hold your breath for 60 seconds</div>
+    </div>
+  </div>
+
+  <!-- COPY TOAST -->
+  <div id="copy-toast" class="copy-toast hidden">Copied summary to clipboard!</div>
 
   <!-- ZEN MODE PEEK HANDLE -->
   <div id="zen-strip" title="Show controls" aria-hidden="true"></div>
@@ -1690,7 +2116,7 @@
       voiceMode:'smart', vibration:'on', ambience:'off', ambience2:'off',
       volVoice:90, volCues:70, volAmbience:50, volAmbience2:50,
       pacer:'on', fullscreen:'off', material:'chrome', autoDim:'on',
-      sleepMode:'off', nightOled:'off'
+      sleepMode:'off', nightOled:'off', flowMode:'on', masterMute:'off'
     };
     var ranges = {
       breathsPerRound:{min:1,max:200}, holdStartTime:{min:0,max:300},
@@ -1713,7 +2139,9 @@
       material:['chrome','gold','lava','aurora'],
       autoDim:['on','off'],
       sleepMode:['off','on'],
-      nightOled:['off','on']
+      nightOled:['off','on'],
+      flowMode:['on','off'],
+      masterMute:['off','on']
     };
     var v = {};
     Object.keys(defaults).forEach(function(k) { v[k] = defaults[k]; });
@@ -1748,11 +2176,11 @@
       volVoice:'cfg-vol-voice', volCues:'cfg-vol-cues', volAmbience:'cfg-vol-amb',
       volAmbience2:'cfg-vol-amb2',
       pacer:'cfg-pacer', fullscreen:'cfg-fullscreen', material:'cfg-material', autoDim:'cfg-autodim',
-      sleepMode:'cfg-sleep', nightOled:'cfg-night-oled'
+      sleepMode:'cfg-sleep', nightOled:'cfg-night-oled', flowMode:'cfg-flow'
     };
     /* settings the user may adjust while a session is running */
     var LIVE_KEYS = ['voiceMode','vibration','ambience','ambience2','volVoice','volCues',
-                     'volAmbience','volAmbience2','pacer','material','autoDim','sleepMode','nightOled'];
+                     'volAmbience','volAmbience2','pacer','material','autoDim','sleepMode','nightOled','flowMode','masterMute'];
     function readFromInputs() {
       Object.keys(inputMap).forEach(function(k) {
         var el = document.getElementById(inputMap[k]);
@@ -1819,7 +2247,8 @@
     return { load:load, save:save, readFromInputs:readFromInputs, populateInputs:populateInputs,
              setInputsDisabled:setInputsDisabled, getHoldTarget:getHoldTarget,
              getRampFactor:getRampFactor, estimateSeconds:estimateSeconds,
-             get:function(k){ return v[k]; } };
+             get:function(k){ return v[k]; },
+             set:function(k, val){ v[k]=clamp(k,val); } };
   })();
 
   /* ======== App.Presets ======== */
@@ -1847,6 +2276,36 @@
         breathsPerRound:50, holdStartTime:0, holdIncrement:0,
         rounds:1, inhaleDuration:4, exhaleDuration:8,
         pauseAfterInhale:7, pauseAfterExhale:0,
+        recoveryHold:15, ramp:'off', holdMode:'fixed'
+      },
+      journey_d1: {
+        breathsPerRound:20, holdStartTime:45, holdIncrement:10,
+        rounds:2, inhaleDuration:2, exhaleDuration:2.5,
+        pauseAfterInhale:0, pauseAfterExhale:0,
+        recoveryHold:15, ramp:'off', holdMode:'fixed'
+      },
+      journey_d3: {
+        breathsPerRound:25, holdStartTime:60, holdIncrement:15,
+        rounds:3, inhaleDuration:2, exhaleDuration:2.5,
+        pauseAfterInhale:0, pauseAfterExhale:0,
+        recoveryHold:15, ramp:'off', holdMode:'fixed'
+      },
+      journey_d7: {
+        breathsPerRound:35, holdStartTime:90, holdIncrement:20,
+        rounds:4, inhaleDuration:2, exhaleDuration:3,
+        pauseAfterInhale:0, pauseAfterExhale:0,
+        recoveryHold:15, ramp:'speedup', holdMode:'adaptive'
+      },
+      apnea_co2: {
+        breathsPerRound:20, holdStartTime:60, holdIncrement:0,
+        rounds:4, inhaleDuration:2, exhaleDuration:2,
+        pauseAfterInhale:0, pauseAfterExhale:0,
+        recoveryHold:10, ramp:'off', holdMode:'fixed'
+      },
+      apnea_o2: {
+        breathsPerRound:30, holdStartTime:60, holdIncrement:20,
+        rounds:4, inhaleDuration:2, exhaleDuration:2.5,
+        pauseAfterInhale:0, pauseAfterExhale:0,
         recoveryHold:15, ramp:'off', holdMode:'fixed'
       }
     };
@@ -2094,14 +2553,30 @@
   /* ======== App.Audio ======== */
   App.Audio = (function() {
     var ctx = null;
+    var masterMuted = false;
+
     function init() {
       if(ctx) return;
       try { ctx = new (window.AudioContext||window.webkitAudioContext)(); } catch(e) { ctx=null; }
     }
     function resume() { if(ctx && ctx.state==='suspended') ctx.resume(); }
     function getCtx() { return ctx; }
+
+    function isMasterMuted() {
+      return masterMuted || (App.Config && App.Config.get('masterMute') === 'on');
+    }
+
+    function setMasterMute(m) {
+      masterMuted = !!m;
+      if(App.Config) {
+        App.Config.set('masterMute', masterMuted ? 'on' : 'off');
+        App.Config.save();
+      }
+      if(App.Ambience && App.Ambience.applyVolume) App.Ambience.applyVolume();
+    }
+
     function beep(freq, dur, t, vol) {
-      if(!ctx) return;
+      if(!ctx || isMasterMuted()) return;
       vol = (vol||0.3) * (App.Config.get('volCues') / 100);
       if(vol <= 0) return;
       try {
@@ -2115,27 +2590,74 @@
         o.start(t); o.stop(t+dur+0.01);
       } catch(e) {}
     }
+
+    /* Resonant Tibetan singing bowl / meditative chime */
+    function playSingingBowl(freq, dur) {
+      if(!ctx || isMasterMuted()) return;
+      resume();
+      freq = freq || 280;
+      dur = dur || 2.4;
+      var t = ctx.currentTime;
+      var vol = 0.3 * (App.Config.get('volCues') / 100);
+      if(vol <= 0) return;
+      try {
+        // Fundamental partials with gentle chorusing/beating
+        [freq, freq + 0.85].forEach(function(f) {
+          var o = ctx.createOscillator(), g = ctx.createGain();
+          o.type = 'sine'; o.frequency.value = f;
+          g.gain.setValueAtTime(0, t);
+          g.gain.linearRampToValueAtTime(vol * 0.7, t + 0.03);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+          o.connect(g); g.connect(ctx.destination);
+          o.start(t); o.stop(t + dur);
+        });
+        // High harmonic overtone shimmer
+        var o2 = ctx.createOscillator(), g2 = ctx.createGain();
+        o2.type = 'sine'; o2.frequency.value = freq * 2.76;
+        g2.gain.setValueAtTime(0, t);
+        g2.gain.linearRampToValueAtTime(vol * 0.22, t + 0.02);
+        g2.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.65);
+        o2.connect(g2); g2.connect(ctx.destination);
+        o2.start(t); o2.stop(t + dur * 0.65);
+      } catch(e) {}
+    }
+
     return {
       init: init,
       getCtx: getCtx,
       resume: resume,
+      isMasterMuted: isMasterMuted,
+      setMasterMute: setMasterMute,
+      playSingingBowl: playSingingBowl,
       playHoldStart: function() {
         if(!ctx) return; resume();
-        var t=ctx.currentTime; beep(800,0.12,t,0.35); beep(800,0.12,t+0.22,0.35);
+        playSingingBowl(320, 2.2);
       },
       playHoldEnd: function() {
         if(!ctx) return; resume();
-        var t=ctx.currentTime; beep(600,0.12,t,0.35); beep(600,0.12,t+0.22,0.35); beep(600,0.12,t+0.44,0.35);
+        playSingingBowl(440, 2.0);
       },
       playRecoveryHoldEnd: function() {
-        if(!ctx) return; resume(); beep(400,0.35,ctx.currentTime,0.3);
+        if(!ctx) return; resume();
+        playSingingBowl(260, 2.4);
       },
       playSessionComplete: function() {
         if(!ctx) return; resume();
-        var t=ctx.currentTime; beep(523,0.2,t,0.3); beep(659,0.2,t+0.28,0.3); beep(784,0.4,t+0.56,0.3);
+        var t=ctx.currentTime;
+        beep(523,0.2,t,0.3); beep(659,0.2,t+0.28,0.3); beep(784,0.4,t+0.56,0.3);
+        setTimeout(function() { playSingingBowl(528, 3.5); }, 650);
       },
       playBreathTick: function() {
-        if(!ctx) return; resume(); beep(1000,0.05,ctx.currentTime,0.07);
+        if(!ctx) return; resume(); beep(1000,0.04,ctx.currentTime,0.06);
+      },
+      playMilestoneChime: function() {
+        playSingingBowl(350, 2.6);
+      },
+      playUrgeChime: function() {
+        playSingingBowl(440, 1.8);
+      },
+      playGhostOvertaken: function() {
+        playSingingBowl(520, 3.0);
       }
     };
   })();
@@ -3373,9 +3895,196 @@
         : 0;
       return { sessions: all.length, best: best, avgBest: avg, all: all };
     }
+    function pad(n) { return (n < 10 ? '0' : '') + n; }
+    function toDayKey(d) {
+      return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+    }
+    function getStreak() {
+      var all = loadAll();
+      if(!all.length) return 0;
+      var dayMap = {};
+      all.forEach(function(s) {
+        if(!s.ts) return;
+        dayMap[toDayKey(new Date(s.ts))] = true;
+      });
+      var today = new Date();
+      var cur = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      var streak = 0;
+      if (dayMap[toDayKey(cur)]) {
+        streak = 1;
+        cur.setDate(cur.getDate() - 1);
+      } else {
+        cur.setDate(cur.getDate() - 1);
+        if (!dayMap[toDayKey(cur)]) return 0;
+        streak = 1;
+        cur.setDate(cur.getDate() - 1);
+      }
+      while (dayMap[toDayKey(cur)]) {
+        streak++;
+        cur.setDate(cur.getDate() - 1);
+      }
+      return streak;
+    }
+    function exportData() {
+      var all = loadAll();
+      var achievements = [];
+      try { achievements = JSON.parse(localStorage.getItem('whm_achievements')) || []; } catch(e) {}
+      var config = {};
+      try { config = JSON.parse(localStorage.getItem('whm_config_v2')) || {}; } catch(e) {}
+      var payload = {
+        version: 2,
+        exportedAt: new Date().toISOString(),
+        history: all,
+        achievements: achievements,
+        config: config
+      };
+      var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'breathe-backup-' + toDayKey(new Date()) + '.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    function importData(jsonString) {
+      try {
+        var data = JSON.parse(jsonString);
+        if(!data || (!data.history && !Array.isArray(data))) throw new Error('Invalid format: missing history data');
+        var hist = Array.isArray(data) ? data : (data.history || []);
+        if(Array.isArray(hist) && hist.length > 0) {
+          localStorage.setItem(SK, JSON.stringify(hist.slice(-MAX)));
+        }
+        if(data.achievements && Array.isArray(data.achievements)) {
+          localStorage.setItem('whm_achievements', JSON.stringify(data.achievements));
+        }
+        if(data.config && typeof data.config === 'object') {
+          localStorage.setItem('whm_config_v2', JSON.stringify(data.config));
+        }
+        return { success: true, count: hist.length };
+      } catch(e) {
+        return { success: false, error: e.message };
+      }
+    }
     return { record:record, stats:stats, bestHold:bestHold,
              recentBest:recentBest, setLastFeeling:setLastFeeling,
-             setLastSleep:setLastSleep };
+             setLastSleep:setLastSleep, getStreak:getStreak,
+             exportData:exportData, importData:importData };
+  })();
+
+  /* ======== App.Achievements ======== */
+  App.Achievements = (function() {
+    var SK = 'whm_achievements';
+    var BADGES = [
+      { id: 'first_breath',  title: 'First Step',           desc: 'Complete your first breathing session',  icon: '🌱' },
+      { id: 'streak_3',      title: 'Ignition (3-Day)',     desc: 'Maintain a 3-day practice streak',       icon: '🔥' },
+      { id: 'streak_7',      title: 'Week of Prana',        desc: 'Reach a 7-day daily breathing streak',   icon: '⚡' },
+      { id: 'streak_30',     title: 'Iron Will (30-Day)',   desc: 'Master consistency with a 30-day streak',icon: '👑' },
+      { id: 'hold_60',       title: 'One-Minute Club',      desc: 'Achieve a retention hold of 60s+',       icon: '⏱️' },
+      { id: 'hold_120',      title: 'Deep Diver (2m)',      desc: 'Reach a retention hold of 120s+',        icon: '🌊' },
+      { id: 'hold_180',      title: 'Trance State (3m)',    desc: 'Reach an extraordinary 180s+ hold',      icon: '🧘' },
+      { id: 'hold_240',      title: 'Apnea Master (4m)',    desc: 'Shatter boundaries with a 240s+ hold',   icon: '🏔️' },
+      { id: 'overtake',      title: 'Shadow Hunter',        desc: 'Overtake your personal best ghost pacer',icon: '👻' },
+      { id: 'flow_master',   title: 'Harmonic Resonance',   desc: 'Achieve 90%+ Cadence Flow sync',         icon: '🌊' },
+      { id: 'bolt_high',     title: 'CO2 Resilient',        desc: 'Hold past 40s to first urge (Elite CO2)',icon: '🛡️' },
+      { id: 'sessions_10',   title: 'Consistent Warrior',   desc: 'Complete 10 total breathing sessions',   icon: '🥉' },
+      { id: 'sessions_50',   title: 'Breath Alchemist',     desc: 'Complete 50 total breathing sessions',   icon: '🥇' },
+      { id: 'night_owl',     title: 'Zen Slumber',          desc: 'Complete a relaxing session in Sleep Mode',icon: '🌙' }
+    ];
+
+    function loadUnlocked() {
+      try { return JSON.parse(localStorage.getItem(SK)) || []; } catch(e) { return []; }
+    }
+
+    function saveUnlocked(arr) {
+      try { localStorage.setItem(SK, JSON.stringify(arr)); } catch(e) {}
+    }
+
+    function isUnlocked(id) {
+      return loadUnlocked().indexOf(id) !== -1;
+    }
+
+    function unlock(id) {
+      var arr = loadUnlocked();
+      if (arr.indexOf(id) === -1) {
+        arr.push(id);
+        saveUnlocked(arr);
+        var b = BADGES.find(function(x) { return x.id === id; });
+        if (b) showToast(b);
+        return true;
+      }
+      return false;
+    }
+
+    function showToast(badge) {
+      var el = document.getElementById('achievement-toast');
+      if (!el) return;
+      var iconEl = document.getElementById('toast-icon');
+      var titleEl = document.getElementById('toast-title');
+      var descEl = document.getElementById('toast-desc');
+      if (iconEl) iconEl.textContent = badge.icon;
+      if (titleEl) titleEl.textContent = badge.title;
+      if (descEl) descEl.textContent = badge.desc;
+
+      el.classList.remove('hidden', 'toast-hide');
+      el.classList.add('toast-show');
+      try { App.Audio.playMilestoneChime(); } catch(e) {}
+      if (navigator.vibrate) try { navigator.vibrate([60, 40, 100]); } catch(e) {}
+
+      setTimeout(function() {
+        el.classList.remove('toast-show');
+        el.classList.add('toast-hide');
+        setTimeout(function() { el.classList.add('hidden'); }, 400);
+      }, 3800);
+    }
+
+    function check(ctx) {
+      var newlyUnlocked = [];
+      function tryUnlock(id, cond) {
+        if (cond && !isUnlocked(id)) {
+          if (unlock(id)) newlyUnlocked.push(id);
+        }
+      }
+
+      tryUnlock('first_breath', ctx.totalSessions >= 1);
+      tryUnlock('streak_3', ctx.streak >= 3);
+      tryUnlock('streak_7', ctx.streak >= 7);
+      tryUnlock('streak_30', ctx.streak >= 30);
+      tryUnlock('hold_60', ctx.sessionBest >= 60);
+      tryUnlock('hold_120', ctx.sessionBest >= 120);
+      tryUnlock('hold_180', ctx.sessionBest >= 180);
+      tryUnlock('hold_240', ctx.sessionBest >= 240);
+      tryUnlock('overtake', !!ctx.ghostOvertaken);
+      tryUnlock('flow_master', ctx.flowScore >= 90);
+      tryUnlock('bolt_high', ctx.maxUrge >= 40);
+      tryUnlock('sessions_10', ctx.totalSessions >= 10);
+      tryUnlock('sessions_50', ctx.totalSessions >= 50);
+      tryUnlock('night_owl', !!ctx.isSleep);
+
+      return newlyUnlocked;
+    }
+
+    function getAll() {
+      var un = loadUnlocked();
+      return BADGES.map(function(b) {
+        return {
+          id: b.id,
+          title: b.title,
+          desc: b.desc,
+          icon: b.icon,
+          unlocked: un.indexOf(b.id) !== -1
+        };
+      });
+    }
+
+    return {
+      isUnlocked: isUnlocked,
+      unlock: unlock,
+      check: check,
+      getAll: getAll,
+      showToast: showToast
+    };
   })();
 
   /* ======== App.Liquid ========
@@ -3705,6 +4414,15 @@
       }
     }
 
+    /* harmonic milestone / ghost overtake pulse */
+    function pulse(colorRgb) {
+      if(!enabled) return;
+      var c = colorRgb || [0.4, 0.8, 1.0];
+      for(var i = 0; i < 50; i++) {
+        spawnParticle(true, 1.2 + Math.random()*0.8, c, 0.4);
+      }
+    }
+
     /* ---- compact bloom: scene RT → bright → blur ×2 → composite ---- */
     function makeBloom(w, h) {
       var rtScene = new THREE.WebGLRenderTarget(w, h, { samples: 2 });
@@ -3986,7 +4704,7 @@
       pressure = Math.min(1.3, Math.max(0, p));
     }
 
-    return { init:init, set:set, setBreath:setBreath, burst:burst,
+    return { init:init, set:set, setBreath:setBreath, burst:burst, pulse:pulse,
              setPressure:setPressure,
              isEnabled:function() { return enabled; } };
   })();
@@ -4058,6 +4776,9 @@
     var roundUrges=[], urgeMarked=false, urgeTime=0;
     var prevBestEver=0, prevSessionBest=0, newRecord=false;
     var sleepStartTs=0, lastSleepSec=0;
+    var lastMilestoneSec=0, ghostSec=0;
+    var roundGhostOvertaken=false, sessionGhostOvertaken=false;
+    var flowInSyncMs=0, flowTotalMs=0, flowTouchActive=false, flowTouchEvents=0;
 
     function requestFullscreen() {
       if(App.Config.get('fullscreen') !== 'on') return;
@@ -4106,6 +4827,39 @@
       if(mode === 'every' || breathCount <= 3) App.Voice.speak('pause');
     }
 
+    /* Flow Cadence Sync Mode */
+    function onFlowPointerDown() {
+      flowTouchActive = true;
+      flowTouchEvents++;
+      checkFlowSync();
+    }
+    function onFlowPointerUp() {
+      flowTouchActive = false;
+      flowTouchEvents++;
+      checkFlowSync();
+    }
+    function checkFlowSync() {
+      if(state !== STATES.BREATHING_IN && state !== STATES.BREATHING_OUT) {
+        App.UI.hideFlowIndicator();
+        return;
+      }
+      var inSync = (state === STATES.BREATHING_IN && flowTouchActive) ||
+                   (state === STATES.BREATHING_OUT && !flowTouchActive);
+      if(App.Config.get('flowMode') === 'on' || flowTouchEvents >= 2) {
+        App.UI.updateFlowIndicator(inSync);
+      }
+    }
+    function updateFlowTick(dt) {
+      if(state !== STATES.BREATHING_IN && state !== STATES.BREATHING_OUT) return;
+      flowTotalMs += dt;
+      var inSync = (state === STATES.BREATHING_IN && flowTouchActive) ||
+                   (state === STATES.BREATHING_OUT && !flowTouchActive);
+      if(inSync) flowInSyncMs += dt;
+      if(App.Config.get('flowMode') === 'on' || flowTouchEvents >= 2) {
+        App.UI.updateFlowIndicator(inSync);
+      }
+    }
+
     function beginGetReady() {
       transition(STATES.GET_READY);
       App.Voice.speak('getReady');
@@ -4125,6 +4879,7 @@
       breathCount++;
       holdTarget = App.Config.getHoldTarget(currentRound);
       transition(STATES.BREATHING_IN);
+      checkFlowSync();
       cueBreath(true);
       App.Haptics.inhale();
       App.Audio.playBreathTick();
@@ -4132,13 +4887,18 @@
       App.Pacer.play(true, durMs);
       var pauseInhale = App.Config.get('pauseAfterInhale');
       var nextFn = pauseInhale > 0 ? beginPauseAfterInhale : beginBreathingOut;
+      var lastElapsed = 0;
       App.Timer.startPhase(durMs, nextFn, function(elapsed) {
+        var dt = Math.max(0, elapsed - lastElapsed);
+        lastElapsed = elapsed;
+        updateFlowTick(dt);
         App.UI.updateBreathingProgress(elapsed, durMs, true);
       });
     }
 
     function beginBreathingOut() {
       transition(STATES.BREATHING_OUT);
+      checkFlowSync();
       cueBreath(false);
       App.Haptics.exhale();
       var last = breathCount >= App.Config.get('breathsPerRound');
@@ -4158,12 +4918,17 @@
       } else {
         nextFn = beginBreathingIn;
       }
+      var lastElapsed = 0;
       App.Timer.startPhase(durMs, nextFn, function(elapsed) {
+        var dt = Math.max(0, elapsed - lastElapsed);
+        lastElapsed = elapsed;
+        updateFlowTick(dt);
         App.UI.updateBreathingProgress(elapsed, durMs, false);
       });
     }
 
     function beginPauseAfterInhale() {
+      App.UI.hideFlowIndicator();
       transition(STATES.PAUSE_AFTER_INHALE);
       cuePause();
       var durMs = App.Config.get('pauseAfterInhale') * 1000;
@@ -4173,6 +4938,7 @@
     }
 
     function beginPauseAfterExhale() {
+      App.UI.hideFlowIndicator();
       transition(STATES.PAUSE_AFTER_EXHALE);
       cuePause();
       var durMs = App.Config.get('pauseAfterExhale') * 1000;
@@ -4183,13 +4949,36 @@
 
     function beginHold() {
       urgeMarked = false; urgeTime = 0;
+      lastMilestoneSec = 0; roundGhostOvertaken = false;
+      ghostSec = prevSessionBest > 0 ? prevSessionBest : (prevBestEver > 0 ? prevBestEver : 0);
+      App.UI.hideFlowIndicator();
       transition(STATES.HOLD);
       App.Audio.playHoldStart();
       App.Voice.speak('hold');
       App.Haptics.holdStart();
       App.Ambience.setCalm();
+      App.UI.setupGhostTarget(ghostSec, holdTarget);
+
       App.Timer.startPhase(null, null, function(elapsed) {
-        App.UI.updateHoldTimer(Math.floor(elapsed/1000), holdTarget);
+        var secs = Math.floor(elapsed/1000);
+        App.UI.updateHoldTimer(secs, holdTarget);
+
+        /* Ghost target overtake check */
+        if(ghostSec > 0 && secs >= ghostSec && !roundGhostOvertaken) {
+          roundGhostOvertaken = true;
+          sessionGhostOvertaken = true;
+          App.UI.showGhostOvertaken(ghostSec);
+          App.Audio.playGhostOvertaken();
+          App.Liquid.pulse([0.2, 0.9, 1.0]);
+        }
+
+        /* 30s milestone singing bowl check */
+        if(secs > 0 && secs % 30 === 0 && secs !== lastMilestoneSec) {
+          lastMilestoneSec = secs;
+          App.Audio.playMilestoneChime();
+          App.UI.showHoldMilestone(secs);
+          App.Liquid.pulse();
+        }
       });
     }
 
@@ -4199,6 +4988,7 @@
       urgeMarked = true;
       urgeTime = App.Timer.getElapsed() / 1000;
       App.Haptics.tick();
+      App.Audio.playUrgeChime();
       App.UI.showUrgeMarked(urgeTime);
     }
 
@@ -4208,6 +4998,8 @@
       roundHolds.push(holdAchieved);
       roundUrges.push(urgeMarked ? Math.round(urgeTime*10)/10 : null);
       App.Timer.stop();
+      App.UI.hideGhostTarget();
+      App.UI.hideHoldMilestone();
       App.Audio.playHoldEnd();
       App.Haptics.holdEnd();
       beginRecoveryIn();
@@ -4274,7 +5066,7 @@
     }
 
     /* shared tail of session end; silent skips celebration cues (sleep mode) */
-    function showComplete(silent) {
+    function showComplete(silent, sessionEntry, streak) {
       if(!silent) {
         App.Audio.playSessionComplete();
         App.Voice.speak(newRecord ? 'newRecord' : 'wellDone');
@@ -4286,23 +5078,65 @@
       App.Config.setInputsDisabled(false);
       App.UI.setStartButton('start');
       transition(STATES.SESSION_COMPLETE);
+
+      if(!silent && sessionEntry) {
+        App.UI.showVictoryModal({
+          sessionBest: roundHolds.length ? Math.max.apply(null, roundHolds) : 0,
+          holds: roundHolds,
+          urges: roundUrges,
+          rounds: App.Config.get('rounds'),
+          breaths: App.Config.get('breathsPerRound'),
+          newRecord: newRecord,
+          streak: streak || App.History.getStreak(),
+          flowScore: sessionEntry.flowScore,
+          durationSec: sessionEntry.durationSec,
+          ghostOvertaken: sessionGhostOvertaken
+        });
+      }
     }
 
     function beginSessionComplete() {
       App.Timer.stop();
       var sessionBest = roundHolds.length ? Math.max.apply(null, roundHolds) : 0;
-      newRecord = prevBestEver > 0 && sessionBest > prevBestEver;
-      App.History.record({
+      var isFirstEver = prevBestEver === 0 || App.History.stats().sessions === 0;
+      newRecord = (sessionBest > 0) && (isFirstEver || sessionBest > prevBestEver);
+
+      var flowScore = (flowTouchEvents >= 2 && flowTotalMs > 0)
+        ? Math.min(100, Math.round((flowInSyncMs / flowTotalMs) * 100))
+        : null;
+
+      var sessionEntry = {
         ts: Date.now(),
         preset: App.Presets.getCurrentLabel(),
         rounds: App.Config.get('rounds'),
         breaths: App.Config.get('breathsPerRound'),
         holds: roundHolds.map(function(h) { return Math.round(h*10)/10; }),
         urges: roundUrges,
-        durationSec: Math.round((performance.now() - sessionStartMs) / 1000)
+        durationSec: Math.round((performance.now() - sessionStartMs) / 1000),
+        flowScore: flowScore,
+        ghostOvertaken: sessionGhostOvertaken
+      };
+      App.History.record(sessionEntry);
+
+      var currentStreak = App.History.getStreak();
+      var totalSessions = App.History.stats().sessions;
+      var validUrges = roundUrges.filter(function(u) { return typeof u === 'number' && u > 0; });
+      var maxUrge = validUrges.length ? Math.max.apply(null, validUrges) : 0;
+
+      App.Achievements.check({
+        sessionBest: sessionBest,
+        streak: currentStreak,
+        totalSessions: totalSessions,
+        ghostOvertaken: sessionGhostOvertaken,
+        flowScore: flowScore || 0,
+        isSleep: App.Config.get('sleepMode') === 'on',
+        maxUrge: maxUrge
       });
+
+      App.UI.updateStreakBadge();
+
       if(App.Config.get('sleepMode') === 'on') { beginSleep(); return; }
-      showComplete(false);
+      showComplete(false, sessionEntry, currentStreak);
     }
 
     /* sleep mode: ambience keeps playing, screen goes near-black, wake lock held */
@@ -4318,7 +5152,22 @@
       lastSleepSec = Math.round((Date.now() - sleepStartTs) / 1000);
       App.History.setLastSleep(lastSleepSec);
       App.UI.exitSleep();
-      showComplete(true);
+      var sessionBest = roundHolds.length ? Math.max.apply(null, roundHolds) : 0;
+      var dur = Math.round((performance.now() - sessionStartMs) / 1000);
+      var streak = App.History.getStreak();
+      showComplete(true, { sessionBest: sessionBest, durationSec: dur, flowScore: null }, streak);
+      App.UI.showVictoryModal({
+        sessionBest: sessionBest,
+        holds: roundHolds,
+        urges: roundUrges,
+        rounds: App.Config.get('rounds'),
+        breaths: App.Config.get('breathsPerRound'),
+        newRecord: newRecord,
+        streak: streak,
+        flowScore: null,
+        durationSec: dur,
+        ghostOvertaken: sessionGhostOvertaken
+      });
     }
 
     return {
@@ -4330,6 +5179,8 @@
       isNewRecord: function() { return newRecord; },
       getPrevSessionBest: function() { return prevSessionBest; },
       markUrge: markUrge,
+      onFlowPointerDown: onFlowPointerDown,
+      onFlowPointerUp: onFlowPointerUp,
       isActive: function() {
         return state !== STATES.IDLE && state !== STATES.SESSION_COMPLETE;
       },
@@ -4343,6 +5194,9 @@
         currentRound=1; breathCount=0; holdAchieved=0;
         roundHolds=[]; roundUrges=[]; stateBeforePause=null;
         newRecord=false; sleepStartTs=0; lastSleepSec=0;
+        lastMilestoneSec=0; ghostSec=0;
+        roundGhostOvertaken=false; sessionGhostOvertaken=false;
+        flowInSyncMs=0; flowTotalMs=0; flowTouchActive=false; flowTouchEvents=0;
         prevBestEver = App.History.stats().best;
         prevSessionBest = App.History.recentBest(1);
         sessionStartMs = performance.now();
@@ -4383,6 +5237,9 @@
         exitFullscreen();
         currentRound=0; breathCount=0; holdAchieved=0;
         roundHolds=[]; roundUrges=[]; stateBeforePause=null;
+        App.UI.hideGhostTarget();
+        App.UI.hideHoldMilestone();
+        App.UI.hideFlowIndicator();
         App.Config.setInputsDisabled(false);
         App.UI.setStartButton('start');
         transition(STATES.IDLE);
@@ -4941,6 +5798,220 @@
       }
     }
 
+    function setupGhostTarget(ghostSec, holdTarget) {
+      var pip = document.getElementById('ghost-pip');
+      var lbl = document.getElementById('ghost-label');
+      if(!pip || !lbl) return;
+      if(ghostSec <= 0 || holdTarget <= 0) {
+        pip.classList.add('hidden');
+        lbl.classList.add('hidden');
+        return;
+      }
+      var frac = Math.min(1.0, ghostSec / holdTarget);
+      var angle = -Math.PI / 2 + frac * 2 * Math.PI;
+      var cx = 100 + 88 * Math.cos(angle);
+      var cy = 100 + 88 * Math.sin(angle);
+      pip.setAttribute('cx', cx.toFixed(2));
+      pip.setAttribute('cy', cy.toFixed(2));
+      pip.classList.remove('hidden', 'ghost-overtaken');
+
+      var m = Math.floor(ghostSec / 60);
+      var s = Math.floor(ghostSec % 60);
+      var timeStr = m > 0 ? (m + ':' + (s < 10 ? '0' : '') + s) : (s + 's');
+      lbl.textContent = '🎯 Target PB: ' + timeStr;
+      lbl.classList.remove('hidden');
+    }
+
+    function showGhostOvertaken(ghostSec) {
+      var pip = document.getElementById('ghost-pip');
+      var lbl = document.getElementById('ghost-label');
+      if(pip) pip.classList.add('ghost-overtaken');
+      if(lbl) {
+        lbl.textContent = '🔥 PB OVERTAKEN!';
+        lbl.classList.remove('hidden');
+      }
+    }
+
+    function hideGhostTarget() {
+      var pip = document.getElementById('ghost-pip');
+      var lbl = document.getElementById('ghost-label');
+      if(pip) pip.classList.add('hidden');
+      if(lbl) lbl.classList.add('hidden');
+    }
+
+    var milestoneTimer = null;
+    function showHoldMilestone(secs) {
+      var banner = document.getElementById('hold-milestone-banner');
+      if(!banner) return;
+      var m = Math.floor(secs / 60);
+      var s = secs % 60;
+      var str = m > 0 ? (m + 'm' + (s > 0 ? (' ' + s + 's') : '')) : (s + 's');
+      banner.textContent = '✨ ' + str + ' MILESTONE';
+      banner.classList.remove('hidden');
+      banner.classList.add('active');
+      if(milestoneTimer) clearTimeout(milestoneTimer);
+      milestoneTimer = setTimeout(function() {
+        if(banner) {
+          banner.classList.remove('active');
+          banner.classList.add('hidden');
+        }
+      }, 2500);
+    }
+
+    function hideHoldMilestone() {
+      if(milestoneTimer) clearTimeout(milestoneTimer);
+      var banner = document.getElementById('hold-milestone-banner');
+      if(banner) {
+        banner.classList.remove('active');
+        banner.classList.add('hidden');
+      }
+    }
+
+    function updateFlowIndicator(inSync) {
+      var el = document.getElementById('flow-indicator');
+      if(!el) return;
+      el.classList.remove('hidden');
+      if(inSync) {
+        el.textContent = '⚡ IN FLOW';
+        el.classList.remove('flow-warn');
+      } else {
+        el.textContent = '⚡ SYNCING...';
+        el.classList.add('flow-warn');
+      }
+    }
+
+    function hideFlowIndicator() {
+      var el = document.getElementById('flow-indicator');
+      if(el) el.classList.add('hidden');
+    }
+
+    function updateStreakBadge() {
+      var streak = App.History.getStreak();
+      var countEl = document.getElementById('streak-count');
+      var btn = document.getElementById('streak-badge-btn');
+      if(countEl) countEl.textContent = streak;
+      if(btn) {
+        if(streak > 0) btn.classList.add('streak-active');
+        else btn.classList.remove('streak-active');
+      }
+    }
+
+    function formatTimeMinSec(sec) {
+      var s = Math.round(sec);
+      var m = Math.floor(s / 60);
+      var rem = s % 60;
+      return m + ':' + (rem < 10 ? '0' : '') + rem;
+    }
+
+    function showVictoryModal(data) {
+      var overlay = document.getElementById('victory-overlay');
+      if(!overlay) return;
+
+      var sessionBest = data.sessionBest || 0;
+      var totalHoldSec = (data.holds || []).reduce(function(a, b) { return a + b; }, 0);
+      var totalBreaths = (data.rounds || 0) * (data.breaths || 0);
+
+      var archetype = 'MINDFUL BREATH';
+      if(sessionBest >= 180) archetype = 'TRANCE MASTER';
+      else if(sessionBest >= 120) archetype = 'DEEP DIVER';
+      else if(data.flowScore && data.flowScore >= 85) archetype = 'FLOW RESONATOR';
+      else if(data.newRecord) archetype = 'RECORD BREAKER';
+      else if(data.rounds >= 4) archetype = 'ENDURANCE YOGI';
+      else if(App.Config.get('sleepMode') === 'on') archetype = 'ZEN SLUMBERER';
+
+      var archEl = document.getElementById('victory-archetype');
+      if(archEl) archEl.textContent = archetype;
+
+      var titleEl = document.getElementById('victory-title');
+      if(titleEl) titleEl.textContent = data.newRecord ? 'NEW PERSONAL RECORD!' : 'SESSION COMPLETE';
+
+      var subEl = document.getElementById('victory-subtitle');
+      if(subEl) {
+        subEl.textContent = data.newRecord
+          ? 'Outstanding progress! You conquered a new peak threshold.'
+          : 'Harmonious session completed. Soak in the stillness.';
+      }
+
+      var bestEl = document.getElementById('v-val-best');
+      if(bestEl) bestEl.textContent = sessionBest >= 60 ? formatTimeMinSec(sessionBest) : (Math.round(sessionBest) + 's');
+      var subBestEl = document.getElementById('v-sub-best');
+      if(subBestEl) subBestEl.textContent = data.newRecord ? '🔥 New Best!' : 'Session Peak';
+
+      var retEl = document.getElementById('v-val-retention');
+      if(retEl) retEl.textContent = formatTimeMinSec(totalHoldSec);
+      var subBreathsEl = document.getElementById('v-sub-breaths');
+      if(subBreathsEl) subBreathsEl.textContent = totalBreaths + ' Breaths';
+
+      var streakEl = document.getElementById('v-val-streak');
+      if(streakEl) streakEl.textContent = '🔥 ' + (data.streak || 1);
+      var subStreakEl = document.getElementById('v-sub-streak');
+      if(subStreakEl) subStreakEl.textContent = (data.streak > 1 ? (data.streak + ' Days in a row') : 'Streak started!');
+
+      var validUrges = (data.urges || []).filter(function(u) { return typeof u === 'number' && u > 0; });
+      var co2El = document.getElementById('v-val-co2');
+      var subCo2El = document.getElementById('v-sub-co2');
+      if(validUrges.length > 0) {
+        var avgUrge = validUrges.reduce(function(a,b){return a+b;}, 0) / validUrges.length;
+        var tier = 'Building';
+        if(avgUrge >= 40) tier = 'Elite';
+        else if(avgUrge >= 28) tier = 'Advanced';
+        else if(avgUrge >= 18) tier = 'Balanced';
+        if(co2El) co2El.textContent = Math.round(avgUrge) + 's';
+        if(subCo2El) subCo2El.textContent = 'Grade: ' + tier;
+      } else {
+        if(co2El) co2El.textContent = '–';
+        if(subCo2El) subCo2El.textContent = 'Tap Urge to grade';
+      }
+
+      var barsEl = document.getElementById('victory-rounds-bars');
+      if(barsEl) {
+        barsEl.innerHTML = '';
+        var totalRounds = data.rounds || (data.holds ? data.holds.length : 1);
+        for(var r = 1; r <= totalRounds; r++) {
+          var actual = (data.holds && data.holds[r-1]) ? data.holds[r-1] : 0;
+          var target = App.Config.getHoldTarget(r);
+          var pct = target > 0 ? Math.min(100, Math.round((actual / target) * 100)) : 100;
+          var row = document.createElement('div');
+          row.className = 'victory-round-row';
+          var colorCls = actual >= target ? 'bar-success' : (actual >= target * 0.75 ? 'bar-good' : 'bar-mid');
+          row.innerHTML =
+            '<span class="v-round-lbl">Round ' + r + '</span>' +
+            '<div class="v-bar-track">' +
+              '<div class="v-bar-fill ' + colorCls + '" style="width:' + pct + '%"></div>' +
+            '</div>' +
+            '<span class="v-bar-val">' + (actual >= 60 ? formatTimeMinSec(actual) : (Math.round(actual) + 's')) + ' / ' + (target >= 60 ? formatTimeMinSec(target) : (target + 's')) + '</span>';
+          barsEl.appendChild(row);
+        }
+      }
+
+      var flowWrap = document.getElementById('victory-flow-wrap');
+      var flowText = document.getElementById('victory-flow-text');
+      if(flowWrap && flowText) {
+        if(data.flowScore !== null && data.flowScore !== undefined) {
+          flowText.textContent = 'Cadence Flow: ' + data.flowScore + '% synchronized';
+          flowWrap.classList.remove('hidden');
+        } else {
+          flowWrap.classList.add('hidden');
+        }
+      }
+
+      overlay._shareData = {
+        archetype: archetype,
+        sessionBest: sessionBest,
+        totalRetention: totalHoldSec,
+        streak: data.streak,
+        flowScore: data.flowScore,
+        newRecord: data.newRecord
+      };
+
+      overlay.classList.remove('hidden');
+    }
+
+    function hideVictoryModal() {
+      var overlay = document.getElementById('victory-overlay');
+      if(overlay) overlay.classList.add('hidden');
+    }
+
     return { init:init, render:render, updateHoldTimer:updateHoldTimer,
              updateBreathingProgress:updateBreathingProgress,
              updateRecoveryCountdown:updateRecoveryCountdown,
@@ -4949,7 +6020,12 @@
              showRoundSummary:showRoundSummary, updateSummaryCountdown:updateSummaryCountdown,
              refreshIdleTitle:refreshIdleTitle, setStartButton:setStartButton,
              showUrgeMarked:showUrgeMarked, pokeDim:pokeDim,
-             enterSleep:enterSleep, exitSleep:exitSleep, peekSleep:peekSleep };
+             enterSleep:enterSleep, exitSleep:exitSleep, peekSleep:peekSleep,
+             setupGhostTarget:setupGhostTarget, showGhostOvertaken:showGhostOvertaken,
+             hideGhostTarget:hideGhostTarget, showHoldMilestone:showHoldMilestone,
+             hideHoldMilestone:hideHoldMilestone, updateFlowIndicator:updateFlowIndicator,
+             hideFlowIndicator:hideFlowIndicator, updateStreakBadge:updateStreakBadge,
+             showVictoryModal:showVictoryModal, hideVictoryModal:hideVictoryModal };
   })();
 
   /* ======== DISCLAIMER ======== */
@@ -5171,102 +6247,159 @@
       if(!st.sessions) {
         body.appendChild(el('div', 'stats-empty',
           'No sessions yet. Complete a session to see your progress here.'));
-        return;
-      }
-      var tiles = el('div', 'stats-summary');
-      function tile(val, label) {
-        var t = el('div', 'stat-tile');
-        t.appendChild(el('div', 'stat-value', val));
-        t.appendChild(el('div', 'stat-label', label));
-        return t;
-      }
-      tiles.appendChild(tile(String(st.sessions), 'Sessions'));
-      tiles.appendChild(tile(st.best ? Math.round(st.best) + 's' : '–', 'Best hold'));
-      tiles.appendChild(tile(st.avgBest ? Math.round(st.avgBest) + 's' : '–', 'Avg best hold'));
-      body.appendChild(tiles);
+      } else {
+        var tiles = el('div', 'stats-summary');
+        function tile(val, label) {
+          var t = el('div', 'stat-tile');
+          t.appendChild(el('div', 'stat-value', val));
+          t.appendChild(el('div', 'stat-label', label));
+          return t;
+        }
+        tiles.appendChild(tile(String(st.sessions), 'Sessions'));
+        tiles.appendChild(tile(st.best ? Math.round(st.best) + 's' : '–', 'Best hold'));
+        tiles.appendChild(tile(st.avgBest ? Math.round(st.avgBest) + 's' : '–', 'Avg best hold'));
+        body.appendChild(tiles);
 
-      /* streak / practice totals */
-      var dayset = {};
-      st.all.forEach(function(s) { dayset[new Date(s.ts).toDateString()] = true; });
-      var streak = 0, cursor = new Date();
-      if(!dayset[cursor.toDateString()]) cursor.setDate(cursor.getDate() - 1);
-      while(dayset[cursor.toDateString()]) { streak++; cursor.setDate(cursor.getDate() - 1); }
-      var totalSec = st.all.reduce(function(a, s) { return a + (s.durationSec || 0); }, 0);
-      var totalTxt = totalSec >= 3600
-        ? Math.floor(totalSec/3600) + 'h ' + Math.round(totalSec%3600/60) + 'm'
-        : Math.round(totalSec/60) + 'm';
-      var weekAgo = Date.now() - 7*864e5;
-      var thisWeek = st.all.filter(function(s) { return s.ts >= weekAgo; }).length;
-      var tiles2 = el('div', 'stats-summary');
-      tiles2.appendChild(tile(streak + (streak === 1 ? ' day' : ' days'), 'Streak'));
-      tiles2.appendChild(tile(totalTxt, 'Total practice'));
-      tiles2.appendChild(tile(String(thisWeek), 'This week'));
-      body.appendChild(tiles2);
+        /* streak / practice totals */
+        var dayset = {};
+        st.all.forEach(function(s) { dayset[new Date(s.ts).toDateString()] = true; });
+        var streak = 0, cursor = new Date();
+        if(!dayset[cursor.toDateString()]) cursor.setDate(cursor.getDate() - 1);
+        while(dayset[cursor.toDateString()]) { streak++; cursor.setDate(cursor.getDate() - 1); }
+        var totalSec = st.all.reduce(function(a, s) { return a + (s.durationSec || 0); }, 0);
+        var totalTxt = totalSec >= 3600
+          ? Math.floor(totalSec/3600) + 'h ' + Math.round(totalSec%3600/60) + 'm'
+          : Math.round(totalSec/60) + 'm';
+        var weekAgo = Date.now() - 7*864e5;
+        var thisWeek = st.all.filter(function(s) { return s.ts >= weekAgo; }).length;
+        var tiles2 = el('div', 'stats-summary');
+        tiles2.appendChild(tile(streak + (streak === 1 ? ' day' : ' days'), 'Streak'));
+        tiles2.appendChild(tile(totalTxt, 'Total practice'));
+        tiles2.appendChild(tile(String(thisWeek), 'This week'));
+        body.appendChild(tiles2);
 
-      var sleepSec = st.all.reduce(function(a, s) { return a + (s.sleepSec || 0); }, 0);
-      if(sleepSec > 0) {
-        var sleepTxt = sleepSec >= 3600
-          ? Math.floor(sleepSec/3600) + 'h ' + Math.round(sleepSec%3600/60) + 'm'
-          : Math.round(sleepSec/60) + 'm';
-        var sleepCount = st.all.filter(function(s) { return (s.sleepSec || 0) > 0; }).length;
-        var tiles3 = el('div', 'stats-summary');
-        tiles3.appendChild(tile(sleepTxt, 'Slept'));
-        tiles3.appendChild(tile(String(sleepCount), 'Sleep sessions'));
-        body.appendChild(tiles3);
+        var sleepSec = st.all.reduce(function(a, s) { return a + (s.sleepSec || 0); }, 0);
+        if(sleepSec > 0) {
+          var sleepTxt = sleepSec >= 3600
+            ? Math.floor(sleepSec/3600) + 'h ' + Math.round(sleepSec%3600/60) + 'm'
+            : Math.round(sleepSec/60) + 'm';
+          var sleepCount = st.all.filter(function(s) { return (s.sleepSec || 0) > 0; }).length;
+          var tiles3 = el('div', 'stats-summary');
+          tiles3.appendChild(tile(sleepTxt, 'Slept'));
+          tiles3.appendChild(tile(String(sleepCount), 'Sleep sessions'));
+          body.appendChild(tiles3);
+        }
+
+        var series = st.all
+          .filter(function(s) { return App.History.bestHold(s) > 0; })
+          .slice(-30)
+          .map(function(s) { return { ts: s.ts, best: App.History.bestHold(s) }; });
+        if(series.length >= 2) {
+          body.appendChild(el('div', 'stats-chart-title', 'Best hold per session'));
+          body.appendChild(buildChart(series));
+        }
+
+        /* average hold per round (last 10 sessions) — do later rounds improve? */
+        var roundAgg = [];
+        st.all.slice(-10).forEach(function(s) {
+          (s.holds || []).forEach(function(h, i) {
+            if(h > 0) {
+              roundAgg[i] = roundAgg[i] || { sum:0, n:0 };
+              roundAgg[i].sum += h; roundAgg[i].n++;
+            }
+          });
+        });
+        var roundAvgs = roundAgg.map(function(a, i) {
+          return a ? { round: i+1, avg: a.sum/a.n } : null;
+        }).filter(Boolean);
+        if(roundAvgs.length >= 2) {
+          body.appendChild(el('div', 'stats-chart-title', 'Average hold by round (last 10 sessions)'));
+          body.appendChild(buildRoundChart(roundAvgs));
+        }
+
+        var listWrap = el('div', 'stats-list');
+        var table = document.createElement('table');
+        var thead = document.createElement('thead');
+        var hr = document.createElement('tr');
+        ['Date','Preset','Rounds','Feel','Best hold'].forEach(function(h) {
+          var th = document.createElement('th'); th.textContent = h; hr.appendChild(th);
+        });
+        thead.appendChild(hr); table.appendChild(thead);
+        var FEELS = {1:'😌', 2:'✨', 3:'⚡', 4:'🎯', 5:'😵'};
+        var tbody = document.createElement('tbody');
+        st.all.slice(-10).reverse().forEach(function(s) {
+          var tr = document.createElement('tr');
+          tr.className = 'session-row';
+          var best = App.History.bestHold(s);
+          [fmtDate(s.ts), s.preset || 'Custom', String(s.rounds || '–'),
+           FEELS[s.feeling] || '–',
+           best ? Math.round(best) + 's' : '–'].forEach(function(c) {
+            var td = document.createElement('td'); td.textContent = c; tr.appendChild(td);
+          });
+          tr.addEventListener('click', function() { toggleDetail(tr, s); });
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        listWrap.appendChild(table);
+        body.appendChild(listWrap);
       }
 
-      var series = st.all
-        .filter(function(s) { return App.History.bestHold(s) > 0; })
-        .slice(-30)
-        .map(function(s) { return { ts: s.ts, best: App.History.bestHold(s) }; });
-      if(series.length >= 2) {
-        body.appendChild(el('div', 'stats-chart-title', 'Best hold per session'));
-        body.appendChild(buildChart(series));
-      }
+      /* Achievements / Trophy Shelf */
+      var badges = App.Achievements.getAll();
+      var unlockedCount = badges.filter(function(b) { return b.unlocked; }).length;
+      body.appendChild(el('div', 'stats-chart-title', 'Trophy Shelf (' + unlockedCount + ' / ' + badges.length + ')'));
+      var grid = el('div', 'achievements-grid');
+      badges.forEach(function(b) {
+        var card = el('div', 'achieve-card ' + (b.unlocked ? 'unlocked' : 'locked'));
+        var icon = el('div', 'achieve-icon', b.icon);
+        var title = el('div', 'achieve-title', b.title);
+        var desc = el('div', 'achieve-desc', b.desc);
+        card.appendChild(icon);
+        card.appendChild(title);
+        card.appendChild(desc);
+        grid.appendChild(card);
+      });
+      body.appendChild(grid);
 
-      /* average hold per round (last 10 sessions) — do later rounds improve? */
-      var roundAgg = [];
-      st.all.slice(-10).forEach(function(s) {
-        (s.holds || []).forEach(function(h, i) {
-          if(h > 0) {
-            roundAgg[i] = roundAgg[i] || { sum:0, n:0 };
-            roundAgg[i].sum += h; roundAgg[i].n++;
+      /* Backup & Data Actions */
+      body.appendChild(el('div', 'stats-chart-title', 'Data Backup & Portability'));
+      var dataActions = el('div', 'stats-data-actions');
+      var btnExport = document.createElement('button');
+      btnExport.className = 'btn btn-secondary';
+      btnExport.textContent = 'Export Backup (.json)';
+      btnExport.addEventListener('click', function() {
+        App.History.exportData();
+      });
+      var btnImport = document.createElement('button');
+      btnImport.className = 'btn btn-secondary';
+      btnImport.textContent = 'Import Backup';
+      var fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = '.json,application/json';
+      fileInput.style.display = 'none';
+      fileInput.addEventListener('change', function(ev) {
+        var file = ev.target.files && ev.target.files[0];
+        if(!file) return;
+        var reader = new FileReader();
+        reader.onload = function(e2) {
+          var res = App.History.importData(e2.target.result);
+          if (res.success) {
+            alert('Backup restored successfully (' + res.count + ' sessions loaded)!');
+            build();
+            App.UI.updateStreakBadge();
+          } else {
+            alert('Import failed: ' + res.error);
           }
-        });
+        };
+        reader.readAsText(file);
       });
-      var roundAvgs = roundAgg.map(function(a, i) {
-        return a ? { round: i+1, avg: a.sum/a.n } : null;
-      }).filter(Boolean);
-      if(roundAvgs.length >= 2) {
-        body.appendChild(el('div', 'stats-chart-title', 'Average hold by round (last 10 sessions)'));
-        body.appendChild(buildRoundChart(roundAvgs));
-      }
-
-      var listWrap = el('div', 'stats-list');
-      var table = document.createElement('table');
-      var thead = document.createElement('thead');
-      var hr = document.createElement('tr');
-      ['Date','Preset','Rounds','Feel','Best hold'].forEach(function(h) {
-        var th = document.createElement('th'); th.textContent = h; hr.appendChild(th);
+      btnImport.addEventListener('click', function() {
+        fileInput.click();
       });
-      thead.appendChild(hr); table.appendChild(thead);
-      var FEELS = {1:'😌', 2:'🙂', 3:'😵'};
-      var tbody = document.createElement('tbody');
-      st.all.slice(-10).reverse().forEach(function(s) {
-        var tr = document.createElement('tr');
-        tr.className = 'session-row';
-        var best = App.History.bestHold(s);
-        [fmtDate(s.ts), s.preset || 'Custom', String(s.rounds || '–'),
-         FEELS[s.feeling] || '–',
-         best ? Math.round(best) + 's' : '–'].forEach(function(c) {
-          var td = document.createElement('td'); td.textContent = c; tr.appendChild(td);
-        });
-        tr.addEventListener('click', function() { toggleDetail(tr, s); });
-        tbody.appendChild(tr);
-      });
-      table.appendChild(tbody);
-      listWrap.appendChild(table);
-      body.appendChild(listWrap);
+      dataActions.appendChild(btnExport);
+      dataActions.appendChild(btnImport);
+      dataActions.appendChild(fileInput);
+      body.appendChild(dataActions);
     }
 
     function open()  { build(); overlay.classList.remove('hidden'); }
@@ -5497,7 +6630,7 @@
     ['cfg-breaths','cfg-hold-start','cfg-hold-incr','cfg-rounds','cfg-inhale','cfg-exhale',
      'cfg-pause-inhale','cfg-pause-exhale','cfg-recovery-hold','cfg-ramp','cfg-hold-mode',
      'cfg-voice','cfg-vibration','cfg-ambience','cfg-ambience2','cfg-pacer','cfg-material',
-     'cfg-fullscreen','cfg-autodim','cfg-sleep','cfg-night-oled']
+     'cfg-fullscreen','cfg-autodim','cfg-sleep','cfg-night-oled','cfg-flow']
       .forEach(function(id) {
         var el = document.getElementById(id);
         if(el) el.addEventListener('change', function() {
@@ -5522,6 +6655,90 @@
         App.Ambience.applyVolume();
       });
     });
+
+    /* Streak Badge & Trophy Shelf Quick-Access */
+    App.UI.updateStreakBadge();
+    var streakBadgeBtn = document.getElementById('streak-badge-btn');
+    if(streakBadgeBtn) {
+      streakBadgeBtn.addEventListener('click', function() {
+        Stats.open();
+      });
+    }
+
+    /* Quick Sound HUD Popover */
+    var qsBtn = document.getElementById('quick-sound-btn');
+    var qsPopover = document.getElementById('quick-sound-popover');
+    var qsMuteBtn = document.getElementById('qs-btn-mute');
+    var qsVolVoice = document.getElementById('qs-vol-voice');
+    var qsVolCues = document.getElementById('qs-vol-cues');
+    var qsVolAmb = document.getElementById('qs-vol-amb');
+    var soundIconOn = document.getElementById('sound-icon-on');
+    var soundIconMute = document.getElementById('sound-icon-mute');
+
+    function syncQuickSoundUI() {
+      var muted = App.Audio.isMasterMuted();
+      if(qsMuteBtn) qsMuteBtn.textContent = muted ? 'Unmute' : 'Mute';
+      if(soundIconOn && soundIconMute) {
+        soundIconOn.classList.toggle('hidden', muted);
+        soundIconMute.classList.toggle('hidden', !muted);
+      }
+      if(qsVolVoice) qsVolVoice.value = App.Config.get('voiceVolume') !== undefined ? App.Config.get('voiceVolume') : 90;
+      if(qsVolCues) qsVolCues.value = App.Config.get('cuesVolume') !== undefined ? App.Config.get('cuesVolume') : 70;
+      if(qsVolAmb) qsVolAmb.value = App.Config.get('ambienceVolume') !== undefined ? App.Config.get('ambienceVolume') : 50;
+    }
+    syncQuickSoundUI();
+
+    if(qsBtn && qsPopover) {
+      qsBtn.addEventListener('click', function(ev) {
+        ev.stopPropagation();
+        syncQuickSoundUI();
+        qsPopover.classList.toggle('hidden');
+      });
+      document.addEventListener('click', function(ev) {
+        if(!qsPopover.classList.contains('hidden') && !ev.target.closest('.quick-sound-wrap')) {
+          qsPopover.classList.add('hidden');
+        }
+      });
+    }
+
+    if(qsMuteBtn) {
+      qsMuteBtn.addEventListener('click', function() {
+        var nowMuted = !App.Audio.isMasterMuted();
+        App.Audio.setMasterMute(nowMuted);
+        App.Config.set('masterMute', nowMuted ? 'on' : 'off');
+        App.Config.save();
+        syncQuickSoundUI();
+      });
+    }
+
+    if(qsVolVoice) {
+      qsVolVoice.addEventListener('input', function() {
+        var val = Number(this.value);
+        App.Config.set('voiceVolume', val);
+        App.Config.save();
+        var drawerSlider = document.getElementById('cfg-vol-voice');
+        if(drawerSlider) drawerSlider.value = val;
+      });
+    }
+    if(qsVolCues) {
+      qsVolCues.addEventListener('input', function() {
+        var val = Number(this.value);
+        App.Config.set('cuesVolume', val);
+        App.Config.save();
+        var drawerSlider = document.getElementById('cfg-vol-cues');
+        if(drawerSlider) drawerSlider.value = val;
+      });
+    }
+    if(qsVolAmb) {
+      qsVolAmb.addEventListener('input', function() {
+        var val = Number(this.value);
+        App.Config.set('ambienceVolume', val);
+        App.Config.save();
+        App.Ambience.applyVolume();
+        var drawerSlider = document.getElementById('cfg-vol-amb');
+        if(drawerSlider) drawerSlider.value = val;
+      });
+    }
 
     /* Ambience preview buttons: hear the current mix for 5 seconds (or toggle off) */
     ['btn-amb-preview','btn-amb2-preview'].forEach(function(id) {
@@ -5555,6 +6772,92 @@
         b.classList.toggle('selected', b === btn);
       });
     });
+
+    /* Victory Modal 2.0 Actions */
+    var victoryOverlay = document.getElementById('victory-overlay');
+    var victoryShareBtn = document.getElementById('btn-victory-share');
+    var victoryCloseBtn = document.getElementById('btn-victory-close');
+    var victoryStatsBtn = document.getElementById('btn-victory-stats');
+    var vFeelingRow = document.getElementById('v-feeling-row');
+    var copyToast = document.getElementById('copy-toast');
+
+    if(victoryCloseBtn) {
+      victoryCloseBtn.addEventListener('click', function() {
+        App.UI.hideVictoryModal();
+      });
+    }
+    if(victoryStatsBtn) {
+      victoryStatsBtn.addEventListener('click', function() {
+        App.UI.hideVictoryModal();
+        Stats.open();
+      });
+    }
+
+    if(vFeelingRow) {
+      vFeelingRow.addEventListener('click', function(ev) {
+        var btn = ev.target.closest ? ev.target.closest('.feeling-btn') : null;
+        if(!btn) return;
+        App.History.setLastFeeling(Number(btn.getAttribute('data-feel')));
+        vFeelingRow.querySelectorAll('.feeling-btn').forEach(function(b) {
+          b.classList.toggle('selected', b === btn);
+        });
+      });
+    }
+
+    if(victoryShareBtn && victoryOverlay) {
+      victoryShareBtn.addEventListener('click', function() {
+        var d = victoryOverlay._shareData || {};
+        var bestSec = Math.round(d.sessionBest || 0);
+        var bestStr = bestSec >= 60 ? (Math.floor(bestSec/60) + 'm ' + (bestSec%60) + 's') : (bestSec + 's');
+        var retSec = Math.round(d.totalRetention || 0);
+        var retStr = retSec >= 60 ? (Math.floor(retSec/60) + 'm ' + (retSec%60) + 's') : (retSec + 's');
+
+        var text = '🌬️ Breathwork Session Completed!\n' +
+                   '🏆 Archetype: ' + (d.archetype || 'Mindful Breath') + '\n' +
+                   '⏱️ Peak Hold: ' + bestStr + (d.newRecord ? ' (🔥 New PB!)' : '') + '\n' +
+                   '⌛ Total Retention: ' + retStr + '\n' +
+                   '🔥 Streak: ' + (d.streak || 1) + ' Days\n' +
+                   (d.flowScore ? ('⚡ Cadence Flow: ' + d.flowScore + '% Sync\n') : '') +
+                   '\n#BreatheApp #Breathwork #Pranayama';
+
+        if(navigator.share) {
+          navigator.share({
+            title: 'Breathe Session Recap',
+            text: text
+          }).catch(function() {});
+        } else if(navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function() {
+            if(copyToast) {
+              copyToast.classList.remove('hidden');
+              setTimeout(function() { copyToast.classList.add('hidden'); }, 2200);
+            }
+          });
+        }
+      });
+    }
+
+    /* Flow Cadence Touch / Pointer events */
+    var circleWrap = document.getElementById('circle-wrapper');
+    if(circleWrap) {
+      circleWrap.addEventListener('pointerdown', function() {
+        var st = App.Session.getState();
+        if(st === STATES.BREATHING_IN || st === STATES.BREATHING_OUT) {
+          App.Session.onFlowPointerDown();
+        }
+      });
+      circleWrap.addEventListener('pointerup', function() {
+        var st = App.Session.getState();
+        if(st === STATES.BREATHING_IN || st === STATES.BREATHING_OUT) {
+          App.Session.onFlowPointerUp();
+        }
+      });
+      circleWrap.addEventListener('pointercancel', function() {
+        var st = App.Session.getState();
+        if(st === STATES.BREATHING_IN || st === STATES.BREATHING_OUT) {
+          App.Session.onFlowPointerUp();
+        }
+      });
+    }
 
     /* Urge-to-breathe marker */
     document.getElementById('urge-btn').addEventListener('click', function() {
@@ -5638,8 +6941,22 @@
           App.Session.resume();
         } else if(st === STATES.SLEEPING) {
           App.UI.peekSleep();
+        } else if(st === STATES.BREATHING_IN || st === STATES.BREATHING_OUT) {
+          if(App.Config.get('flowMode') === 'on') {
+            App.Session.onFlowPointerDown();
+          } else {
+            App.Session.pause();
+          }
         } else {
           App.Session.pause();
+        }
+      }
+    });
+    document.addEventListener('keyup', function(ev) {
+      if(ev.key === ' ' && App.Config.get('flowMode') === 'on') {
+        var st = App.Session.getState();
+        if(st === STATES.BREATHING_IN || st === STATES.BREATHING_OUT) {
+          App.Session.onFlowPointerUp();
         }
       }
     });
