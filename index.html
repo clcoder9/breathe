@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <title>Pranayama Breathing</title>
+  <title>Breathe</title>
   <script>
     // Flash prevention: apply theme before paint
     (function(){
@@ -1714,7 +1714,7 @@
                   <option value="forest">Night Forest (HQ Crickets & Birds)</option>
                   <option value="fire">Campfire (HQ Crackle)</option>
                   <option value="stream">Stream (HQ Mountain Brook)</option>
-                  <option value="noise">Deep Noise</option>
+                  <option value="noise">Deep Noise (HQ Drone & Rumble)</option>
                 </optgroup>
               </select>
               <button type="button" class="amb-preview" id="btn-amb-preview" title="Preview 5s" aria-label="Preview ambience">&#9654;</button>
@@ -1739,7 +1739,7 @@
                 <option value="forest">Night Forest (HQ Crickets & Birds)</option>
                 <option value="fire">Campfire (HQ Crackle)</option>
                 <option value="stream">Stream (HQ Mountain Brook)</option>
-                <option value="noise">Deep Noise</option>
+                <option value="noise">Deep Noise (HQ Drone & Rumble)</option>
               </select>
               <button type="button" class="amb-preview" id="btn-amb2-preview" title="Preview 5s" aria-label="Preview ambience mix">&#9654;</button>
             </div>
@@ -1840,7 +1840,7 @@
       </div>
 
       <div class="header-center">
-        <span class="app-brand-title">PRANAYAMA</span>
+        <span class="app-brand-title">BREATHE</span>
       </div>
 
       <div class="header-right">
@@ -2751,7 +2751,8 @@
       wind: './music/wind.mp3',
       forest: './music/forest.mp3',
       fire: './music/fire.mp3',
-      stream: './music/stream.mp3'
+      stream: './music/stream.mp3',
+      noise: './music/noise.mp3'
     };
     var natureBuffers = {};
     var loadingBuffers = {};
@@ -3170,17 +3171,41 @@
               } catch(e) {}
             });
           }
-        } else { /* noise: deep featureless brown noise */
-          noise.buffer = makeNoiseBuffer(c, true); noise.loop = true;
-          filter.type = 'lowpass'; filter.frequency.value = 220; filter.Q.value = 0.4;
-          noiseGain.gain.value = 0.9;
-          noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
-          /* imperceptibly slow swell so it never feels static */
-          var swell = c.createOscillator(); swell.type = 'sine'; swell.frequency.value = 0.05;
-          var swellGain = c.createGain(); swellGain.gain.value = 0.06;
-          swell.connect(swellGain); swellGain.connect(noiseGain.gain);
-          swell.start();
-          extras.push(swell);
+        } else { /* noise: deep meditative warm drone / brown noise */
+          var hqNoiseBuf = natureBuffers.noise;
+          if(hqNoiseBuf) {
+            noise.buffer = hqNoiseBuf; noise.loop = true;
+            filter.type = 'lowpass'; filter.frequency.value = 350; filter.Q.value = 0.5;
+            noiseGain.gain.value = 0.85;
+            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
+          } else {
+            noise.buffer = makeNoiseBuffer(c, true); noise.loop = true;
+            filter.type = 'lowpass'; filter.frequency.value = 220; filter.Q.value = 0.4;
+            noiseGain.gain.value = 0.9;
+            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
+            /* imperceptibly slow swell so it never feels static */
+            var swell = c.createOscillator(); swell.type = 'sine'; swell.frequency.value = 0.05;
+            var swellGain = c.createGain(); swellGain.gain.value = 0.06;
+            swell.connect(swellGain); swellGain.connect(noiseGain.gain);
+            swell.start();
+            extras.push(swell);
+            preloadNatureBuffer(c, 'noise', function(buf) {
+              if(!running) return;
+              try {
+                var hq = c.createBufferSource();
+                hq.buffer = buf; hq.loop = true;
+                var hqGain = c.createGain();
+                hqGain.gain.setValueAtTime(0.0001, c.currentTime);
+                hqGain.gain.linearRampToValueAtTime(0.85, c.currentTime + 1.5);
+                hq.connect(filter); filter.frequency.setTargetAtTime(350, c.currentTime, 0.5);
+                hqGain.connect(master);
+                hq.start();
+                noiseGain.gain.linearRampToValueAtTime(0.0001, c.currentTime + 1.2);
+                swellGain.gain.linearRampToValueAtTime(0.0001, c.currentTime + 1.2);
+                extras.push(hq);
+              } catch(e) {}
+            });
+          }
         }
 
         noise.start();
@@ -3493,6 +3518,8 @@
           m = [1200, 2600];
         } else if(isHQ && s.type === 'stream') {
           m = [1500, 3200];
+        } else if(isHQ && s.type === 'noise') {
+          m = [220, 240];
         } else {
           m = BREATH_F[s.type] || BREATH_F.ocean;
         }
@@ -3514,6 +3541,7 @@
         else if(isHQ && s.type === 'forest') f = 1600;
         else if(isHQ && s.type === 'fire') f = 1000;
         else if(isHQ && s.type === 'stream') f = 1400;
+        else if(isHQ && s.type === 'noise') f = 200;
         else f = CALM_F[s.type] || CALM_F.ocean;
         try { s.filter.frequency.setTargetAtTime(f, c.currentTime, 0.8); } catch(e) {}
       });
@@ -3909,7 +3937,7 @@
         dayMap[toDayKey(new Date(s.ts))] = true;
       });
       var today = new Date();
-      var cur = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      var cur = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12, 0, 0);
       var streak = 0;
       if (dayMap[toDayKey(cur)]) {
         streak = 1;
@@ -5888,12 +5916,19 @@
 
     function updateStreakBadge() {
       var streak = App.History.getStreak();
-      var countEl = document.getElementById('streak-count');
+      var countEl = document.getElementById('streak-badge-val') || document.getElementById('streak-count');
       var btn = document.getElementById('streak-badge-btn');
       if(countEl) countEl.textContent = streak;
       if(btn) {
-        if(streak > 0) btn.classList.add('streak-active');
-        else btn.classList.remove('streak-active');
+        btn.title = (streak > 0 ? streak + ' Day Streak' : 'Daily Streak') + ' - Click for Stats';
+        btn.setAttribute('aria-label', streak > 0 ? streak + ' day streak' : 'Current daily streak');
+        if(streak > 0) {
+          btn.classList.add('active-streak');
+          btn.classList.add('streak-active');
+        } else {
+          btn.classList.remove('active-streak');
+          btn.classList.remove('streak-active');
+        }
       }
     }
 
