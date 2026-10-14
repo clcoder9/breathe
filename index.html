@@ -3002,9 +3002,9 @@
     };
 
     /* build one scene graph; local `master` is the scene's own mix gain */
-    function buildScene(c, type, slot) {
+    function buildScene(c, type, slot, isPreview) {
         var master = c.createGain();
-        master.gain.value = slotVol(slot);
+        master.gain.value = isPreview ? Math.max(0.7, slotVol(slot)) : slotVol(slot);
         var timers = [];
         var extras = [];
         var cfg = NATURE_PRESETS[type] || { lp: 6000, q: 0.5, vol: 1.0 };
@@ -3021,7 +3021,7 @@
         var currentSource = null;
 
         function startBuffer(buf, fadeDur) {
-          if(!running) return;
+          if(!running && !previewTimer) return;
           try {
             var src = c.createBufferSource();
             src.buffer = buf;
@@ -3091,6 +3091,7 @@
       var isPaused = false;
 
       function getMasterVol() {
+        if(previewTimer) return Math.max(0.7, App.Config.get('volAmbience') / 100);
         return (App.Config.get('volAmbience') / 100);
       }
 
@@ -3308,6 +3309,9 @@
         music.start(t1);
       }
 
+      running = true;
+      runningKey = key;
+
       var c = App.Audio.getCtx();
       if(c && (!hasMusic || t2 !== 'off')) {
         try {
@@ -3317,13 +3321,12 @@
           var dest = (App.Audio.getDestination && App.Audio.getDestination()) || c.destination;
           master.connect(dest);
           scenes = [];
-          if(!hasMusic && t1 !== 'off') scenes.push(buildScene(c, t1, 0));
-          if(t2 !== 'off') scenes.push(buildScene(c, t2, 1));
+          if(!hasMusic && t1 !== 'off') scenes.push(buildScene(c, t1, 0, false));
+          if(t2 !== 'off') scenes.push(buildScene(c, t2, 1, false));
           scenes.forEach(function(s) { s.gain.connect(master); });
-        } catch(e) { scenes = []; master = null; }
+        } catch(e) { scenes = []; master = null; running = false; runningKey = null; }
       }
 
-      running = true; runningKey = key;
       if(hasMusic) {
         App.Scene.start(t2 !== 'off' ? t2 : 'stardust');
       } else {
@@ -3410,8 +3413,12 @@
     }
 
     function resume() {
-      if(music.isPlaying()) music.resume();
-      duck(false);
+      if(!running) {
+        sync();
+      } else {
+        if(music.isPlaying()) music.resume();
+        duck(false);
+      }
     }
 
     function onStateChange(newState) {
@@ -3429,6 +3436,7 @@
 
     /* start/stop/switch according to config + session state (called on setting change) */
     function sync() {
+      if(previewTimer) return;
       var wanted = App.Session && App.Session.isActive() &&
                    App.Session.getState() !== STATES.PAUSED &&
                    (App.Config.get('ambience') !== 'off' ||
@@ -3442,7 +3450,6 @@
     var previewingType = null;
 
     function preview(targetType, slot) {
-      if(App.Session && App.Session.isActive()) return false;
       stopPreview();
 
       var t = targetType || App.Config.get('ambience');
@@ -3453,6 +3460,8 @@
 
       var isMusic = !!IS_MUSIC[t];
       previewingType = t;
+      running = true;
+      runningKey = 'preview:' + t;
 
       if(isMusic) {
         music.start(t);
@@ -3465,14 +3474,11 @@
             master.gain.linearRampToValueAtTime(MASTER, c.currentTime + 0.15);
             var dest = (App.Audio.getDestination && App.Audio.getDestination()) || c.destination;
             master.connect(dest);
-            scenes = [buildScene(c, t, slot !== undefined ? slot : 0)];
+            scenes = [buildScene(c, t, slot !== undefined ? slot : 0, true)];
             scenes[0].gain.connect(master);
-          } catch(e) { scenes = []; master = null; }
+          } catch(e) { scenes = []; master = null; running = false; runningKey = null; }
         }
       }
-
-      running = true;
-      runningKey = 'preview:' + t;
 
       clearTimeout(previewTimer);
       previewTimer = setTimeout(function() {
@@ -3495,6 +3501,9 @@
       previewingType = null;
       stop(true);
       document.querySelectorAll('.amb-preview').forEach(function(b) { b.classList.remove('playing'); });
+      if(App.Session && App.Session.isActive() && App.Session.getState() !== STATES.PAUSED) {
+        sync();
+      }
     }
 
     return { start:start, stop:stop, pause:pause, resume:resume, setBreath:setBreath, setCalm:setCalm,
