@@ -2822,7 +2822,7 @@
     /* up to two scenes play in parallel (Ambience + Ambience 2), each with its
        own volume, mixed into one master used for fades and ducking */
     var master = null, scenes = [], running = false, runningKey = null;
-    var MASTER = 0.5;
+    var MASTER = 1.0;
 
     function slotVol(slot) {
       return App.Config.get(slot === 0 ? 'volAmbience' : 'volAmbience2') / 100;
@@ -2947,13 +2947,13 @@
     }
 
     var NATURE_PRESETS = {
-      ocean:  { lp: 1400, q: 0.5, vol: 0.85 },
-      rain:   { lp: 5200, q: 0.4, vol: 0.75, thunder: true },
-      wind:   { lp: 1400, q: 0.6, vol: 0.85 },
-      forest: { lp: 4500, q: 0.4, vol: 0.80 },
-      fire:   { lp: 3200, q: 0.5, vol: 0.80 },
-      stream: { lp: 3500, q: 0.5, vol: 0.75 },
-      noise:  { lp: 350,  q: 0.5, vol: 0.85 }
+      ocean:  { lp: 6000, q: 0.5, vol: 1.0 },
+      rain:   { lp: 8000, q: 0.4, vol: 1.0, thunder: true },
+      wind:   { lp: 5500, q: 0.5, vol: 1.0 },
+      forest: { lp: 7000, q: 0.4, vol: 1.0 },
+      fire:   { lp: 6000, q: 0.5, vol: 1.0 },
+      stream: { lp: 7000, q: 0.5, vol: 1.0 },
+      noise:  { lp: 4500, q: 0.5, vol: 1.0 }
     };
 
     /* build one scene graph; local `master` is the scene's own mix gain */
@@ -2962,7 +2962,7 @@
         master.gain.value = slotVol(slot);
         var timers = [];
         var extras = [];
-        var cfg = NATURE_PRESETS[type] || { lp: 1400, q: 0.5, vol: 0.80 };
+        var cfg = NATURE_PRESETS[type] || { lp: 6000, q: 0.5, vol: 1.0 };
 
         var filter = c.createBiquadFilter();
         filter.type = 'lowpass';
@@ -3166,7 +3166,7 @@
         if(!deckA) return;
         if(duckRaf) cancelAnimationFrame(duckRaf);
         var startLevel = duckLevel;
-        var targetLevel = on ? 0.35 : 1.0;
+        var targetLevel = on ? 0.65 : 1.0;
         var startTime = performance.now();
         var dur = 300;
         function step(now) {
@@ -3316,51 +3316,24 @@
     }
 
     /* breath progress 0 (empty) → 1 (full): each soundscape opens with the inhale */
-    var BREATH_F = { rain:[2200,3300], wind:[420,320], ocean:[350,750],
-                     forest:[250,250], fire:[350,300], stream:[1800,1400], noise:[180,120] };
+    var BREATH_F = { rain:[4800,4500], wind:[3200,4300], ocean:[3800,4200],
+                     forest:[4200,4500], fire:[3600,4000], stream:[4200,4500], noise:[2500,3500] };
     function setBreath(p) {
       if(!running) return;
       var c = App.Audio.getCtx();
       scenes.forEach(function(s) {
-        var isHQ = !!natureBuffers[s.type];
-        var m;
-        if(isHQ && s.type === 'ocean') {
-          m = [550, 1650];
-        } else if(isHQ && s.type === 'rain') {
-          m = [2500, 4000];
-        } else if(isHQ && s.type === 'wind') {
-          m = [600, 1800];
-        } else if(isHQ && s.type === 'forest') {
-          m = [1800, 3500];
-        } else if(isHQ && s.type === 'fire') {
-          m = [1200, 2600];
-        } else if(isHQ && s.type === 'stream') {
-          m = [1500, 3200];
-        } else if(isHQ && s.type === 'noise') {
-          m = [220, 240];
-        } else {
-          m = BREATH_F[s.type] || BREATH_F.ocean;
-        }
+        var m = BREATH_F[s.type] || BREATH_F.ocean;
         try { s.filter.frequency.setTargetAtTime(m[0] + m[1]*p, c.currentTime, 0.12); } catch(e) {}
       });
     }
 
     /* calm setting for holds: filter low and steady */
-    var CALM_F = { rain:1900, wind:380, ocean:300, forest:250, fire:300, stream:1600, noise:170 };
+    var CALM_F = { rain:4500, wind:3000, ocean:3800, forest:4000, fire:3500, stream:4000, noise:2400 };
     function setCalm() {
       if(!running) return;
       var c = App.Audio.getCtx();
       scenes.forEach(function(s) {
-        var isHQ = !!natureBuffers[s.type];
-        var f;
-        if(isHQ && s.type === 'ocean') f = 500;
-        else if(isHQ && s.type === 'rain') f = 2400;
-        else if(isHQ && s.type === 'wind') f = 550;
-        else if(isHQ && s.type === 'forest') f = 1600;
-        else if(isHQ && s.type === 'fire') f = 1000;
-        else if(isHQ && s.type === 'stream') f = 1400;
-        else if(isHQ && s.type === 'noise') f = 200;
-        else f = CALM_F[s.type] || CALM_F.ocean;
+        var f = CALM_F[s.type] || CALM_F.ocean;
         try { s.filter.frequency.setTargetAtTime(f, c.currentTime, 0.8); } catch(e) {}
       });
     }
@@ -3370,7 +3343,7 @@
       if(!running || !master) return;
       var c = App.Audio.getCtx();
       try {
-        master.gain.setTargetAtTime(on ? MASTER*0.35 : MASTER, c.currentTime, 0.3);
+        master.gain.setTargetAtTime(on ? MASTER*0.65 : MASTER, c.currentTime, 0.3);
       } catch(e) {}
     }
 
@@ -6510,6 +6483,7 @@
         App.Config.readFromInputs();
         App.Config.save();
         App.Ambience.applyVolume();
+        if(typeof syncQuickSoundUI === 'function') syncQuickSoundUI();
       });
     });
 
@@ -6539,9 +6513,9 @@
         soundIconOn.classList.toggle('hidden', muted);
         soundIconMute.classList.toggle('hidden', !muted);
       }
-      if(qsVolVoice) qsVolVoice.value = App.Config.get('voiceVolume') !== undefined ? App.Config.get('voiceVolume') : 90;
-      if(qsVolCues) qsVolCues.value = App.Config.get('cuesVolume') !== undefined ? App.Config.get('cuesVolume') : 70;
-      if(qsVolAmb) qsVolAmb.value = App.Config.get('ambienceVolume') !== undefined ? App.Config.get('ambienceVolume') : 50;
+      if(qsVolVoice) qsVolVoice.value = App.Config.get('volVoice') !== undefined ? App.Config.get('volVoice') : 90;
+      if(qsVolCues) qsVolCues.value = App.Config.get('volCues') !== undefined ? App.Config.get('volCues') : 70;
+      if(qsVolAmb) qsVolAmb.value = App.Config.get('volAmbience') !== undefined ? App.Config.get('volAmbience') : 50;
     }
     syncQuickSoundUI();
 
@@ -6571,7 +6545,7 @@
     if(qsVolVoice) {
       qsVolVoice.addEventListener('input', function() {
         var val = Number(this.value);
-        App.Config.set('voiceVolume', val);
+        App.Config.set('volVoice', val);
         App.Config.save();
         var drawerSlider = document.getElementById('cfg-vol-voice');
         if(drawerSlider) drawerSlider.value = val;
@@ -6580,7 +6554,7 @@
     if(qsVolCues) {
       qsVolCues.addEventListener('input', function() {
         var val = Number(this.value);
-        App.Config.set('cuesVolume', val);
+        App.Config.set('volCues', val);
         App.Config.save();
         var drawerSlider = document.getElementById('cfg-vol-cues');
         if(drawerSlider) drawerSlider.value = val;
@@ -6589,7 +6563,7 @@
     if(qsVolAmb) {
       qsVolAmb.addEventListener('input', function() {
         var val = Number(this.value);
-        App.Config.set('ambienceVolume', val);
+        App.Config.set('volAmbience', val);
         App.Config.save();
         App.Ambience.applyVolume();
         var drawerSlider = document.getElementById('cfg-vol-amb');

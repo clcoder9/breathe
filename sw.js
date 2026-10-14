@@ -1,4 +1,4 @@
-var CACHE_NAME = 'pranayama-v18';
+var CACHE_NAME = 'pranayama-v19';
 var ASSETS = [
   './',
   './index.html',
