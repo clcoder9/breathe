@@ -2555,13 +2555,42 @@
   App.Audio = (function() {
     var ctx = null;
     var masterMuted = false;
+    var limiter = null;
 
     function init() {
       if(ctx) return;
-      try { ctx = new (window.AudioContext||window.webkitAudioContext)(); } catch(e) { ctx=null; }
+      try {
+        var AudioCtx = window.AudioContext || window.webkitAudioContext;
+        ctx = new AudioCtx({ latencyHint: 'interactive' });
+      } catch(e) {
+        try { ctx = new (window.AudioContext||window.webkitAudioContext)(); } catch(e2) { ctx=null; }
+      }
+      if(ctx) ensureLimiter();
     }
     function resume() { if(ctx && ctx.state==='suspended') ctx.resume(); }
     function getCtx() { return ctx; }
+
+    function ensureLimiter() {
+      if(!ctx || limiter) return limiter;
+      try {
+        var comp = ctx.createDynamicsCompressor();
+        comp.threshold.value = -2.5;
+        comp.knee.value = 6.0;
+        comp.ratio.value = 16.0;
+        comp.attack.value = 0.003;
+        comp.release.value = 0.15;
+        comp.connect(ctx.destination);
+        limiter = comp;
+      } catch(e) {
+        limiter = ctx ? ctx.destination : null;
+      }
+      return limiter;
+    }
+
+    function getDestination() {
+      if(!ctx) return null;
+      return limiter || ensureLimiter() || ctx.destination;
+    }
 
     function isMasterMuted() {
       return masterMuted || (App.Config && App.Config.get('masterMute') === 'on');
@@ -2582,8 +2611,9 @@
       if(vol <= 0) return;
       try {
         var o=ctx.createOscillator(), g=ctx.createGain();
-        o.connect(g); g.connect(ctx.destination);
+        o.connect(g); g.connect(getDestination());
         o.type='sine'; o.frequency.value=freq;
+        t = Math.max(ctx.currentTime, t || ctx.currentTime);
         g.gain.setValueAtTime(0,t);
         g.gain.linearRampToValueAtTime(vol, t+0.01);
         g.gain.setValueAtTime(vol, Math.max(t+0.01, t+dur-0.015));
@@ -2598,10 +2628,11 @@
       resume();
       freq = freq || 280;
       dur = dur || 2.4;
-      var t = ctx.currentTime;
+      var t = Math.max(ctx.currentTime, ctx.currentTime + 0.005);
       var vol = 0.3 * (App.Config.get('volCues') / 100);
       if(vol <= 0) return;
       try {
+        var dest = getDestination();
         // Fundamental partials with gentle chorusing/beating
         [freq, freq + 0.85].forEach(function(f) {
           var o = ctx.createOscillator(), g = ctx.createGain();
@@ -2609,7 +2640,7 @@
           g.gain.setValueAtTime(0, t);
           g.gain.linearRampToValueAtTime(vol * 0.7, t + 0.03);
           g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-          o.connect(g); g.connect(ctx.destination);
+          o.connect(g); g.connect(dest);
           o.start(t); o.stop(t + dur);
         });
         // High harmonic overtone shimmer
@@ -2618,7 +2649,7 @@
         g2.gain.setValueAtTime(0, t);
         g2.gain.linearRampToValueAtTime(vol * 0.22, t + 0.02);
         g2.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.65);
-        o2.connect(g2); g2.connect(ctx.destination);
+        o2.connect(g2); g2.connect(dest);
         o2.start(t); o2.stop(t + dur * 0.65);
       } catch(e) {}
     }
@@ -2626,6 +2657,7 @@
     return {
       init: init,
       getCtx: getCtx,
+      getDestination: getDestination,
       resume: resume,
       isMasterMuted: isMasterMuted,
       setMasterMute: setMasterMute,
@@ -2665,37 +2697,73 @@
 
   /* ======== App.Voice ========
      Female neural TTS clips embedded as base64 MP3 (see docs/voice/ for
-     sources + regeneration script). Decoded lazily after first user gesture. */
+     sources + regeneration script). Priority clips decoded immediately,
+     remaining clips decoded in smooth background batches to prevent audio buffer underruns. */
   App.Voice = (function() {
-    var buffers = {}, decoding = false, current = null;
+    var buffers = {}, decodingStarted = false, current = null;
     var lastName = null, lastTime = 0, gain = null;
+    var pendingCallbacks = {};
+
+    function decodeClip(c, name, onDone) {
+      if(buffers[name]) {
+        if(onDone) onDone(buffers[name]);
+        return;
+      }
+      if(typeof VOICE_CLIPS === 'undefined' || !VOICE_CLIPS[name]) return;
+      if(!pendingCallbacks[name]) pendingCallbacks[name] = [];
+      if(onDone) pendingCallbacks[name].push(onDone);
+      if(pendingCallbacks[name].length > 1) return;
+
+      try {
+        var bin = atob(VOICE_CLIPS[name]);
+        var arr = new Uint8Array(bin.length);
+        for(var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        c.decodeAudioData(arr.buffer, function(buf) {
+          buffers[name] = buf;
+          var cbs = pendingCallbacks[name] || [];
+          delete pendingCallbacks[name];
+          cbs.forEach(function(fn) { try { fn(buf); } catch(e) {} });
+        }, function() {
+          delete pendingCallbacks[name];
+        });
+      } catch(e) {
+        delete pendingCallbacks[name];
+      }
+    }
 
     function init() {
       var c = App.Audio.getCtx();
-      if(!c || decoding) return;
-      decoding = true;
+      if(!c || decodingStarted) return;
+      decodingStarted = true;
       gain = c.createGain();
       gain.gain.value = 0.9;
-      gain.connect(c.destination);
-      Object.keys(VOICE_CLIPS).forEach(function(name) {
-        try {
-          var bin = atob(VOICE_CLIPS[name]);
-          var arr = new Uint8Array(bin.length);
-          for(var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-          /* callback form for Safari compatibility */
-          c.decodeAudioData(arr.buffer,
-            function(buf) { buffers[name] = buf; },
-            function() {});
-        } catch(e) {}
+      var dest = (App.Audio.getDestination && App.Audio.getDestination()) || c.destination;
+      gain.connect(dest);
+
+      // 1. Decode immediate cues first (countdown + first breath)
+      var immediate = ['getReady', 'breatheIn', 'breatheOut', 'pause'];
+      immediate.forEach(function(name) {
+        decodeClip(c, name);
       });
+
+      // 2. Decode remaining clips in small background batches to avoid audio thread stalls
+      setTimeout(function() {
+        var remaining = Object.keys(VOICE_CLIPS).filter(function(k) { return immediate.indexOf(k) === -1; });
+        var idx = 0;
+        function decodeNextBatch() {
+          if(!c || idx >= remaining.length) return;
+          var batch = remaining.slice(idx, idx + 2);
+          idx += 2;
+          batch.forEach(function(name) { decodeClip(c, name); });
+          if(idx < remaining.length) {
+            setTimeout(decodeNextBatch, 80);
+          }
+        }
+        decodeNextBatch();
+      }, 350);
     }
 
-    function speak(name) {
-      if(App.Config.get('voiceMode') === 'off') return;
-      var c = App.Audio.getCtx();
-      var buf = buffers[name];
-      if(!c || !buf) return;
-      App.Audio.resume();
+    function playBuffer(c, buf, name) {
       gain.gain.value = App.Config.get('volVoice') / 100;
       var now = c.currentTime;
       if(name === lastName && (now - lastTime) < 0.3) return;
@@ -2704,11 +2772,26 @@
         var src = c.createBufferSource();
         src.buffer = buf;
         src.connect(gain);
-        src.start(now);
+        var startT = Math.max(c.currentTime, now + 0.005);
+        src.start(startT);
         src.onended = function() { if(current === src) current = null; };
         current = src;
         lastName = name; lastTime = now;
       } catch(e) {}
+    }
+
+    function speak(name) {
+      if(App.Config.get('voiceMode') === 'off') return;
+      var c = App.Audio.getCtx();
+      if(!c) return;
+      App.Audio.resume();
+      if(buffers[name]) {
+        playBuffer(c, buffers[name], name);
+      } else {
+        decodeClip(c, name, function(buf) {
+          playBuffer(c, buf, name);
+        });
+      }
     }
 
     return { init:init, speak:speak };
@@ -2756,6 +2839,20 @@
     };
     var natureBuffers = {};
     var loadingBuffers = {};
+    var rawBuffers = {};
+
+    function earlyFetch() {
+      if(typeof App === 'undefined' || !App.Config) return;
+      var t1 = App.Config.get('ambience'), t2 = App.Config.get('ambience2');
+      [t1, t2].forEach(function(type) {
+        if(NATURE_TRACKS[type] && !rawBuffers[type] && !natureBuffers[type]) {
+          fetch(NATURE_TRACKS[type])
+            .then(function(res) { if(res.ok) return res.arrayBuffer(); })
+            .then(function(arr) { if(arr) rawBuffers[type] = arr; })
+            .catch(function() {});
+        }
+      });
+    }
 
     function preloadNatureBuffer(c, type, onReady) {
       if(!NATURE_TRACKS[type]) return;
@@ -2768,17 +2865,26 @@
           var checkTimer = setInterval(function() {
             if(natureBuffers[type]) { clearInterval(checkTimer); onReady(natureBuffers[type]); }
             else if(!loadingBuffers[type]) { clearInterval(checkTimer); }
-          }, 60);
+          }, 40);
         }
         return;
       }
       loadingBuffers[type] = true;
-      fetch(NATURE_TRACKS[type])
-        .then(function(res) {
-          if(!res.ok) throw new Error('Fetch failed: ' + res.status);
-          return res.arrayBuffer();
-        })
+      var fetchP = rawBuffers[type]
+        ? Promise.resolve(rawBuffers[type].slice(0))
+        : fetch(NATURE_TRACKS[type])
+            .then(function(res) {
+              if(!res.ok) throw new Error('Fetch failed: ' + res.status);
+              return res.arrayBuffer();
+            })
+            .then(function(arr) {
+              try { rawBuffers[type] = arr.slice(0); } catch(e) {}
+              return arr;
+            });
+
+      fetchP
         .then(function(arr) {
+          if(!c) { loadingBuffers[type] = false; return; }
           c.decodeAudioData(arr, function(buf) {
             natureBuffers[type] = buf;
             loadingBuffers[type] = false;
@@ -2811,38 +2917,14 @@
       var last = 0;
       for(var i = 0; i < len; i++) {
         var w = Math.random()*2 - 1;
-        if(brown) { last = (last + 0.02*w) / 1.02; d[i] = last * 3.5; }
-        else d[i] = w;
+        if(brown) {
+          last = (last + 0.02*w) / 1.02;
+          d[i] = Math.max(-0.95, Math.min(0.95, last * 1.5));
+        } else {
+          d[i] = Math.max(-0.95, Math.min(0.95, w * 0.7));
+        }
       }
       return buf;
-    }
-
-    /* small cached white-noise buffer shared by one-shot blips */
-    function smallBuf(c) {
-      return makeNoiseBuffer.smallBuf || (makeNoiseBuffer.smallBuf = (function() {
-        var b = c.createBuffer(1, Math.round(c.sampleRate*0.04), c.sampleRate);
-        var d = b.getChannelData(0);
-        for(var i = 0; i < d.length; i++) d[i] = Math.random()*2 - 1;
-        return b;
-      })());
-    }
-
-    /* single rain droplet: short high bandpass noise blip */
-    function droplet(c, master) {
-      try {
-        var t = c.currentTime;
-        var src = c.createBufferSource();
-        src.buffer = smallBuf(c);
-        var bp = c.createBiquadFilter();
-        bp.type = 'bandpass'; bp.Q.value = 6;
-        bp.frequency.value = 2500 + Math.random()*4500;
-        var g = c.createGain();
-        var vol = 0.05 + Math.random()*0.16;
-        g.gain.setValueAtTime(vol, t);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.04 + Math.random()*0.05);
-        src.connect(bp); bp.connect(g); g.connect(master);
-        src.start(t); src.stop(t + 0.12);
-      } catch(e) {}
     }
 
     /* distant thunder: slow brown-noise swell through a deep lowpass */
@@ -2854,7 +2936,7 @@
         var lp = c.createBiquadFilter();
         lp.type = 'lowpass'; lp.frequency.value = 90 + Math.random()*50; lp.Q.value = 0.5;
         var g = c.createGain();
-        var peak = 0.5 + Math.random()*0.4;
+        var peak = 0.4 + Math.random()*0.3;
         var dur = 2.5 + Math.random()*2.5;
         g.gain.setValueAtTime(0.0001, t);
         g.gain.exponentialRampToValueAtTime(peak, t + 0.4 + Math.random()*0.5);
@@ -2864,352 +2946,87 @@
       } catch(e) {}
     }
 
-    /* single cricket chirp: high sine with fast tremolo and a soft envelope */
-    function cricket(c, master) {
-      try {
-        var t = c.currentTime;
-        var dur = 0.6 + Math.random()*0.9;
-        var osc = c.createOscillator();
-        osc.type = 'sine'; osc.frequency.value = 4200 + Math.random()*600;
-        var am = c.createGain(); am.gain.value = 0.5;
-        var lfo = c.createOscillator();
-        lfo.type = 'sine'; lfo.frequency.value = 22 + Math.random()*8;
-        var lfoGain = c.createGain(); lfoGain.gain.value = 0.5;
-        lfo.connect(lfoGain); lfoGain.connect(am.gain);
-        var env = c.createGain();
-        var peak = 0.012 + Math.random()*0.02;
-        env.gain.setValueAtTime(0.0001, t);
-        env.gain.exponentialRampToValueAtTime(peak, t + 0.15);
-        env.gain.setValueAtTime(peak, t + dur*0.6);
-        env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-        osc.connect(am); am.connect(env); env.connect(master);
-        osc.start(t); lfo.start(t);
-        osc.stop(t + dur + 0.1); lfo.stop(t + dur + 0.1);
-      } catch(e) {}
-    }
-
-    /* fire crackle: tiny bandpass noise snap, occasional deeper pop */
-    function crackle(c, master) {
-      try {
-        var t = c.currentTime;
-        var src = c.createBufferSource();
-        src.buffer = smallBuf(c);
-        var bp = c.createBiquadFilter();
-        bp.type = 'bandpass'; bp.Q.value = 4;
-        var pop = Math.random() < 0.12;
-        bp.frequency.value = pop ? 300 + Math.random()*500 : 1400 + Math.random()*3600;
-        var g = c.createGain();
-        var vol = pop ? 0.25 : 0.04 + Math.random()*0.15;
-        var decay = pop ? 0.08 : 0.02 + Math.random()*0.04;
-        g.gain.setValueAtTime(vol, t);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + decay);
-        src.connect(bp); bp.connect(g); g.connect(master);
-        src.start(t); src.stop(t + decay + 0.05);
-      } catch(e) {}
-    }
-
-    /* stream burble: soft mid bandpass noise blip */
-    function burble(c, master) {
-      try {
-        var t = c.currentTime;
-        var src = c.createBufferSource();
-        src.buffer = smallBuf(c);
-        var bp = c.createBiquadFilter();
-        bp.type = 'bandpass'; bp.Q.value = 3;
-        bp.frequency.value = 400 + Math.random()*900;
-        var g = c.createGain();
-        var vol = 0.03 + Math.random()*0.08;
-        g.gain.setValueAtTime(vol, t);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06 + Math.random()*0.09);
-        src.connect(bp); bp.connect(g); g.connect(master);
-        src.start(t); src.stop(t + 0.2);
-      } catch(e) {}
-    }
+    var NATURE_PRESETS = {
+      ocean:  { lp: 1400, q: 0.5, vol: 0.85 },
+      rain:   { lp: 5200, q: 0.4, vol: 0.75, thunder: true },
+      wind:   { lp: 1400, q: 0.6, vol: 0.85 },
+      forest: { lp: 4500, q: 0.4, vol: 0.80 },
+      fire:   { lp: 3200, q: 0.5, vol: 0.80 },
+      stream: { lp: 3500, q: 0.5, vol: 0.75 },
+      noise:  { lp: 350,  q: 0.5, vol: 0.85 }
+    };
 
     /* build one scene graph; local `master` is the scene's own mix gain */
     function buildScene(c, type, slot) {
         var master = c.createGain();
         master.gain.value = slotVol(slot);
         var timers = [];
-        var noise = c.createBufferSource();
-        var filter = c.createBiquadFilter();
-        var noiseGain = c.createGain();
         var extras = [];
+        var cfg = NATURE_PRESETS[type] || { lp: 1400, q: 0.5, vol: 0.80 };
 
-        if(type === 'ocean') {
-          var hqOceanBuf = natureBuffers.ocean;
-          if(hqOceanBuf) {
-            noise.buffer = hqOceanBuf; noise.loop = true;
-            filter.type = 'lowpass'; filter.frequency.value = 1400; filter.Q.value = 0.5;
-            noiseGain.gain.value = 0.85;
-            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
-          } else {
-            noise.buffer = makeNoiseBuffer(c, true); noise.loop = true;
-            filter.type = 'lowpass'; filter.frequency.value = 450; filter.Q.value = 0.7;
-            noiseGain.gain.value = 0.5;
-            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
-            /* soft pad: root + fifth, barely audible */
-            var o1 = c.createOscillator(); o1.type = 'sine'; o1.frequency.value = 110;
-            var o2 = c.createOscillator(); o2.type = 'sine'; o2.frequency.value = 164.8;
-            var padGain = c.createGain(); padGain.gain.value = 0.10;
-            o1.connect(padGain); o2.connect(padGain); padGain.connect(master);
-            o1.start(); o2.start();
-            extras.push(o1, o2);
-            preloadNatureBuffer(c, 'ocean', function(buf) {
-              if(!running) return;
-              try {
-                var hq = c.createBufferSource();
-                hq.buffer = buf; hq.loop = true;
-                var hqGain = c.createGain();
-                hqGain.gain.setValueAtTime(0.0001, c.currentTime);
-                hqGain.gain.linearRampToValueAtTime(0.85, c.currentTime + 1.5);
-                hq.connect(filter); filter.frequency.setTargetAtTime(1400, c.currentTime, 0.5);
-                hqGain.connect(master);
-                hq.start();
-                noiseGain.gain.linearRampToValueAtTime(0.0001, c.currentTime + 1.2);
-                padGain.gain.linearRampToValueAtTime(0.0001, c.currentTime + 1.2);
-                extras.push(hq);
-              } catch(e) {}
-            });
-          }
-        } else if(type === 'rain') {
-          var hqRainBuf = natureBuffers.rain;
-          if(hqRainBuf) {
-            noise.buffer = hqRainBuf; noise.loop = true;
-            filter.type = 'lowpass'; filter.frequency.value = 5200; filter.Q.value = 0.4;
-            noiseGain.gain.value = 0.75;
-            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
-            /* occasional distant thunder adds natural ambiance */
-            var scheduleThunder = function() {
-              timers.push(setTimeout(function() {
-                thunder(c, master);
-                scheduleThunder();
-              }, 20000 + Math.random()*35000));
-            };
-            scheduleThunder();
-          } else {
-            noise.buffer = makeNoiseBuffer(c, false); noise.loop = true;
-            var hp = c.createBiquadFilter();
-            hp.type = 'highpass'; hp.frequency.value = 400; hp.Q.value = 0.5;
-            filter.type = 'lowpass'; filter.frequency.value = 3800; filter.Q.value = 0.4;
-            noiseGain.gain.value = 0.16;
-            noise.connect(hp); hp.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
-            /* droplet patter */
-            timers.push(setInterval(function() {
-              if(Math.random() < 0.75) droplet(c, master);
-            }, 120));
-            /* occasional distant thunder */
-            var scheduleThunder = function() {
-              timers.push(setTimeout(function() {
-                thunder(c, master);
-                scheduleThunder();
-              }, 15000 + Math.random()*30000));
-            };
-            scheduleThunder();
-            preloadNatureBuffer(c, 'rain', function(buf) {
-              if(!running) return;
-              try {
-                var hq = c.createBufferSource();
-                hq.buffer = buf; hq.loop = true;
-                var hqGain = c.createGain();
-                hqGain.gain.setValueAtTime(0.0001, c.currentTime);
-                hqGain.gain.linearRampToValueAtTime(0.75, c.currentTime + 1.5);
-                hq.connect(filter); filter.frequency.setTargetAtTime(5200, c.currentTime, 0.5);
-                hqGain.connect(master);
-                hq.start();
-                noiseGain.gain.linearRampToValueAtTime(0.0001, c.currentTime + 1.2);
-                extras.push(hq);
-              } catch(e) {}
-            });
-          }
-        } else if(type === 'wind') {
-          var hqWindBuf = natureBuffers.wind;
-          if(hqWindBuf) {
-            noise.buffer = hqWindBuf; noise.loop = true;
-            filter.type = 'lowpass'; filter.frequency.value = 1400; filter.Q.value = 0.6;
-            noiseGain.gain.value = 0.85;
-            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
-          } else {
-            noise.buffer = makeNoiseBuffer(c, true); noise.loop = true;
-            filter.type = 'bandpass'; filter.frequency.value = 500; filter.Q.value = 1.8;
-            noiseGain.gain.value = 0.9;
-            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
-            /* slow wandering howl + gusts */
-            var lfo = c.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 0.07;
-            var lfoGain = c.createGain(); lfoGain.gain.value = 160;
-            lfo.connect(lfoGain); lfoGain.connect(filter.frequency);
-            var gust = c.createOscillator(); gust.type = 'sine'; gust.frequency.value = 0.13;
-            var gustGain = c.createGain(); gustGain.gain.value = 0.25;
-            gust.connect(gustGain); gustGain.connect(noiseGain.gain);
-            lfo.start(); gust.start();
-            extras.push(lfo, gust);
-            preloadNatureBuffer(c, 'wind', function(buf) {
-              if(!running) return;
-              try {
-                var hq = c.createBufferSource();
-                hq.buffer = buf; hq.loop = true;
-                var hqGain = c.createGain();
-                hqGain.gain.setValueAtTime(0.0001, c.currentTime);
-                hqGain.gain.linearRampToValueAtTime(0.85, c.currentTime + 1.5);
-                hq.connect(filter); filter.frequency.setTargetAtTime(1400, c.currentTime, 0.5);
-                hqGain.connect(master);
-                hq.start();
-                noiseGain.gain.linearRampToValueAtTime(0.0001, c.currentTime + 1.2);
-                extras.push(hq);
-              } catch(e) {}
-            });
-          }
-        } else if(type === 'forest') {
-          var hqForestBuf = natureBuffers.forest;
-          if(hqForestBuf) {
-            noise.buffer = hqForestBuf; noise.loop = true;
-            filter.type = 'lowpass'; filter.frequency.value = 4500; filter.Q.value = 0.4;
-            noiseGain.gain.value = 0.80;
-            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
-          } else {
-            /* quiet night air + cricket chorus */
-            noise.buffer = makeNoiseBuffer(c, true); noise.loop = true;
-            filter.type = 'lowpass'; filter.frequency.value = 300; filter.Q.value = 0.5;
-            noiseGain.gain.value = 0.35;
-            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
-            timers.push(setInterval(function() {
-              if(Math.random() < 0.6) cricket(c, master);
-            }, 700));
-            preloadNatureBuffer(c, 'forest', function(buf) {
-              if(!running) return;
-              try {
-                var hq = c.createBufferSource();
-                hq.buffer = buf; hq.loop = true;
-                var hqGain = c.createGain();
-                hqGain.gain.setValueAtTime(0.0001, c.currentTime);
-                hqGain.gain.linearRampToValueAtTime(0.80, c.currentTime + 1.5);
-                hq.connect(filter); filter.frequency.setTargetAtTime(4500, c.currentTime, 0.5);
-                hqGain.connect(master);
-                hq.start();
-                noiseGain.gain.linearRampToValueAtTime(0.0001, c.currentTime + 1.2);
-                extras.push(hq);
-              } catch(e) {}
-            });
-          }
-        } else if(type === 'fire') {
-          var hqFireBuf = natureBuffers.fire;
-          if(hqFireBuf) {
-            noise.buffer = hqFireBuf; noise.loop = true;
-            filter.type = 'lowpass'; filter.frequency.value = 3200; filter.Q.value = 0.5;
-            noiseGain.gain.value = 0.80;
-            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
-          } else {
-            /* warm low rumble with breathing flame + crackles */
-            noise.buffer = makeNoiseBuffer(c, true); noise.loop = true;
-            filter.type = 'lowpass'; filter.frequency.value = 400; filter.Q.value = 0.6;
-            noiseGain.gain.value = 0.55;
-            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
-            var flame = c.createOscillator(); flame.type = 'sine'; flame.frequency.value = 0.11;
-            var flameGain = c.createGain(); flameGain.gain.value = 0.12;
-            flame.connect(flameGain); flameGain.connect(noiseGain.gain);
-            flame.start();
-            extras.push(flame);
-            timers.push(setInterval(function() {
-              if(Math.random() < 0.45) crackle(c, master);
-            }, 90));
-            preloadNatureBuffer(c, 'fire', function(buf) {
-              if(!running) return;
-              try {
-                var hq = c.createBufferSource();
-                hq.buffer = buf; hq.loop = true;
-                var hqGain = c.createGain();
-                hqGain.gain.setValueAtTime(0.0001, c.currentTime);
-                hqGain.gain.linearRampToValueAtTime(0.80, c.currentTime + 1.5);
-                hq.connect(filter); filter.frequency.setTargetAtTime(3200, c.currentTime, 0.5);
-                hqGain.connect(master);
-                hq.start();
-                noiseGain.gain.linearRampToValueAtTime(0.0001, c.currentTime + 1.2);
-                extras.push(hq);
-              } catch(e) {}
-            });
-          }
-        } else if(type === 'stream') {
-          var hqStreamBuf = natureBuffers.stream;
-          if(hqStreamBuf) {
-            noise.buffer = hqStreamBuf; noise.loop = true;
-            filter.type = 'lowpass'; filter.frequency.value = 3500; filter.Q.value = 0.5;
-            noiseGain.gain.value = 0.75;
-            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
-          } else {
-            /* bright water bed + wandering gurgle band + burbles */
-            noise.buffer = makeNoiseBuffer(c, false); noise.loop = true;
-            filter.type = 'lowpass'; filter.frequency.value = 2400; filter.Q.value = 0.6;
-            noiseGain.gain.value = 0.20;
-            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
-            var gurgle = c.createBufferSource();
-            gurgle.buffer = noise.buffer; gurgle.loop = true;
-            var gBand = c.createBiquadFilter();
-            gBand.type = 'bandpass'; gBand.frequency.value = 900; gBand.Q.value = 2;
-            var gGain = c.createGain(); gGain.gain.value = 0.25;
-            gurgle.connect(gBand); gBand.connect(gGain); gGain.connect(master);
-            var gLfo = c.createOscillator(); gLfo.type = 'sine'; gLfo.frequency.value = 0.3;
-            var gLfoGain = c.createGain(); gLfoGain.gain.value = 250;
-            gLfo.connect(gLfoGain); gLfoGain.connect(gBand.frequency);
-            gurgle.start(); gLfo.start();
-            extras.push(gurgle, gLfo);
-            timers.push(setInterval(function() {
-              if(Math.random() < 0.5) burble(c, master);
-            }, 250));
-            preloadNatureBuffer(c, 'stream', function(buf) {
-              if(!running) return;
-              try {
-                var hq = c.createBufferSource();
-                hq.buffer = buf; hq.loop = true;
-                var hqGain = c.createGain();
-                hqGain.gain.setValueAtTime(0.0001, c.currentTime);
-                hqGain.gain.linearRampToValueAtTime(0.75, c.currentTime + 1.5);
-                hq.connect(filter); filter.frequency.setTargetAtTime(3500, c.currentTime, 0.5);
-                hqGain.connect(master);
-                hq.start();
-                noiseGain.gain.linearRampToValueAtTime(0.0001, c.currentTime + 1.2);
-                extras.push(hq);
-              } catch(e) {}
-            });
-          }
-        } else { /* noise: deep meditative warm drone / brown noise */
-          var hqNoiseBuf = natureBuffers.noise;
-          if(hqNoiseBuf) {
-            noise.buffer = hqNoiseBuf; noise.loop = true;
-            filter.type = 'lowpass'; filter.frequency.value = 350; filter.Q.value = 0.5;
-            noiseGain.gain.value = 0.85;
-            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
-          } else {
-            noise.buffer = makeNoiseBuffer(c, true); noise.loop = true;
-            filter.type = 'lowpass'; filter.frequency.value = 220; filter.Q.value = 0.4;
-            noiseGain.gain.value = 0.9;
-            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
-            /* imperceptibly slow swell so it never feels static */
-            var swell = c.createOscillator(); swell.type = 'sine'; swell.frequency.value = 0.05;
-            var swellGain = c.createGain(); swellGain.gain.value = 0.06;
-            swell.connect(swellGain); swellGain.connect(noiseGain.gain);
-            swell.start();
-            extras.push(swell);
-            preloadNatureBuffer(c, 'noise', function(buf) {
-              if(!running) return;
-              try {
-                var hq = c.createBufferSource();
-                hq.buffer = buf; hq.loop = true;
-                var hqGain = c.createGain();
-                hqGain.gain.setValueAtTime(0.0001, c.currentTime);
-                hqGain.gain.linearRampToValueAtTime(0.85, c.currentTime + 1.5);
-                hq.connect(filter); filter.frequency.setTargetAtTime(350, c.currentTime, 0.5);
-                hqGain.connect(master);
-                hq.start();
-                noiseGain.gain.linearRampToValueAtTime(0.0001, c.currentTime + 1.2);
-                swellGain.gain.linearRampToValueAtTime(0.0001, c.currentTime + 1.2);
-                extras.push(hq);
-              } catch(e) {}
-            });
-          }
+        var filter = c.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = cfg.lp;
+        filter.Q.value = cfg.q;
+
+        var sceneGain = c.createGain();
+        filter.connect(sceneGain);
+        sceneGain.connect(master);
+
+        var currentSource = null;
+
+        function startBuffer(buf, fadeDur) {
+          if(!running) return;
+          try {
+            var src = c.createBufferSource();
+            src.buffer = buf;
+            src.loop = true;
+            src.connect(filter);
+            src.start();
+            currentSource = src;
+            extras.push(src);
+
+            var now = c.currentTime;
+            var dur = fadeDur !== undefined ? fadeDur : 1.2;
+            sceneGain.gain.cancelScheduledValues(now);
+            sceneGain.gain.setValueAtTime(Math.max(0.0001, sceneGain.gain.value), now);
+            sceneGain.gain.linearRampToValueAtTime(cfg.vol, now + dur);
+
+            if(cfg.thunder) {
+              var scheduleThunder = function() {
+                timers.push(setTimeout(function() {
+                  thunder(c, master);
+                  scheduleThunder();
+                }, 20000 + Math.random()*35000));
+              };
+              scheduleThunder();
+            }
+          } catch(e) {}
         }
 
-        noise.start();
-        return { slot:slot, type:type, gain:master, noise:noise, filter:filter, extras:extras, timers:timers };
+        if(natureBuffers[type]) {
+          sceneGain.gain.setValueAtTime(cfg.vol, c.currentTime);
+          startBuffer(natureBuffers[type], 0.05);
+        } else {
+          // Keep silent while loading HQ audio to prevent harsh procedural noise distortion
+          sceneGain.gain.setValueAtTime(0.0001, c.currentTime);
+          preloadNatureBuffer(c, type, function(buf) {
+            startBuffer(buf, 1.2);
+          });
+        }
+
+        return {
+          slot: slot,
+          type: type,
+          gain: master,
+          filter: filter,
+          extras: extras,
+          timers: timers,
+          get noise() { return currentSource; },
+          stop: function() {
+            if(currentSource) { try { currentSource.stop(); } catch(e){} }
+          }
+        };
     }
 
     var MUSIC_TRACKS = {
@@ -3449,7 +3266,8 @@
           master = c.createGain();
           master.gain.setValueAtTime(0.0001, c.currentTime);
           master.gain.exponentialRampToValueAtTime(MASTER, c.currentTime + 2);
-          master.connect(c.destination);
+          var dest = (App.Audio.getDestination && App.Audio.getDestination()) || c.destination;
+          master.connect(dest);
           scenes = [];
           if(!hasMusic && t1 !== 'off') scenes.push(buildScene(c, t1, 0));
           if(t2 !== 'off') scenes.push(buildScene(c, t2, 1));
@@ -3486,7 +3304,7 @@
           setTimeout(function() {
             try {
               oldScenes.forEach(function(s) {
-                try { s.noise.stop(); } catch(e) {}
+                try { if(s.stop) s.stop(); else if(s.noise) s.noise.stop(); } catch(e) {}
                 s.extras.forEach(function(x) { try { x.stop(); } catch(e) {} });
               });
               oldMaster.disconnect();
@@ -3630,7 +3448,7 @@
 
     return { start:start, stop:stop, pause:pause, resume:resume, setBreath:setBreath, setCalm:setCalm,
              duck:duck, applyVolume:applyVolume, sync:sync, preview:preview, preload:preload,
-             isPreviewing:isPreviewing, stopPreview:stopPreview, onStateChange:onStateChange };
+             earlyFetch:earlyFetch, isPreviewing:isPreviewing, stopPreview:stopPreview, onStateChange:onStateChange };
   })();
 
   /* ======== App.Pacer ========
@@ -3643,7 +3461,7 @@
       if(noiseBuf) return noiseBuf;
       var b = c.createBuffer(1, c.sampleRate, c.sampleRate);
       var d = b.getChannelData(0);
-      for(var i = 0; i < d.length; i++) d[i] = Math.random()*2 - 1;
+      for(var i = 0; i < d.length; i++) d[i] = Math.max(-0.95, Math.min(0.95, (Math.random()*2 - 1) * 0.75));
       noiseBuf = b;
       return b;
     }
@@ -3656,7 +3474,7 @@
       if(vol <= 0) return;
       try {
         var dur = Math.max(0.4, durMs / 1000);
-        var t = c.currentTime;
+        var t = Math.max(c.currentTime, c.currentTime + 0.005);
         var src = c.createBufferSource();
         src.buffer = ensureBuf(c); src.loop = true;
         var bp = c.createBiquadFilter();
@@ -3668,7 +3486,9 @@
         g.gain.exponentialRampToValueAtTime(vol, t + dur*0.35);
         g.gain.setValueAtTime(vol, t + dur*0.7);
         g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-        src.connect(bp); bp.connect(g); g.connect(c.destination);
+        src.connect(bp); bp.connect(g);
+        var dest = (App.Audio.getDestination && App.Audio.getDestination()) || c.destination;
+        g.connect(dest);
         src.start(t); src.stop(t + dur + 0.05);
       } catch(e) {}
     }
@@ -6640,6 +6460,7 @@
   /* ======== MAIN INIT ======== */
   document.addEventListener('DOMContentLoaded', function() {
     App.Config.load();
+    if(App.Ambience && App.Ambience.earlyFetch) App.Ambience.earlyFetch();
     App.Theme.init();
     App.UI.init();
     App.Config.populateInputs();
