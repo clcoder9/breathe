@@ -162,7 +162,9 @@ def main():
     print("   Breathe Soundscape Importer & Loop Optimizer")
     print("=" * 60)
 
-    input_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else INPUT_DIR
+    target_filter = [a.lower() for a in sys.argv[1:] if not Path(a).is_dir()]
+    dir_arg = [a for a in sys.argv[1:] if Path(a).is_dir()]
+    input_dir = Path(dir_arg[0]) if dir_arg else INPUT_DIR
     if not input_dir.exists():
         print(f"Error: Directory '{input_dir}' not found.")
         sys.exit(1)
@@ -174,8 +176,14 @@ def main():
         if f.is_file() and f.suffix.lower() in SUPPORTED_EXTS
     ]
 
+    if target_filter:
+        candidates = [
+            f for f in candidates
+            if match_track_type(f.name) in target_filter or any(tf in f.stem.lower() for tf in target_filter)
+        ]
+
     if not candidates:
-        print(f"No audio files found in: {input_dir}")
+        print(f"No matching audio files found in: {input_dir}")
         print("\nDrop your generated soundscape files in that folder:")
         print("  - rain.mp3   (or rain.wav)")
         print("  - wind.mp3   (or wind.wav)")
