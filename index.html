@@ -1702,19 +1702,19 @@
               <select id="cfg-ambience">
                 <option value="off">Off</option>
                 <optgroup label="Lyria Studio Music">
-                  <option value="pranayama">Dynamic Pranayama (Adaptive)</option>
-                  <option value="ethereal">Ethereal Ambient (Relaxing)</option>
-                  <option value="active">Active Breathing Only</option>
-                  <option value="retention">Deep Retention Only</option>
+                  <option value="pranayama">Dynamic Pranayama</option>
+                  <option value="ethereal">Ethereal Ambient</option>
+                  <option value="active">Active Breathing</option>
+                  <option value="retention">Deep Retention</option>
                 </optgroup>
-                <optgroup label="Nature Soundscapes (HQ)">
-                  <option value="ocean">Ocean (HQ Waves)</option>
-                  <option value="rain">Rain (HQ Rainfall)</option>
-                  <option value="wind">Wind (HQ Mountain Breeze)</option>
-                  <option value="forest">Night Forest (HQ Crickets & Birds)</option>
-                  <option value="fire">Campfire (HQ Crackle)</option>
-                  <option value="stream">Stream (HQ Mountain Brook)</option>
-                  <option value="noise">Deep Noise (HQ Drone & Rumble)</option>
+                <optgroup label="Nature Soundscapes">
+                  <option value="ocean">Ocean</option>
+                  <option value="rain">Rain</option>
+                  <option value="wind">Wind</option>
+                  <option value="forest">Night Forest</option>
+                  <option value="fire">Campfire</option>
+                  <option value="stream">Stream</option>
+                  <option value="noise">Deep Noise</option>
                 </optgroup>
               </select>
               <button type="button" class="amb-preview" id="btn-amb-preview" title="Preview 5s" aria-label="Preview ambience">&#9654;</button>
@@ -1733,13 +1733,13 @@
             <div class="amb-row">
               <select id="cfg-ambience2">
                 <option value="off">Off</option>
-                <option value="ocean">Ocean (HQ Waves)</option>
-                <option value="rain">Rain (HQ Rainfall)</option>
-                <option value="wind">Wind (HQ Mountain Breeze)</option>
-                <option value="forest">Night Forest (HQ Crickets & Birds)</option>
-                <option value="fire">Campfire (HQ Crackle)</option>
-                <option value="stream">Stream (HQ Mountain Brook)</option>
-                <option value="noise">Deep Noise (HQ Drone & Rumble)</option>
+                <option value="ocean">Ocean</option>
+                <option value="rain">Rain</option>
+                <option value="wind">Wind</option>
+                <option value="forest">Night Forest</option>
+                <option value="fire">Campfire</option>
+                <option value="stream">Stream</option>
+                <option value="noise">Deep Noise</option>
               </select>
               <button type="button" class="amb-preview" id="btn-amb2-preview" title="Preview 5s" aria-label="Preview ambience mix">&#9654;</button>
             </div>
@@ -2557,18 +2557,36 @@
     var masterMuted = false;
     var limiter = null;
 
+    function resume() {
+      if(ctx && ctx.state === 'suspended') {
+        try { ctx.resume(); } catch(e) {}
+      }
+    }
+
     function init() {
-      if(ctx) return;
+      if(ctx) {
+        resume();
+        return;
+      }
       try {
         var AudioCtx = window.AudioContext || window.webkitAudioContext;
         ctx = new AudioCtx({ latencyHint: 'interactive' });
+        resume();
       } catch(e) {
         try { ctx = new (window.AudioContext||window.webkitAudioContext)(); } catch(e2) { ctx=null; }
       }
-      if(ctx) ensureLimiter();
+      if(ctx) {
+        ensureLimiter();
+        resume();
+      }
     }
-    function resume() { if(ctx && ctx.state==='suspended') ctx.resume(); }
-    function getCtx() { return ctx; }
+
+    function getCtx() {
+      if(ctx && ctx.state === 'suspended') {
+        try { ctx.resume(); } catch(e) {}
+      }
+      return ctx;
+    }
 
     function ensureLimiter() {
       if(!ctx || limiter) return limiter;
@@ -2840,17 +2858,31 @@
     var natureBuffers = {};
     var loadingBuffers = {};
     var rawBuffers = {};
+    var pendingNatureCallbacks = {};
 
     function earlyFetch() {
       if(typeof App === 'undefined' || !App.Config) return;
       var t1 = App.Config.get('ambience'), t2 = App.Config.get('ambience2');
-      [t1, t2].forEach(function(type) {
-        if(NATURE_TRACKS[type] && !rawBuffers[type] && !natureBuffers[type]) {
-          fetch(NATURE_TRACKS[type])
-            .then(function(res) { if(res.ok) return res.arrayBuffer(); })
-            .then(function(arr) { if(arr) rawBuffers[type] = arr; })
-            .catch(function() {});
+      var priority = [t1, t2].filter(function(t) { return NATURE_TRACKS[t]; });
+      var rest = Object.keys(NATURE_TRACKS).filter(function(t) { return priority.indexOf(t) === -1; });
+
+      function fetchOne(type) {
+        if(!NATURE_TRACKS[type] || rawBuffers[type] || natureBuffers[type]) return Promise.resolve();
+        return fetch(NATURE_TRACKS[type])
+          .then(function(res) { if(res.ok) return res.arrayBuffer(); })
+          .then(function(arr) { if(arr) rawBuffers[type] = arr; })
+          .catch(function() {});
+      }
+
+      Promise.all(priority.map(fetchOne)).then(function() {
+        var idx = 0;
+        function next() {
+          if(idx >= rest.length) return;
+          fetchOne(rest[idx++]).then(function() {
+            setTimeout(next, 150);
+          });
         }
+        setTimeout(next, 300);
       });
     }
 
@@ -2860,16 +2892,27 @@
         if(onReady) onReady(natureBuffers[type]);
         return;
       }
-      if(loadingBuffers[type]) {
-        if(onReady) {
-          var checkTimer = setInterval(function() {
-            if(natureBuffers[type]) { clearInterval(checkTimer); onReady(natureBuffers[type]); }
-            else if(!loadingBuffers[type]) { clearInterval(checkTimer); }
-          }, 40);
-        }
-        return;
-      }
+      if(!pendingNatureCallbacks[type]) pendingNatureCallbacks[type] = [];
+      if(onReady) pendingNatureCallbacks[type].push(onReady);
+
+      if(loadingBuffers[type]) return;
       loadingBuffers[type] = true;
+
+      function dispatchReady(buf) {
+        natureBuffers[type] = buf;
+        loadingBuffers[type] = false;
+        var cbs = pendingNatureCallbacks[type] || [];
+        pendingNatureCallbacks[type] = [];
+        cbs.forEach(function(cb) {
+          try { cb(buf); } catch(e) {}
+        });
+      }
+
+      function dispatchError() {
+        loadingBuffers[type] = false;
+        pendingNatureCallbacks[type] = [];
+      }
+
       var fetchP = rawBuffers[type]
         ? Promise.resolve(rawBuffers[type].slice(0))
         : fetch(NATURE_TRACKS[type])
@@ -2884,17 +2927,19 @@
 
       fetchP
         .then(function(arr) {
-          if(!c) { loadingBuffers[type] = false; return; }
-          c.decodeAudioData(arr, function(buf) {
-            natureBuffers[type] = buf;
+          var audioCtx = c || App.Audio.getCtx();
+          if(!audioCtx) {
             loadingBuffers[type] = false;
-            if(onReady) onReady(buf);
+            return;
+          }
+          audioCtx.decodeAudioData(arr.slice(0), function(buf) {
+            dispatchReady(buf);
           }, function() {
-            loadingBuffers[type] = false;
+            dispatchError();
           });
         })
         .catch(function() {
-          loadingBuffers[type] = false;
+          dispatchError();
         });
     }
 
@@ -3011,7 +3056,7 @@
           // Keep silent while loading HQ audio to prevent harsh procedural noise distortion
           sceneGain.gain.setValueAtTime(0.0001, c.currentTime);
           preloadNatureBuffer(c, type, function(buf) {
-            startBuffer(buf, 1.2);
+            startBuffer(buf, 0.2);
           });
         }
 
@@ -3253,6 +3298,9 @@
       if(running) stop(true);
       if(t1 === 'off' && t2 === 'off') return;
 
+      App.Audio.init();
+      App.Audio.resume();
+
       preload();
 
       var hasMusic = !!IS_MUSIC[t1];
@@ -3265,7 +3313,7 @@
         try {
           master = c.createGain();
           master.gain.setValueAtTime(0.0001, c.currentTime);
-          master.gain.exponentialRampToValueAtTime(MASTER, c.currentTime + 2);
+          master.gain.linearRampToValueAtTime(MASTER, c.currentTime + 0.3);
           var dest = (App.Audio.getDestination && App.Audio.getDestination()) || c.destination;
           master.connect(dest);
           scenes = [];
@@ -3389,25 +3437,54 @@
       else stop(true);
     }
 
-    /* 5s preview outside a session (settings button) */
+    /* Preview soundscape outside a session (settings button) */
     var previewTimer = null;
-    function preview() {
+    var previewingType = null;
+
+    function preview(targetType, slot) {
       if(App.Session && App.Session.isActive()) return false;
-      if(previewTimer) {
-        stopPreview();
-        return false;
+      stopPreview();
+
+      var t = targetType || App.Config.get('ambience');
+      if(!t || t === 'off') return false;
+
+      App.Audio.init();
+      App.Audio.resume();
+
+      var isMusic = !!IS_MUSIC[t];
+      previewingType = t;
+
+      if(isMusic) {
+        music.start(t);
+      } else if(NATURE_TRACKS[t]) {
+        var c = App.Audio.getCtx();
+        if(c) {
+          try {
+            master = c.createGain();
+            master.gain.setValueAtTime(0.0001, c.currentTime);
+            master.gain.linearRampToValueAtTime(MASTER, c.currentTime + 0.15);
+            var dest = (App.Audio.getDestination && App.Audio.getDestination()) || c.destination;
+            master.connect(dest);
+            scenes = [buildScene(c, t, slot !== undefined ? slot : 0)];
+            scenes[0].gain.connect(master);
+          } catch(e) { scenes = []; master = null; }
+        }
       }
-      preload();
-      start(); applyVolume();
+
+      running = true;
+      runningKey = 'preview:' + t;
+
       clearTimeout(previewTimer);
       previewTimer = setTimeout(function() {
         stopPreview();
-      }, 5000);
-      return running || music.isPlaying();
+      }, 6000);
+      return true;
     }
 
-    function isPreviewing() {
-      return previewTimer !== null;
+    function isPreviewing(type) {
+      if(!previewTimer) return false;
+      if(type) return previewingType === type;
+      return true;
     }
 
     function stopPreview() {
@@ -3415,6 +3492,7 @@
         clearTimeout(previewTimer);
         previewTimer = null;
       }
+      previewingType = null;
       stop(true);
       document.querySelectorAll('.amb-preview').forEach(function(b) { b.classList.remove('playing'); });
     }
@@ -5008,6 +5086,7 @@
       },
       start: function() {
         App.Audio.init();
+        App.Audio.resume();
         App.Voice.init();
         App.Config.readFromInputs();
         App.Config.save();
@@ -6293,8 +6372,8 @@
       if(tabName) selectTab(tabName);
       updatePresetBadge();
       updateSummaryPill();
-      if(App.Audio) App.Audio.init();
-      if(App.Ambience && App.Ambience.preload) App.Ambience.preload();
+      if(App.Audio) { App.Audio.init(); App.Audio.resume(); }
+      if(App.Ambience && App.Ambience.earlyFetch) App.Ambience.earlyFetch();
       if(backdrop) backdrop.classList.remove('hidden');
       if(drawer)   drawer.classList.remove('hidden');
       if(drawer)   drawer.offsetHeight; /* trigger reflow */
@@ -6304,6 +6383,7 @@
     }
 
     function close() {
+      if(App.Ambience && App.Ambience.stopPreview) App.Ambience.stopPreview();
       if(backdrop) backdrop.classList.remove('open');
       if(drawer)   drawer.classList.remove('open');
       document.body.classList.remove('drawer-open');
@@ -6571,23 +6651,33 @@
       });
     }
 
-    /* Ambience preview buttons: hear the current mix for 5 seconds (or toggle off) */
+    /* Ambience preview buttons: hear the selected soundscape (or toggle off) */
     ['btn-amb-preview','btn-amb2-preview'].forEach(function(id) {
       var btn = document.getElementById(id);
       if(!btn) return;
-      btn.addEventListener('click', function() {
+      var isSlot2 = (id === 'btn-amb2-preview');
+      var selectId = isSlot2 ? 'cfg-ambience2' : 'cfg-ambience';
+
+      btn.addEventListener('click', function(ev) {
+        ev.stopPropagation();
+        App.Config.readFromInputs();
         App.Audio.init();
-        if(App.Ambience.isPreviewing && App.Ambience.isPreviewing()) {
+        App.Audio.resume();
+
+        var sel = document.getElementById(selectId);
+        var chosen = sel ? sel.value : (isSlot2 ? App.Config.get('ambience2') : App.Config.get('ambience'));
+        if(!chosen || chosen === 'off') return;
+
+        if(App.Ambience.isPreviewing && App.Ambience.isPreviewing(chosen)) {
           App.Ambience.stopPreview();
-          document.querySelectorAll('.amb-preview').forEach(function(b) { b.classList.remove('playing'); });
           return;
         }
-        if(!App.Ambience.preview()) return;
-        document.querySelectorAll('.amb-preview').forEach(function(b) { b.classList.add('playing'); });
-        clearTimeout(btn._pt);
-        btn._pt = setTimeout(function() {
-          document.querySelectorAll('.amb-preview').forEach(function(b) { b.classList.remove('playing'); });
-        }, 5000);
+
+        document.querySelectorAll('.amb-preview').forEach(function(b) { b.classList.remove('playing'); });
+        var ok = App.Ambience.preview(chosen, isSlot2 ? 1 : 0);
+        if(ok) {
+          btn.classList.add('playing');
+        }
       });
     });
 
