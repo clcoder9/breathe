@@ -1774,25 +1774,25 @@
             <div class="amb-row">
               <select id="cfg-ambience">
                 <option value="off">Off</option>
-                <optgroup label="Lyria Studio Music">
-                  <option value="pranayama">Dynamic Pranayama</option>
-                  <option value="ethereal">Ethereal Ambient</option>
-                  <option value="active">Active Breathing</option>
-                  <option value="retention">Deep Retention</option>
+                <optgroup label="Breathwork &amp; Meditation">
+                  <option value="pranayama">Adaptive Pranayama (Breath + Hold)</option>
+                  <option value="bowls">Tibetan Singing Bowls</option>
+                  <option value="theta">Theta Retention Drone</option>
+                  <option value="harmonic">Warm Harmonic Pad</option>
+                  <option value="delta">Deep Sleep Velvet</option>
                 </optgroup>
-                <optgroup label="Nature Soundscapes">
-                  <option value="ocean">Ocean</option>
-                  <option value="rain">Rain</option>
-                  <option value="wind">Wind</option>
-                  <option value="forest">Night Forest</option>
-                  <option value="fire">Campfire</option>
-                  <option value="stream">Stream</option>
-                  <option value="noise">Deep Noise</option>
+                <optgroup label="Nature Soundscapes (CC0)">
+                  <option value="ocean">Ocean Waves</option>
+                  <option value="rain">Gentle Rain</option>
+                  <option value="stream">Mountain Stream</option>
+                  <option value="forest">Woodland Birds &amp; Breeze</option>
+                  <option value="fire">Crackling Campfire</option>
+                  <option value="wind">Alpine Pines Wind</option>
                 </optgroup>
               </select>
               <button type="button" class="amb-preview" id="btn-amb-preview" title="Preview 5s" aria-label="Preview ambience">&#9654;</button>
             </div>
-            <span class="setting-hint">Music or base soundscape</span>
+            <span class="setting-hint">Adaptive music, harmonic drone, or nature soundscape</span>
           </div>
 
           <div class="setting-card">
@@ -1806,17 +1806,24 @@
             <div class="amb-row">
               <select id="cfg-ambience2">
                 <option value="off">Off</option>
-                <option value="ocean">Ocean</option>
-                <option value="rain">Rain</option>
-                <option value="wind">Wind</option>
-                <option value="forest">Night Forest</option>
-                <option value="fire">Campfire</option>
-                <option value="stream">Stream</option>
-                <option value="noise">Deep Noise</option>
+                <optgroup label="Nature Soundscapes (CC0)">
+                  <option value="ocean">Ocean Waves</option>
+                  <option value="rain">Gentle Rain</option>
+                  <option value="stream">Mountain Stream</option>
+                  <option value="forest">Woodland Birds &amp; Breeze</option>
+                  <option value="fire">Crackling Campfire</option>
+                  <option value="wind">Alpine Pines Wind</option>
+                </optgroup>
+                <optgroup label="Breathwork &amp; Meditation">
+                  <option value="bowls">Tibetan Singing Bowls</option>
+                  <option value="theta">Theta Retention Drone</option>
+                  <option value="harmonic">Warm Harmonic Pad</option>
+                  <option value="delta">Deep Sleep Velvet</option>
+                </optgroup>
               </select>
               <button type="button" class="amb-preview" id="btn-amb2-preview" title="Preview 5s" aria-label="Preview ambience mix">&#9654;</button>
             </div>
-            <span class="setting-hint">Layer a second complementary sound</span>
+            <span class="setting-hint">Layer a second complementary soundscape</span>
           </div>
 
           <div class="setting-card">
@@ -2212,13 +2219,20 @@
       volVoice:{min:0,max:100}, volCues:{min:0,max:100}, volAmbience:{min:0,max:100},
       volAmbience2:{min:0,max:100}
     };
+    var LEGACY_AMBIENCE_MAP = {
+      wimhof: 'pranayama',
+      active: 'pranayama',
+      ethereal: 'harmonic',
+      retention: 'theta',
+      noise: 'delta'
+    };
     var allowed = {
       voiceMode:['smart','every','phases','off'],
       vibration:['on','off'],
       ramp:['off','speedup','slowdown'],
       holdMode:['fixed','adaptive'],
-      ambience:['off','pranayama','wimhof','ethereal','active','retention','ocean','rain','wind','forest','fire','stream','noise'],
-      ambience2:['off','ocean','rain','wind','forest','fire','stream','noise'],
+      ambience:['off','pranayama','bowls','theta','harmonic','delta','ocean','rain','stream','forest','fire','wind'],
+      ambience2:['off','ocean','rain','stream','forest','fire','wind','bowls','theta','harmonic','delta'],
       pacer:['on','off'],
       fullscreen:['on','off'],
       material:['chrome','gold','lava','aurora'],
@@ -2232,6 +2246,10 @@
     Object.keys(defaults).forEach(function(k) { v[k] = defaults[k]; });
 
     function clamp(k, val) {
+      if((k === 'ambience' || k === 'ambience2') && LEGACY_AMBIENCE_MAP[val]) {
+        val = LEGACY_AMBIENCE_MAP[val];
+        if(k === 'ambience2' && val === 'pranayama') val = 'theta';
+      }
       if(allowed[k]) return allowed[k].indexOf(val) >= 0 ? val : defaults[k];
       var n = Number(val);
       if(isNaN(n)) return defaults[k];
@@ -3016,13 +3034,16 @@
     }
 
     var NATURE_TRACKS = {
-      rain: './music/rain.mp3',
-      ocean: './music/ocean.mp3',
-      wind: './music/wind.mp3',
-      forest: './music/forest.mp3',
-      fire: './music/fire.mp3',
-      stream: './music/stream.mp3',
-      noise: './music/noise.mp3'
+      ocean:    './music/ocean.mp3',
+      rain:     './music/rain.mp3',
+      stream:   './music/stream.mp3',
+      forest:   './music/forest.mp3',
+      fire:     './music/fire.mp3',
+      wind:     './music/wind.mp3',
+      bowls:    './music/singing-bowls.mp3',
+      theta:    './music/theta-drone.mp3',
+      harmonic: './music/harmonic-pad.mp3',
+      delta:    './music/velvet-noise.mp3'
     };
     var natureBuffers = {};
     var loadingBuffers = {};
@@ -3124,50 +3145,17 @@
       }
     }
 
-    function makeNoiseBuffer(c, brown) {
-      var len = 2 * c.sampleRate;
-      var buf = c.createBuffer(1, len, c.sampleRate);
-      var d = buf.getChannelData(0);
-      var last = 0;
-      for(var i = 0; i < len; i++) {
-        var w = Math.random()*2 - 1;
-        if(brown) {
-          last = (last + 0.02*w) / 1.02;
-          d[i] = Math.max(-0.95, Math.min(0.95, last * 1.5));
-        } else {
-          d[i] = Math.max(-0.95, Math.min(0.95, w * 0.7));
-        }
-      }
-      return buf;
-    }
-
-    /* distant thunder: slow brown-noise swell through a deep lowpass */
-    function thunder(c, master) {
-      try {
-        var t = c.currentTime;
-        var src = c.createBufferSource();
-        src.buffer = makeNoiseBuffer(c, true);
-        var lp = c.createBiquadFilter();
-        lp.type = 'lowpass'; lp.frequency.value = 90 + Math.random()*50; lp.Q.value = 0.5;
-        var g = c.createGain();
-        var peak = 0.4 + Math.random()*0.3;
-        var dur = 2.5 + Math.random()*2.5;
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.exponentialRampToValueAtTime(peak, t + 0.4 + Math.random()*0.5);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-        src.connect(lp); lp.connect(g); g.connect(master);
-        src.start(t); src.stop(t + dur + 0.1);
-      } catch(e) {}
-    }
-
     var NATURE_PRESETS = {
-      ocean:  { lp: 6000, q: 0.5, vol: 1.0 },
-      rain:   { lp: 8000, q: 0.4, vol: 1.0, thunder: true },
-      wind:   { lp: 5500, q: 0.5, vol: 1.0 },
-      forest: { lp: 7000, q: 0.4, vol: 1.0 },
-      fire:   { lp: 6000, q: 0.5, vol: 1.0 },
-      stream: { lp: 7000, q: 0.5, vol: 1.0 },
-      noise:  { lp: 4500, q: 0.5, vol: 1.0 }
+      ocean:    { lp: 16000, q: 0.5, vol: 1.0 },
+      rain:     { lp: 16000, q: 0.5, vol: 1.0 },
+      stream:   { lp: 16000, q: 0.5, vol: 1.0 },
+      forest:   { lp: 16000, q: 0.5, vol: 1.0 },
+      fire:     { lp: 16000, q: 0.5, vol: 1.0 },
+      wind:     { lp: 16000, q: 0.5, vol: 1.0 },
+      bowls:    { lp: 16000, q: 0.5, vol: 1.0 },
+      theta:    { lp: 16000, q: 0.5, vol: 1.0 },
+      harmonic: { lp: 16000, q: 0.5, vol: 1.0 },
+      delta:    { lp: 16000, q: 0.5, vol: 1.0 }
     };
 
     /* build one scene graph; local `master` is the scene's own mix gain */
@@ -3176,7 +3164,7 @@
         master.gain.value = isPreview ? Math.max(0.7, slotVol(slot)) : slotVol(slot);
         var timers = [];
         var extras = [];
-        var cfg = NATURE_PRESETS[type] || { lp: 6000, q: 0.5, vol: 1.0 };
+        var cfg = NATURE_PRESETS[type] || { lp: 16000, q: 0.5, vol: 1.0 };
 
         var filter = c.createBiquadFilter();
         filter.type = 'lowpass';
@@ -3205,16 +3193,6 @@
             sceneGain.gain.cancelScheduledValues(now);
             sceneGain.gain.setValueAtTime(Math.max(0.0001, sceneGain.gain.value), now);
             sceneGain.gain.linearRampToValueAtTime(cfg.vol, now + dur);
-
-            if(cfg.thunder) {
-              var scheduleThunder = function() {
-                timers.push(setTimeout(function() {
-                  thunder(c, master);
-                  scheduleThunder();
-                }, 20000 + Math.random()*35000));
-              };
-              scheduleThunder();
-            }
           } catch(e) {}
         }
 
@@ -3244,11 +3222,10 @@
     }
 
     var MUSIC_TRACKS = {
-      active: './music/active-breathing.mp3',
-      retention: './music/retention.mp3',
-      ethereal: './music/ethereal-ambient.mp3'
+      active:    './music/active-flow.mp3',
+      retention: './music/deep-retention.mp3'
     };
-    var IS_MUSIC = { pranayama:true, wimhof:true, ethereal:true, active:true, retention:true };
+    var IS_MUSIC = { pranayama:true, wimhof:true };
 
     /* Music streaming deck manager (HTML5 audio streaming, low memory, equal-power crossfader) */
     var music = (function() {
@@ -3298,38 +3275,14 @@
         duckLevel = 1.0;
 
         if(type === 'pranayama' || type === 'wimhof') {
-          if(deckA.src.indexOf('active-breathing.mp3') === -1) {
+          if(deckA.src.indexOf('active-flow.mp3') === -1) {
             deckA.src = MUSIC_TRACKS.active;
           }
-          if(deckB.src.indexOf('retention.mp3') === -1) {
+          if(deckB.src.indexOf('deep-retention.mp3') === -1) {
             deckB.src = MUSIC_TRACKS.retention;
           }
           deckA.currentTime = 0;
           deckB.currentTime = 0;
-          gainA = 1; gainB = 0;
-          applyGains();
-          deckA.play().catch(function(){});
-        } else if(type === 'ethereal') {
-          if(deckA.src.indexOf('ethereal-ambient.mp3') === -1) {
-            deckA.src = MUSIC_TRACKS.ethereal;
-          }
-          deckA.currentTime = 0;
-          gainA = 1; gainB = 0;
-          applyGains();
-          deckA.play().catch(function(){});
-        } else if(type === 'active') {
-          if(deckA.src.indexOf('active-breathing.mp3') === -1) {
-            deckA.src = MUSIC_TRACKS.active;
-          }
-          deckA.currentTime = 0;
-          gainA = 1; gainB = 0;
-          applyGains();
-          deckA.play().catch(function(){});
-        } else if(type === 'retention') {
-          if(deckA.src.indexOf('retention.mp3') === -1) {
-            deckA.src = MUSIC_TRACKS.retention;
-          }
-          deckA.currentTime = 0;
           gainA = 1; gainB = 0;
           applyGains();
           deckA.play().catch(function(){});
@@ -3536,26 +3489,31 @@
       scenes = []; master = null; running = false; runningKey = null;
     }
 
-    /* breath progress 0 (empty) → 1 (full): each soundscape opens with the inhale */
-    var BREATH_F = { rain:[4800,4500], wind:[3200,4300], ocean:[3800,4200],
-                     forest:[4200,4500], fire:[3600,4000], stream:[4200,4500], noise:[2500,3500] };
-    function setBreath(p) {
-      if(!running) return;
-      var c = App.Audio.getCtx();
-      scenes.forEach(function(s) {
-        var m = BREATH_F[s.type] || BREATH_F.ocean;
-        try { s.filter.frequency.setTargetAtTime(m[0] + m[1]*p, c.currentTime, 0.12); } catch(e) {}
-      });
-    }
+    /* Per-breath filter modulation disabled so nature and harmonic soundscapes
+       play with natural clarity without artificial filter whooshing. */
+    function setBreath() {}
 
-    /* calm setting for holds: filter low and steady */
-    var CALM_F = { rain:4500, wind:3000, ocean:3800, forest:4000, fire:3500, stream:4000, noise:2400 };
+    /* Subtle hold deepening: warm & soften high frequencies during retention holds,
+       and smoothly open back to full transparency when active breathing resumes. */
+    var CALM_F = {
+      ocean: 2800, rain: 3000, stream: 3000, forest: 3200, fire: 2800, wind: 2600,
+      bowls: 2400, theta: 2200, harmonic: 2400, delta: 2000
+    };
     function setCalm() {
       if(!running) return;
       var c = App.Audio.getCtx();
       scenes.forEach(function(s) {
-        var f = CALM_F[s.type] || CALM_F.ocean;
-        try { s.filter.frequency.setTargetAtTime(f, c.currentTime, 0.8); } catch(e) {}
+        var f = CALM_F[s.type] || 2800;
+        try { s.filter.frequency.setTargetAtTime(f, c.currentTime, 0.9); } catch(e) {}
+      });
+    }
+
+    function setActive() {
+      if(!running) return;
+      var c = App.Audio.getCtx();
+      scenes.forEach(function(s) {
+        var cfg = NATURE_PRESETS[s.type] || { lp: 16000 };
+        try { s.filter.frequency.setTargetAtTime(cfg.lp, c.currentTime, 0.8); } catch(e) {}
       });
     }
 
@@ -3595,6 +3553,8 @@
       if(music.isPlaying()) music.onStateChange(newState);
       if(newState === STATES.HOLD || newState === STATES.RECOVERY_HOLD) {
         setCalm();
+      } else if(newState === STATES.BREATHING_IN || newState === STATES.GET_READY || newState === STATES.RECOVERY_IN) {
+        setActive();
       } else if(newState === STATES.SESSION_COMPLETE) {
         if(App.Config.get('sleepMode') === 'on') {
           setCalm();
@@ -3884,9 +3844,9 @@
       rafId = requestAnimationFrame(frame);
     }
     function start(t) {
-      if(t === 'pranayama' || t === 'wimhof' || t === 'ethereal' || t === 'active' || t === 'retention') t = 'stardust';
-      if(t === 'noise') { stop(); return; }     /* deep noise: no visual */
-      if(t === 'stream') t = 'ocean';           /* stream reuses caustics */
+      if(t === 'pranayama' || t === 'wimhof' || t === 'bowls' || t === 'theta' || t === 'harmonic') t = 'stardust';
+      if(t === 'delta' || t === 'noise') { stop(); return; } /* deep sleep velvet: calm screen without particles */
+      if(t === 'stream') t = 'ocean';                        /* stream reuses caustics */
       if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       ensureCanvas();
       resize();

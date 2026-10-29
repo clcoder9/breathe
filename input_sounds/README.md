@@ -1,75 +1,45 @@
-# Soundscape Input Directory (`input_sounds/`)
+# Breathe Soundscape Pipeline (`input_sounds/` & `music/`)
 
-This directory is the dedicated intake folder for new high-quality nature soundscapes and ambient audio tracks generated with **Google Lyria**, **MusicFX**, **Google AI Test Kitchen**, or external high-fidelity recordings.
+This directory is the intake and build staging folder for Breathe's soundscapes. All output files are mastered into `music/` at `44.1 kHz`, `128 kbps` stereo MP3, normalized to **-18 LUFS (EBU R128)** with a **2.5-second equal-power circular crossfade** for gapless looping.
 
 ---
 
-## 🚀 Quick Workflow
+## Soundscape Lineup & Protocol Mapping
 
-1. **Generate** or download your soundscapes using the Lyria prompts below.
-2. **Save or drag & drop** the audio files into this folder (`input_sounds/`):
-   - `rain.mp3` *(or `rain.wav`)*
-   - `wind.mp3` *(or `wind.wav`)*
-   - `forest.mp3` *(or `forest.wav`)*
-   - `fire.mp3` *(or `fire.wav`)*
-   - `stream.mp3` *(or `stream.wav`)*
-   - `noise.mp3` *(or `noise.wav`)*
-   - *(Optional: `ocean.mp3`)*
-3. **Run the importer** from the project root:
+### 1. Breathwork & Meditative Soundscapes (`tools/build_soundscapes.py`)
+Synthesized via multi-layer physical modal modeling, harmonic overtone voicing, and binaural entrainment:
+
+- **Adaptive Pranayama (`pranayama`)**:
+  - `music/active-flow.mp3`: Warm `110 Hz / 165 Hz / 220 Hz` harmonic pulse contoured to support active Pranayama breathing.
+  - `music/deep-retention.mp3`: Consonant `55 Hz / 110 Hz` sub-aquatic `4.0 Hz` Theta binaural pad with distant singing bowl washes that crossfades in during retention holds.
+- **Tibetan Singing Bowls (`bowls` → `music/singing-bowls.mp3`)**:
+  - Struck and rimmed hand-hammered bronze bowls (`1 : 2.756 : 5.404` modal partials with natural warm beating) for **Box Breathing (4-4-4-4)** and **A52 Cadence (5-5-2)**.
+- **Theta Retention Drone (`theta` → `music/theta-drone.mp3`)**:
+  - `108 Hz` fundamental + `54 Hz` sub-bass with a `4.5 Hz` Theta binaural frequency differential (`105.75 Hz` L / `110.25 Hz` R) for **Freediving Apnea Tables (O2 / CO2)** and deep breath holds.
+- **Warm Harmonic Pad (`harmonic` → `music/harmonic-pad.mp3`)**:
+  - Lush `432 Hz`-tuned `Cmaj9` ambient chordal bed with slow chorus drift for **Coherent Breathing**, **7-Day Journey**, and **Recovery**.
+- **Deep Sleep Velvet (`delta` → `music/velvet-noise.mp3`)**:
+  - Dual-channel decorrelated brown/pink velvet acoustic blanket with `2.0 Hz` Delta binaural sub-warmth for **4-7-8 Relaxing Breath** and **Sleep Mode**.
+
+### 2. Nature Soundscapes (Verified CC0 / Public Domain Field Recordings)
+Sourced from CC0 / Public Domain Mark field recordings on the Internet Archive (Radio Aporee collection):
+
+- **Ocean Waves (`ocean` → `music/ocean.mp3`)**: Coastal surf rolling onto sand (`aporee_25434_29478`, Public Domain).
+- **Gentle Rain (`rain` → `music/rain.mp3`)**: Gentle rain falling on forest leaves (`aporee_69982_81513`, Public Domain).
+- **Mountain Stream (`stream` → `music/stream.mp3`)**: Alpine mountain stream in Hollersbach (`aporee_65017_75100`, Public Domain).
+- **Woodland Birds & Breeze (`forest` → `music/forest.mp3`)**: Black Forest morning birds and canopy breeze (`aporee_44034_50101`, Public Domain).
+- **Crackling Campfire (`fire` → `music/fire.mp3`)**: Evening wilderness campfire at dusk (`aporee_51228_58465`, Public Domain).
+- **Alpine Pines Wind (`wind` → `music/wind.mp3`)**: Soft wind blowing through pine woods (`aporee_41242_47058`, Public Domain).
+
+---
+
+## Rebuilding or Importing Custom Tracks
+
+1. To re-synthesize the meditative tracks into `input_sounds/`:
+   ```bash
+   python tools/build_soundscapes.py
+   ```
+2. To master any `.wav` / `.mp3` / `.flac` / `.ogg` files in `input_sounds/` into `music/` and bump the Service Worker cache in `sw.js`:
    ```bash
    python tools/import_soundscapes.py
    ```
-   **What the importer does automatically:**
-   - Detects all supported audio formats (`.mp3`, `.wav`, `.m4a`, `.flac`, `.ogg`, `.aac`, `.opus`).
-   - Generates a **seamless circular crossfade loop** so the track loops gaplessly in WebAudio/HTML5 without any audible click, pop, or abrupt break.
-   - Applies **EBU R128 loudness normalization (-18 LUFS)** for smooth, balanced volume that matches breath coaching cues.
-   - Encodes as clean 44.1 kHz 128 kbps stereo MP3 directly into `music/`.
-   - Automatically increments the Service Worker cache version in `sw.js` so web browsers and PWAs immediately refresh and load the new sounds without stale caching.
-
----
-
-## 🎨 Google Lyria & MusicFX Prompts
-
-Copy and paste these engineered prompts directly into **Google Labs MusicFX** ([https://labs.google/fx/tools/music-fx](https://labs.google/fx/tools/music-fx)), **Lyria Studio**, or the **Gemini API**:
-
-### 1. Rain (HQ Rainfall)
-- **Target File**: `input_sounds/rain.mp3`
-- **Full Prompt**:
-  > Continuous gentle rainfall pattering steadily on broad forest leaves, soft wet soil, and distant foliage. Muffled distant thunder roll in the far background every few moments. Immersive binaural stereo spread, warm organic pink-noise acoustic spectrum, smooth high frequencies without harsh sibilance or splashing. Completely ambient, zero musical instruments, zero synths, zero percussion, zero vocal sounds. Pure, deeply relaxing, seamless meditative rain soundscape.
-- **Short Prompt**:
-  > Gentle steady rain falling on forest leaves, soft distant thunder rumble, binaural nature recording, immersive 3D stereo, pure environmental soundscape, no instruments, meditative relaxation.
-
-### 2. Wind (HQ Mountain Breeze)
-- **Target File**: `input_sounds/wind.mp3`
-- **Full Prompt**:
-  > Gentle mountain breeze softly whispering through alpine pine needles and valleys. Warm airy low-mid organic swell, natural dynamic breathing rhythm without harsh howling, buffeting, or sharp whistling. Expansive spatial depth, quiet mountain pass atmosphere, soothing natural airflow. Pure environmental nature soundscape, zero musical instruments, no rhythm tracks, no synthetic pads, zero vocals. Deeply calming, organic breath meditation backdrop.
-- **Short Prompt**:
-  > Soft mountain breeze whispering through pine trees, gentle airy wind gusts, serene high altitude nature atmosphere, smooth organic airflow, no instruments, zero vocals, pure ambient soundscape.
-
-### 3. Night Forest (HQ Crickets & Birds)
-- **Target File**: `input_sounds/forest.mp3`
-- **Full Prompt**:
-  > Peaceful summer night in a tranquil temperate forest. Continuous gentle chorus of night crickets and soft nocturnal cicadas with natural rhythmic variation. Very soft distant night breeze rustling high tree canopies, occasional faint twilight songbird and distant night owl hoot in the background. Pristine high-fidelity spatial stereo field, warm atmospheric dusk ambience. Zero music, no electronic synthesizers, no percussion, no vocal artifacts. Pure nocturnal wilderness serenity.
-- **Short Prompt**:
-  > Peaceful summer night forest, gentle rhythmic crickets chirping, soft distant owl, rustling canopy breeze, nocturnal wilderness ambience, pristine binaural stereo, no music, no vocals.
-
-### 4. Campfire (HQ Crackle)
-- **Target File**: `input_sounds/fire.mp3`
-- **Full Prompt**:
-  > Cozy wilderness campfire in the calm evening. Natural organic wood embers crackling, gentle popping of dry hardwood pine, soft warm low-frequency flame rumble. Warm, intimate hearth acoustics with soft air movement. Gentle, soothing crackle dynamics without sudden startling loud snaps. Zero musical accompaniment, no instruments, no synthesizer pads, zero human voices. Intimate, grounding, restorative firelight meditation atmosphere.
-- **Short Prompt**:
-  > Cozy campfire crackle, gentle popping wood embers, warm soothing flame rumble, intimate evening wilderness fire, relaxing campfire ambience, no music, pure organic soundscape.
-
-### 5. Stream (HQ Mountain Brook)
-- **Target File**: `input_sounds/stream.mp3`
-- **Full Prompt**:
-  > Crystal clear alpine mountain stream flowing smoothly over worn river pebbles and mossy stones. Gentle bubbling water, refreshing liquid acoustic textures, quiet brook babble with continuous smooth current. Crisp yet velvety water resonance without harsh metallic treble or splash distortion. Immersive stereo width, peaceful forest creek setting. Zero music, no guitars or pads, zero percussion, no vocal sounds. Zen restorative nature soundscape.
-- **Short Prompt**:
-  > Crystal clear mountain stream bubbling over smooth stones, tranquil babbling brook, soothing liquid water flow, fresh alpine creek, pure nature soundscape, no instruments, zen meditation.
-
-### 6. Deep Noise (HQ Ambient Drone & Rumble)
-- **Target File**: `input_sounds/noise.mp3`
-- **Full Prompt**:
-  > Deep meditative drone soundscape, rich warm brown noise acoustic foundation blended with gentle 432 Hz organic harmonic sub-bass warmth. Velvety smooth low-frequency resonance, enveloping sonic cocoon, subtle imperceptible breathing swell. Free of harsh treble, free of digital hiss, free of sudden transients, no percussive beats, zero vocals. Deep calming steady frequency foundation designed for long pranayama breath holds, retention, and deep meditation.
-- **Short Prompt**:
-  > Deep warm brown noise drone, soothing 432Hz harmonic acoustic rumble, velvety sub-bass meditative ambience, warm enveloping sonic floor, no beats, no melody, zero vocals, deep focus.
