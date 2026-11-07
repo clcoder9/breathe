@@ -1566,7 +1566,7 @@
             <label for="cfg-breaths">Breaths / Round</label>
             <div class="stepper-wrap">
               <button type="button" class="stepper-btn btn-dec" data-target="cfg-breaths" aria-label="Decrease breaths">&minus;</button>
-              <input type="number" id="cfg-breaths" min="1" max="200" step="1" value="30">
+              <input type="number" id="cfg-breaths" min="1" max="500" step="1" value="30">
               <button type="button" class="stepper-btn btn-inc" data-target="cfg-breaths" aria-label="Increase breaths">&plus;</button>
             </div>
             <div class="chip-row">
@@ -1574,6 +1574,9 @@
               <button type="button" class="chip-btn" data-target="cfg-breaths" data-val="30">30</button>
               <button type="button" class="chip-btn" data-target="cfg-breaths" data-val="40">40</button>
               <button type="button" class="chip-btn" data-target="cfg-breaths" data-val="50">50</button>
+              <button type="button" class="chip-btn" data-target="cfg-breaths" data-val="100">100</button>
+              <button type="button" class="chip-btn" data-target="cfg-breaths" data-val="200">200</button>
+              <button type="button" class="chip-btn" data-target="cfg-breaths" data-val="300">300</button>
             </div>
             <span class="setting-hint">Hyperventilation breaths before retention hold</span>
           </div>
@@ -2210,7 +2213,7 @@
       sleepMode:'off', nightOled:'off', flowMode:'off', masterMute:'off'
     };
     var ranges = {
-      breathsPerRound:{min:1,max:200}, breathStep:{min:-15,max:20},
+      breathsPerRound:{min:1,max:500}, breathStep:{min:-15,max:20},
       holdStartTime:{min:0,max:300},
       holdIncrement:{min:0,max:60},    rounds:{min:1,max:10},
       inhaleDuration:{min:1,max:10},   exhaleDuration:{min:1,max:10},
