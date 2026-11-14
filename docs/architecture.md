@@ -1,231 +1,119 @@
 # Pranayama Breathing Exercise — Software Architecture
 
-**Version:** 1.0
-**Date:** 2026-03-15
-**Type:** Single-file web application (HTML + embedded CSS + JavaScript)
-**Dependencies:** None (pure vanilla, no frameworks, no external assets)
+**Version:** 2.5
+**Date:** 2026-11-14
+**Type:** Single-file Progressive Web Application (HTML + embedded CSS + JavaScript + Service Worker)
+**Dependencies:** Local `three.module.min.js` (3D particle sphere) & `docs/voice/voice_data.js` (offline neural TTS clips); zero external network runtime dependencies.
 
 ---
 
 ## 1. Overview
 
-The application uses a state-machine-driven architecture. All code resides in a single `.html` file organized into IIFE modules on a global `App` namespace.
+The application uses a state-machine-driven architecture contained in a single `index.html` file organized into IIFE modules on a global `App` namespace, backed by an offline-first Service Worker (`sw.js` — `pranayama-v25`).
 
 ```
-+-----------------------------------------------------+
-|                    index.html                         |
-|                                                       |
-|  +----------+  +--------------+  +---------------+   |
-|  |  Config   |  |    Session   |  |    Timer      |   |
-|  |  Module   |--|   (State     |--|    Engine     |   |
-|  |           |  |   Machine)   |  |               |   |
-|  +----------+  +------+-------+  +---------------+   |
-|                        |                              |
-|         +--------------+-------------+                |
-|         |              |             |                |
-|  +------v-----+ +------v------+ +---v------------+   |
-|  |   UI /     | |   Audio     | |    Events      |   |
-|  | Animation  | | Controller  | |   (DOM wiring) |   |
-|  | Controller | | (Web Audio) | |                |   |
-|  +------------+ +-------------+ +----------------+   |
-+-----------------------------------------------------+
++-----------------------------------------------------------------------+
+|                              index.html                               |
+|                                                                       |
+|  +-------------+  +---------------+  +------------+  +-------------+  |
+|  | App.Config  |  |  App.Presets  |  |  App.Bolt  |  | App.History |  |
+|  | (Settings & |--| (10 Built-in  |--| (CO2 Test  |--| & Stats /   |  |
+|  |  Validation)|  |  & Custom)    |  |  & Tiers)  |  | Achievements|  |
+|  +------+------+  +-------+-------+  +-----+------+  +------+------+  |
+|         |                 |                |                |         |
+|         +-----------------+--------+-------+----------------+         |
+|                                    |                                  |
+|                           +--------v--------+                         |
+|                           |   App.Session   |                         |
+|                           | (14-State FSM)  |                         |
+|                           +--------+--------+                         |
+|                                    |                                  |
+|     +---------------+--------------+--------------+---------------+   |
+|     |               |              |              |               |   |
+| +---v--------+ +----v-----+ +------v------+ +-----v------+ +------v-+ |
+| | App.Timer  | |  App.UI  | |  App.Audio  | | App.Liquid | |App.Wake| |
+| | (rAF loop) | |  & Scene | | Pacer/Voice | | (3D Three/ | |  Lock  | |
+| |            | |          | |  /Ambience  | |  WebGL)    | |        | |
+| +------------+ +----------+ +-------------+ +------------+ +--------+ |
++-----------------------------------------------------------------------+
 ```
 
 ---
 
 ## 2. State Machine Design
 
-### 2.1 States
+### 2.1 States (14 Total)
 
 | State | Description | Exit Condition |
 |-------|-------------|----------------|
-| `IDLE` | Waiting for START | User clicks Start |
-| `BREATHING_IN` | Inhale of power breath | inhaleDuration elapsed |
-| `BREATHING_OUT` | Exhale of power breath | exhaleDuration elapsed |
-| `HOLD` | Breath retention after final exhale | User tap/click/Space |
+| `IDLE` | Waiting for START or BOLT test | User clicks Start or Measure BOLT |
+| `PREPARE` | Optional countdown before Round 1 (`prepareDuration`) | Countdown elapsed |
+| `BREATHING_IN` | Inhale phase (Standard, 2-stage Double Inhale, or Alternate Nostril) | `inhaleDuration` elapsed, Flow release, `Hold Now`, or `Finish & Save` |
+| `PAUSE_AFTER_INHALE` | Box/4-7-8/Nadi Shodhana top hold | `pauseAfterInhale` elapsed or `Hold Now` |
+| `BREATHING_OUT` | Exhale phase | `exhaleDuration` elapsed, Flow release, or `Hold Now` |
+| `PAUSE_AFTER_EXHALE` | Bottom pause between breaths | `pauseAfterExhale` elapsed or `Hold Now` |
+| `HOLD` | Breath retention after final exhale (or early `Hold Now`) | User tap/click/Space, or auto-expire in Box mode |
 | `RECOVERY_IN` | Deep recovery inhale | 3s elapsed |
-| `RECOVERY_HOLD` | Hold recovery breath | 15s elapsed |
+| `RECOVERY_HOLD` | Hold recovery breath (`recoveryHoldDuration`) | Configured duration elapsed |
 | `RECOVERY_OUT` | Recovery exhale | 3s elapsed |
-| `ROUND_COMPLETE` | Brief pause, round summary | 3s auto-advance |
-| `SESSION_COMPLETE` | All rounds finished | User clicks Reset |
-
-### 2.2 Transition Diagram
-
-```
-IDLE --> BREATHING_IN (start)
-BREATHING_IN --> BREATHING_OUT (inhale timer)
-BREATHING_OUT --> BREATHING_IN (exhale timer, breath < max)
-BREATHING_OUT --> HOLD (exhale timer, breath == max)
-HOLD --> RECOVERY_IN (user tap)
-RECOVERY_IN --> RECOVERY_HOLD (3s)
-RECOVERY_HOLD --> RECOVERY_OUT (15s)
-RECOVERY_OUT --> ROUND_COMPLETE (3s, round < total)
-RECOVERY_OUT --> SESSION_COMPLETE (3s, round == total)
-ROUND_COMPLETE --> BREATHING_IN (3s, next round)
-SESSION_COMPLETE --> IDLE (reset)
-```
-
-### 2.3 Implementation
-
-Central `transition(newState)` function:
-```javascript
-function transition(newState) {
-    state = newState;
-    App.UI.render(newState);
-    App.Events.emit('stateChange', {state: newState});
-}
-```
+| `ROUND_COMPLETE` | Brief pause & round summary | 3s auto-advance |
+| `SESSION_COMPLETE` | Session finished (full or via `Finish & Save`) | Victory modal shown; Reset returns to `IDLE` |
+| `SLEEPING` | Gentle post-session sleep wind-down | User clicks/taps to wake |
+| `BOLT_PREP` | Guided 8-second normal inhale/exhale before BOLT hold | 8s elapsed |
+| `BOLT_HOLD` | Count-up CO₂ tolerance hold until first definite urge to breathe | User tap/click/Space |
 
 ---
 
 ## 3. Module Structure
 
-### 3.1 App.Config
-- Manages all user-configurable parameters with defaults and validation
-- Reads from / writes to DOM input elements
-- Persists to `localStorage`
-- `getHoldTarget(round)`: computes `startHold + (round-1) * increment`
+### 3.1 `App.Events`
+- Lightweight pub/sub bus (`on`, `off`, `emit`) decoupling state transitions from UI/audio reactions.
 
-### 3.2 App.Session (State Machine)
-- Central orchestrator owning session state
-- Drives transitions, coordinates Timer, UI, and Audio
-- State: `state`, `currentRound`, `breathCount`, `holdAchieved`
-- Methods: `start()`, `reset()`, `endHold()`, phase begin functions
+### 3.2 `App.Config`
+- Manages 30+ user-configurable parameters with range clamping and `localStorage` persistence (`whm_config`).
+- Supports `breathsPerRound`, `holdStartTime`, `holdIncrement`, `holdMode` (`fixed` | `adaptive`), `rounds`, `inhaleDuration` (`0.5–15s`), `exhaleDuration` (`0.5–15s`), `pauseAfterInhale`, `pauseAfterExhale`, `recoveryHoldDuration`, `prepareDuration`, `breathStyle` (`standard` | `doubleInhale` | `alternateNostril`), audio/ambience mixes, and visual theme settings.
+- `getHoldTarget(round)`: computes target hold per round. In `adaptive` mode, combines `App.History.recentBest(5)` and `App.Bolt.latest()` (`Math.round(boltScore * 2.2)`) to calibrate Round 1 at 80% of baseline with +15% per subsequent round.
 
-### 3.3 App.Timer
-- `requestAnimationFrame` loop with `performance.now()` delta
-- `startPhase(durationMs, onExpire, onTick)`: fixed-duration with callback
-- `startPhase(null, null, onTick)`: free-running for HOLD phase
-- `stop()`: cancels current timer
+### 3.3 `App.Presets`
+- Built-in protocols:
+  - `standard` (Standard Pranayama)
+  - `beginner` (Gentle Start)
+  - `deep` (Deep Retention)
+  - `energize` (Quick Energize)
+  - `box` (Box Breathing 4-4-4-4)
+  - `relax478` (4-7-8 Relax)
+  - `sleep` (Sleep Wind-Down)
+  - `coherent` (Coherent Breathing 5.5s / 5.5s Resonance)
+  - `physio_sigh` (Physiological Sigh — 2-stage `doubleInhale` + long exhale)
+  - `nadi_shodhana` (Nadi Shodhana — `alternateNostril` 4-4-4 cycle)
+  - `custom` (User-saved configurations)
 
-### 3.4 App.UI
-- All DOM manipulation, CSS class toggling, counter/timer text updates
-- `render(state)`: master dispatch by state, updates circle scale/color, shows/hides elements
-- `updateHoldTimer(secs, target)`: updates hold display
-- `updateRecoveryCountdown(rem)`: updates recovery countdown
-- `showRoundSummary(summary)`: displays round completion data
+### 3.4 `App.Bolt`
+- Manages BOLT (Body Oxygen Level Test) CO₂ tolerance score history in `localStorage` (`whm_bolt_history`).
+- Methods: `load()`, `record(scoreSec)`, `latest()`, `best()`, `getTier(score)`, `replaceAll(arr)`.
+- Tiers: `<15s` Developing, `15–24s` Functional, `25–39s` Advanced, `40s+` Elite.
 
-### 3.5 App.Audio
-- Web Audio API with short-lived `OscillatorNode` + `GainNode`
-- `AudioContext` created on first START click (browser autoplay policy)
-- `beep(freq, dur, time, vol)`: general-purpose tone generator
-- Semantic methods: `playHoldStart()`, `playHoldEnd()`, `playSessionComplete()`
+### 3.5 `App.History` & `App.Achievements` & `Stats`
+- Stores completed sessions in `whm_history` (up to 200 entries), tracking `rounds`, `holds`, `roundTargets`, `totalBreaths`, `preset`, and `feeling`.
+- Export/Import JSON backup (`version: 3`) bundles `history`, `config`, `customPreset`, `favorites`, and `boltHistory`.
+- Renders the Statistics modal: summary KPIs, 52-week consistency heatmap, 7-day Guided Journey tracker, 10 achievement badges, BOLT score progression chart, and recent session hold chart.
 
-### 3.6 App.Events
-- Simple pub/sub event bus: `on(event, fn)`, `off(event, fn)`, `emit(event, data)`
-- Decouples modules
+### 3.6 `App.Timer`
+- `requestAnimationFrame` loop using `performance.now()` deltas with pause/resume support (`pause()`, `resume()`, `isPaused()`).
 
----
+### 3.7 `App.Audio`, `App.Pacer`, `App.Voice`, `App.Ambience`, `App.Haptics`
+- **`App.Audio`**: Web Audio API singing-bowl synthesizer with harmonic partials, singing-bowl resonance, and milestone chimes.
+- **`App.Pacer`**: Filtered pink-noise breath pacer (`playInhale`, `playExhale`, `playSip` for 2-stage Physiological Sigh).
+- **`App.Voice`**: Offline neural TTS playback via `VOICE_CLIPS` base64 MP3 map with Web Speech API fallback.
+- **`App.Ambience`**: Dual-layer soundscape engine mixing procedural Web Audio generators (`drone`, `binaural`, `brown`, `wind`) and streamed/cached MP3 nature/music loops (`amb1` + `amb2`).
 
-## 4. Data Model
+### 3.8 `App.Liquid` & `App.Scene`
+- **`App.Liquid`**: Three.js 3D particle sphere (`three.module.min.js`) with custom vertex/fragment shaders and Fibonacci sphere distribution that morphs with breathing phases, hold turbulence, and audio reactivity.
+- **`App.Scene`**: Procedural Canvas2D background renderer (`aurora`, `stars`, `ripples`, `geometry`, `fireflies`, `mist`).
 
-### Session Configuration (persisted to localStorage)
-```javascript
-{
-    breathsPerRound: 30,
-    holdStartTime: 60,      // seconds, round 1
-    holdIncrement: 15,       // seconds added per round
-    rounds: 3,
-    inhaleDuration: 2,       // seconds
-    exhaleDuration: 3        // seconds
-}
-```
+### 3.9 `App.Session`
+- Central state machine orchestrating breathing rounds, Flow Mode (hold-to-inhale, release-to-exhale), `holdNow()` (early transition from breathing to retention), `finishAndSave()` (early session completion saving completed rounds/holds), and `startBolt()` / `endBolt()` (guided CO₂ tolerance test).
+- Preserves exact per-round hold targets in `roundTargets[]` so post-session Victory analytics match in-session targets even after `App.History.record()` updates adaptive baselines.
 
-### Session State (in-memory)
-```javascript
-{
-    state: 'IDLE',
-    currentRound: 0,         // 1-based during session
-    breathCount: 0,          // current breath in round
-    holdAchieved: 0          // actual hold time in seconds
-}
-```
-
----
-
-## 5. Timing Strategy
-
-- `requestAnimationFrame` with `performance.now()` provides sub-millisecond precision
-- Fixed-duration phases: compare elapsed vs target, fire `onExpire` when reached
-- Free-running phase (HOLD): no auto-expire, `onTick` updates display every frame
-- No drift accumulation: each phase captures fresh start timestamp
-- Background tab: rAF pauses (intentional — exercise needs attention), `performance.now()` still accurate on resume
-
----
-
-## 6. Audio Strategy
-
-- `AudioContext` lazy-created on first user gesture (START click)
-- Each sound: `OscillatorNode` → per-beep `GainNode` → `destination`
-- Linear gain ramps for click-free attack/release envelopes
-
-| Cue | Frequency | Duration | Pattern |
-|-----|-----------|----------|---------|
-| Hold start | 800 Hz | 120ms | Double beep, 220ms gap |
-| Hold end | 600 Hz | 120ms | Triple beep, 220ms gap |
-| Recovery hold end | 400 Hz | 350ms | Single tone |
-| Session complete | 523/659/784 Hz | 200/200/400ms | Ascending triad |
-
----
-
-## 7. Animation Strategy
-
-CSS transitions with dynamic duration via custom property:
-
-```css
-.circle-wrapper {
-    transition: transform var(--phase-duration) ease-in-out;
-}
-```
-
-JavaScript sets `--phase-duration` before toggling scale class:
-```javascript
-css('--phase-duration', config.inhaleDuration + 's');
-setScale('scale-inhale');
-```
-
-Hold phase uses a CSS keyframe glow pulse (decorative, loops).
-Idle phase uses a CSS keyframe scale pulse.
-
----
-
-## 8. HTML Structure
-
-```html
-<body>
-  <div id="disclaimer-overlay">   <!-- Safety modal, shown once -->
-  <header id="settings-panel">    <!-- Sticky settings bar -->
-  <main id="main">                <!-- Center breathing area -->
-    <div id="round-indicator">
-    <div class="circle-container">
-      <div class="circle-glow">   <!-- Blurred background glow -->
-      <div class="circle-wrapper"> <!-- Animated scale target -->
-        <svg>                      <!-- Track + ring circles -->
-        <div class="circle-content"> <!-- Counter/label/timer -->
-      </div>
-    </div>
-  </main>
-  <footer id="safety-footer">     <!-- Fixed safety reminder -->
-  <script>                         <!-- All JS modules -->
-</body>
-```
-
----
-
-## 9. Error Handling
-
-| Scenario | Handling |
-|----------|---------|
-| AudioContext creation fails | Continue silently without audio |
-| AudioContext suspended | Call `resume()` on user gesture |
-| Invalid config value | Clamp to valid range |
-| localStorage unavailable | Fall back to in-memory defaults |
-
----
-
-## 10. Accessibility
-
-- Keyboard: Space = start/end hold, Escape = stop
-- ARIA live region on phase label for screen reader announcements
-- `prefers-reduced-motion`: disables all CSS transitions/animations
-- Color contrast: all text meets WCAG AA (4.5:1 minimum)
+### 3.10 `App.UI`
+- Master DOM & SVG renderer (`render(state)`), handling the SVG progress ring (`stroke-dashoffset`), 2-stage Physiological Sigh progress (`INHALE 1/2` → `SIP IN 2/2`), Nadi Shodhana nostril indicator badge (`#nostril-indicator`) and directional SVG arc (`#nostril-arc`), Victory Modal (`showVictoryModal`), and BOLT Result Modal (`showBoltModal`).

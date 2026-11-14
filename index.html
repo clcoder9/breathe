@@ -40,6 +40,7 @@
       --phase-duration: 2s;
       --circle-size: min(85vmin, 560px);
       --chart-line: #0891B2;
+      --color-accent: #22D3EE;
       --font-stack: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     }
 
@@ -60,6 +61,7 @@
       --color-idle:     #475569;
       --color-pause:    #DB2777;
       --color-warning:  #B45309;
+      --color-accent:   #0284C7;
       --current-phase-color: #475569;
     }
     html[data-theme="light"] #atmosphere { opacity: 0.08; filter: blur(55px); }
@@ -246,8 +248,32 @@
       border-color: rgba(52, 211, 153, 0.5);
       background: rgba(52, 211, 153, 0.1);
     }
-    .journey-step .j-day { font-size: 0.62rem; font-weight: 700; color: var(--color-text-primary); }
-    .journey-step .j-status { font-size: 0.75rem; margin-top: 2px; }
+    .journey-step.active {
+      border-color: var(--color-inhale);
+      box-shadow: 0 0 0 1px var(--color-inhale);
+      background: rgba(34, 211, 238, 0.1);
+    }
+    .journey-step .j-day,
+    .journey-step .journey-step-day { font-size: 0.62rem; font-weight: 700; color: var(--color-text-primary); }
+    .journey-step .j-status,
+    .journey-step .journey-step-icon { font-size: 0.75rem; margin-top: 2px; color: var(--color-text-secondary); }
+    .journey-step.done .journey-step-icon { color: var(--color-complete); }
+    .bolt-stats-banner {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      background: rgba(34, 211, 238, 0.08); border: 1px solid rgba(34, 211, 238, 0.28);
+      border-radius: 10px; padding: 10px 12px; margin-bottom: 16px;
+    }
+    .bolt-stats-info { display: flex; flex-direction: column; gap: 2px; }
+    .bolt-stats-title { font-size: 0.76rem; font-weight: 700; color: var(--color-text-primary); letter-spacing: 0.03em; }
+    .bolt-stats-sub { font-size: 0.66rem; color: var(--color-text-secondary); }
+    .bolt-trigger-btn {
+      padding: 6px 12px; border-radius: 8px; border: 1px solid var(--color-inhale);
+      background: var(--color-inhale); color: #000; font-size: 0.72rem; font-weight: 700;
+      cursor: pointer; font-family: var(--font-stack); white-space: nowrap;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .bolt-trigger-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+    .bolt-trigger-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     #chart-tooltip {
       position: absolute; pointer-events: none; display: none;
       background: var(--color-surface-raised); border: 1px solid var(--color-border);
@@ -355,19 +381,59 @@
     }
     .label-swap { animation: label-swap-anim 0.45s ease; }
 
-    /* URGE-TO-BREATHE MARKER */
-    #urge-btn {
+    /* URGE-TO-BREATHE MARKER & HOLD-NOW PILL */
+    #urge-btn, #hold-now-btn {
       margin-top: 2px; padding: 10px 22px;
       border-radius: 22px; border: 1px solid var(--color-hold);
       background: transparent; color: var(--color-hold);
       font-size: 0.78rem; font-weight: 600; letter-spacing: 0.12em;
       font-family: var(--font-stack); cursor: pointer;
-      transition: background 0.2s ease, color 0.2s ease, opacity 0.3s ease;
+      transition: background 0.2s ease, color 0.2s ease, opacity 0.3s ease, transform 0.15s ease;
     }
     #urge-btn:hover:not(.marked) { background: var(--color-hold); color: #000; }
     #urge-btn.marked {
       border-color: var(--color-complete); color: var(--color-complete);
       cursor: default;
+    }
+    #hold-now-btn {
+      border-color: rgba(245, 158, 11, 0.65);
+      color: var(--color-hold);
+      background: rgba(245, 158, 11, 0.08);
+    }
+    #hold-now-btn:hover {
+      background: var(--color-hold);
+      color: #000;
+      transform: translateY(-1px);
+    }
+
+    /* NOSTRIL & DOUBLE-INHALE STAGE INDICATOR */
+    .nostril-indicator {
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; border-radius: 14px; padding: 3px 11px;
+      margin-top: 2px; color: var(--color-inhale);
+      background: rgba(34, 211, 238, 0.12);
+      border: 1px solid rgba(34, 211, 238, 0.38);
+      transition: all 0.25s ease;
+    }
+    .nostril-indicator.nostril-right {
+      color: #A78BFA;
+      background: rgba(167, 139, 250, 0.14);
+      border-color: rgba(167, 139, 250, 0.42);
+    }
+    .nostril-indicator.nostril-both {
+      color: var(--color-pause);
+      background: rgba(244, 114, 182, 0.14);
+      border-color: rgba(244, 114, 182, 0.42);
+    }
+    .nostril-arc {
+      fill: none; stroke: var(--color-inhale); stroke-width: 4.5;
+      stroke-linecap: round; opacity: 0.85;
+      filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.7));
+      transition: stroke 0.3s ease, opacity 0.3s ease;
+    }
+    .nostril-arc.arc-right {
+      stroke: #A78BFA;
+      filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.7));
     }
 
     /* AUTO-DIM (retention holds) */
@@ -430,7 +496,7 @@
       padding: 5px 12px; border-radius: 30px;
       border: 1px solid rgba(255, 255, 255, 0.12);
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-      max-width: 260px; margin-top: 0;
+      max-width: 380px; margin-top: 0;
     }
     body.zen #action-bar:hover,
     body.zen #action-bar:focus-within {
@@ -442,7 +508,7 @@
       opacity: 1; transform: translateX(-50%);
     }
     body.zen #action-bar .btn {
-      min-height: 38px; padding: 6px 14px; font-size: 0.85rem;
+      min-height: 38px; padding: 6px 12px; font-size: 0.8rem;
     }
     html[data-theme="light"] body.zen #action-bar {
       background: rgba(255, 255, 255, 0.75);
@@ -531,20 +597,20 @@
     }
     .pill-dot { opacity: 0.4; }
 
-    /* ACTION BAR (START & RESET BELOW CIRCLE) */
+    /* ACTION BAR (START, FINISH & RESET BELOW CIRCLE) */
     .action-bar {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 12px;
+      gap: 10px;
       width: 100%;
-      max-width: 340px;
+      max-width: 400px;
       margin-top: 4px;
       z-index: 10;
     }
     .btn {
-      padding: 10px 24px; border-radius: 10px;
-      font-size: 0.95rem; font-weight: 700;
+      padding: 10px 20px; border-radius: 10px;
+      font-size: 0.92rem; font-weight: 700;
       cursor: pointer; border: none;
       transition: opacity 0.2s, transform 0.1s, background 0.2s, border-color 0.2s;
       letter-spacing: 0.06em;
@@ -553,6 +619,7 @@
       align-items: center;
       justify-content: center;
       min-height: 46px;
+      white-space: nowrap;
     }
     .btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
     .btn:active:not(:disabled) { transform: scale(0.97); }
@@ -562,6 +629,17 @@
       color: #000;
       flex: 2;
       box-shadow: 0 4px 16px rgba(34, 211, 238, 0.25);
+    }
+    .btn-finish {
+      background: rgba(52, 211, 153, 0.14);
+      color: var(--color-complete);
+      border: 1px solid rgba(52, 211, 153, 0.5);
+      flex: 1.4;
+    }
+    .btn-finish:hover:not(:disabled) {
+      background: var(--color-complete);
+      color: #000;
+      border-color: var(--color-complete);
     }
     .btn-reset {
       flex: 1;
@@ -1311,6 +1389,31 @@
       background: linear-gradient(90deg, var(--color-inhale), var(--color-complete));
       transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
+    .v-round-bar-fill.bar-success {
+      background: linear-gradient(90deg, var(--color-inhale), var(--color-complete));
+    }
+    .v-round-bar-fill.bar-good {
+      background: linear-gradient(90deg, var(--color-exhale), var(--color-inhale));
+    }
+    .v-round-bar-fill.bar-mid {
+      background: linear-gradient(90deg, var(--color-hold), var(--color-inhale));
+    }
+    #bolt-overlay {
+      position: fixed; inset: 0; z-index: 960;
+      background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display: flex; align-items: center; justify-content: center; padding: 16px;
+    }
+    .bolt-score-big {
+      font-size: 3.2rem; font-weight: 200; color: var(--color-inhale);
+      font-variant-numeric: tabular-nums; line-height: 1.05; text-align: center;
+      margin: 4px 0;
+    }
+    .bolt-advice-box {
+      background: var(--color-surface-raised); border: 1px solid var(--color-border);
+      border-radius: 10px; padding: 12px 14px; font-size: 0.8rem;
+      color: var(--color-text-secondary); line-height: 1.5;
+    }
     .v-round-bar-urge {
       position: absolute; top: 0; bottom: 0; width: 2.5px;
       background: #F59E0B; box-shadow: 0 0 4px #F59E0B; z-index: 2;
@@ -1503,6 +1606,9 @@
             <option value="box">Box Breathing (4-4-4-4)</option>
             <option value="fourSevenEight">4-7-8 Relaxing Breath</option>
             <option value="a52">A52 Cadence (5-5-2)</option>
+            <option value="coherent">Coherent Breathing (5.5s HRV)</option>
+            <option value="physio_sigh">Physiological Sigh (Double Inhale)</option>
+            <option value="nadi_shodhana">Nadi Shodhana (Alternate Nostril)</option>
           </optgroup>
           <optgroup label="7-Day Journey">
             <option value="journey_d1">Day 1: Foundations</option>
@@ -1601,7 +1707,7 @@
             <label for="cfg-inhale">Inhale Duration (s)</label>
             <div class="stepper-wrap">
               <button type="button" class="stepper-btn btn-dec" data-target="cfg-inhale" aria-label="Decrease inhale duration">&minus;</button>
-              <input type="number" id="cfg-inhale" min="1" max="10" step="0.5" value="1.5">
+              <input type="number" id="cfg-inhale" min="0.5" max="15" step="0.5" value="1.5">
               <button type="button" class="stepper-btn btn-inc" data-target="cfg-inhale" aria-label="Increase inhale duration">&plus;</button>
             </div>
             <span class="setting-hint">Seconds per breath expansion</span>
@@ -1611,7 +1717,7 @@
             <label for="cfg-exhale">Exhale Duration (s)</label>
             <div class="stepper-wrap">
               <button type="button" class="stepper-btn btn-dec" data-target="cfg-exhale" aria-label="Decrease exhale duration">&minus;</button>
-              <input type="number" id="cfg-exhale" min="1" max="10" step="0.5" value="1.5">
+              <input type="number" id="cfg-exhale" min="0.5" max="15" step="0.5" value="1.5">
               <button type="button" class="stepper-btn btn-inc" data-target="cfg-exhale" aria-label="Increase exhale duration">&plus;</button>
             </div>
             <span class="setting-hint">Seconds per breath release</span>
@@ -1635,6 +1741,16 @@
               <button type="button" class="stepper-btn btn-inc" data-target="cfg-pause-exhale" aria-label="Increase pause after exhale">&plus;</button>
             </div>
             <span class="setting-hint">Bottom-of-breath pause</span>
+          </div>
+
+          <div class="setting-card">
+            <label for="cfg-breath-style">Breathing Mechanics</label>
+            <select id="cfg-breath-style">
+              <option value="standard">Standard (Continuous)</option>
+              <option value="doubleInhale">Double Inhale (Physiological Sigh)</option>
+              <option value="alternateNostril">Alternate Nostril (Nadi Shodhana)</option>
+            </select>
+            <span class="setting-hint">Specialized inhale or nostril alternation mechanics</span>
           </div>
 
           <div class="setting-card">
@@ -1711,6 +1827,14 @@
               <option value="adaptive">Adaptive (Auto-adjust)</option>
             </select>
             <span class="setting-hint">Scale target to your actual breath capacity</span>
+          </div>
+
+          <div class="setting-card">
+            <label>CO₂ Tolerance Baseline (BOLT)</label>
+            <button type="button" id="btn-start-bolt-settings" class="bolt-trigger-btn">
+              <span>🫁</span> Measure BOLT Score
+            </button>
+            <span class="setting-hint" id="bolt-settings-hint">Resting exhale breath-hold to first urge (calibrates Adaptive Holds)</span>
           </div>
 
           <div class="setting-card">
@@ -1957,6 +2081,10 @@
               <span class="qs-label">Ambience</span>
               <input type="range" id="qs-vol-amb" min="0" max="100" step="5" value="50">
             </div>
+            <div class="quick-sound-row">
+              <span class="qs-label">Mix (Amb 2)</span>
+              <input type="range" id="qs-vol-amb2" min="0" max="100" step="5" value="50">
+            </div>
           </div>
         </div>
 
@@ -2001,6 +2129,7 @@
             </filter>
           </defs>
           <circle class="circle-track" cx="100" cy="100" r="88"/>
+          <path id="nostril-arc" class="nostril-arc hidden" d="M 100 12 A 88 88 0 0 0 100 188"/>
           <circle class="circle-ring-glow" cx="100" cy="100" r="88"/>
           <circle class="circle-ring"  cx="100" cy="100" r="88"/>
           <circle id="ghost-pip" class="ghost-pip hidden" cx="100" cy="12" r="5"/>
@@ -2016,6 +2145,7 @@
             <span id="pill-rounds">3 rounds</span>
           </button>
           <div id="phase-label" class="hidden"></div>
+          <div id="nostril-indicator" class="nostril-indicator hidden"></div>
           <div id="breath-counter" class="hidden"></div>
           <div id="flow-indicator" class="flow-indicator hidden"></div>
           <div id="breath-time-remaining" class="hidden"></div>
@@ -2035,6 +2165,7 @@
         </div>
       </div>
     </div>
+    <button id="hold-now-btn" class="hidden" title="Skip remaining breaths and start retention hold (H)">HOLD NOW</button>
     <button id="urge-btn" class="hidden">FIRST URGE? TAP</button>
     <div id="feeling-row" class="hidden">
       <span id="feeling-label">How did it feel?</span>
@@ -2045,9 +2176,10 @@
       <button class="feeling-btn" data-feel="5" aria-label="Dizzy" title="Dizzy">😵</button>
     </div>
 
-    <!-- ACTION CONTROLS (START / RESET) -->
+    <!-- ACTION CONTROLS (START / FINISH / RESET) -->
     <div id="action-bar" class="action-bar">
       <button class="btn btn-start" id="btn-start">START</button>
+      <button class="btn btn-finish hidden" id="btn-finish" title="Finish session early and save completed rounds (F)">FINISH &amp; SAVE</button>
       <button class="btn btn-reset" id="btn-reset">RESET</button>
     </div>
 
@@ -2132,6 +2264,25 @@
     </div>
   </div>
 
+  <!-- BOLT SCORE RESULT MODAL -->
+  <div id="bolt-overlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="bolt-title">
+    <div class="victory-card">
+      <div class="victory-header">
+        <span class="victory-badge" id="bolt-badge">CO₂ BASELINE</span>
+        <h2 id="bolt-title">BOLT SCORE</h2>
+        <div id="bolt-subtitle" class="victory-subtitle">Body Oxygen Level Test Complete</div>
+      </div>
+      <div class="bolt-score-big" id="bolt-val-score">0s</div>
+      <div class="v-metric-sub" id="bolt-sub" style="text-align:center">Personal Best: 0s</div>
+      <div class="bolt-advice-box" id="bolt-advice"></div>
+      <div class="victory-actions">
+        <button id="btn-bolt-calibrate" class="btn btn-secondary">Use Adaptive Hold Targets</button>
+        <button id="btn-bolt-stats" class="btn btn-secondary">Stats</button>
+        <button id="btn-bolt-close" class="btn btn-primary">Done</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ACHIEVEMENT UNLOCKED TOAST -->
   <div id="achievement-toast" class="achievement-toast hidden" role="alert">
     <div class="achieve-toast-icon" id="achieve-toast-icon">🏆</div>
@@ -2185,7 +2336,8 @@
     PAUSE_AFTER_INHALE:'PAUSE_AFTER_INHALE', PAUSE_AFTER_EXHALE:'PAUSE_AFTER_EXHALE',
     HOLD:'HOLD', RECOVERY_IN:'RECOVERY_IN', RECOVERY_HOLD:'RECOVERY_HOLD',
     RECOVERY_OUT:'RECOVERY_OUT', ROUND_COMPLETE:'ROUND_COMPLETE',
-    SESSION_COMPLETE:'SESSION_COMPLETE', PAUSED:'PAUSED', SLEEPING:'SLEEPING'
+    SESSION_COMPLETE:'SESSION_COMPLETE', PAUSED:'PAUSED', SLEEPING:'SLEEPING',
+    BOLT_PREP:'BOLT_PREP', BOLT_HOLD:'BOLT_HOLD'
   };
   var COLORS = {
     IDLE:'#64748B', GET_READY:'#64748B',
@@ -2193,7 +2345,8 @@
     PAUSE_AFTER_INHALE:'#F472B6', PAUSE_AFTER_EXHALE:'#F472B6',
     HOLD:'#F59E0B', RECOVERY_IN:'#A78BFA', RECOVERY_HOLD:'#A78BFA',
     RECOVERY_OUT:'#A78BFA', ROUND_COMPLETE:'#34D399', SESSION_COMPLETE:'#34D399',
-    PAUSED:'#F472B6', SLEEPING:'#475569'
+    PAUSED:'#F472B6', SLEEPING:'#475569',
+    BOLT_PREP:'#22D3EE', BOLT_HOLD:'#F59E0B'
   };
   var GET_READY_DUR = 3;
   var RECOVERY_BREATH_DUR = 3;
@@ -2206,7 +2359,7 @@
       breathsPerRound:30, breathStep:0, holdStartTime:60, holdIncrement:15,
       rounds:5, inhaleDuration:1.5, exhaleDuration:1.5,
       pauseAfterInhale:0, pauseAfterExhale:0,
-      recoveryHold:15, ramp:'off', holdMode:'fixed',
+      recoveryHold:15, ramp:'off', holdMode:'fixed', breathStyle:'standard',
       voiceMode:'smart', vibration:'on', ambience:'off', ambience2:'off',
       volVoice:90, volCues:70, volAmbience:50, volAmbience2:50,
       pacer:'on', fullscreen:'off', material:'chrome', autoDim:'on',
@@ -2216,7 +2369,7 @@
       breathsPerRound:{min:1,max:500}, breathStep:{min:-15,max:20},
       holdStartTime:{min:0,max:300},
       holdIncrement:{min:0,max:60},    rounds:{min:1,max:10},
-      inhaleDuration:{min:1,max:10},   exhaleDuration:{min:1,max:10},
+      inhaleDuration:{min:0.5,max:15}, exhaleDuration:{min:0.5,max:15},
       pauseAfterInhale:{min:0,max:10}, pauseAfterExhale:{min:0,max:10},
       recoveryHold:{min:5,max:60},
       volVoice:{min:0,max:100}, volCues:{min:0,max:100}, volAmbience:{min:0,max:100},
@@ -2234,6 +2387,7 @@
       vibration:['on','off'],
       ramp:['off','speedup','slowdown'],
       holdMode:['fixed','adaptive'],
+      breathStyle:['standard','doubleInhale','alternateNostril'],
       ambience:['off','pranayama','bowls','theta','harmonic','delta','ocean','rain','stream','forest','fire','wind'],
       ambience2:['off','ocean','rain','stream','forest','fire','wind','bowls','theta','harmonic','delta'],
       pacer:['on','off'],
@@ -2278,6 +2432,7 @@
       inhaleDuration:'cfg-inhale',   exhaleDuration:'cfg-exhale',
       pauseAfterInhale:'cfg-pause-inhale', pauseAfterExhale:'cfg-pause-exhale',
       recoveryHold:'cfg-recovery-hold', ramp:'cfg-ramp', holdMode:'cfg-hold-mode',
+      breathStyle:'cfg-breath-style',
       voiceMode:'cfg-voice', vibration:'cfg-vibration', ambience:'cfg-ambience',
       ambience2:'cfg-ambience2',
       volVoice:'cfg-vol-voice', volCues:'cfg-vol-cues', volAmbience:'cfg-vol-amb',
@@ -2323,10 +2478,16 @@
     }
 
     function getHoldTarget(round) {
-      if(v.holdMode === 'adaptive' && App.History) {
-        var base = App.History.recentBest(5);
+      if(v.holdStartTime === 0 && v.holdIncrement === 0) return 0;
+      if(v.holdMode === 'adaptive') {
+        var base = App.History ? App.History.recentBest(5) : 0;
+        var boltLatest = (App.Bolt && App.Bolt.getLatest) ? App.Bolt.getLatest() : 0;
+        if(boltLatest > 0) {
+          var boltEst = Math.min(240, Math.max(30, Math.round(boltLatest * 2.2)));
+          base = Math.max(base, boltEst);
+        }
         if(base > 0) {
-          /* aim: final round tries to beat your recent best by 5s,
+          /* aim: final round tries to beat your recent best / BOLT baseline by 5s,
              first round starts at 70% of that */
           var finalT = Math.round(base + 5);
           var t = v.rounds > 1 ? (round-1)/(v.rounds-1) : 1;
@@ -2372,95 +2533,114 @@
         breathsPerRound:30, breathStep:0, holdStartTime:60, holdIncrement:15,
         rounds:5, inhaleDuration:1.5, exhaleDuration:1.5,
         pauseAfterInhale:0, pauseAfterExhale:0,
-        recoveryHold:15, ramp:'off', holdMode:'fixed'
+        recoveryHold:15, ramp:'off', holdMode:'fixed', breathStyle:'standard'
       },
       box: {
         breathsPerRound:50, breathStep:0, holdStartTime:0, holdIncrement:0,
         rounds:1, inhaleDuration:4, exhaleDuration:4,
         pauseAfterInhale:4, pauseAfterExhale:4,
-        recoveryHold:15, ramp:'off', holdMode:'fixed'
+        recoveryHold:15, ramp:'off', holdMode:'fixed', breathStyle:'standard'
       },
       a52: {
         breathsPerRound:50, breathStep:0, holdStartTime:0, holdIncrement:0,
         rounds:1, inhaleDuration:5, exhaleDuration:5,
         pauseAfterInhale:0, pauseAfterExhale:2,
-        recoveryHold:15, ramp:'off', holdMode:'fixed'
+        recoveryHold:15, ramp:'off', holdMode:'fixed', breathStyle:'standard'
       },
       fourSevenEight: {
         breathsPerRound:50, breathStep:0, holdStartTime:0, holdIncrement:0,
         rounds:1, inhaleDuration:4, exhaleDuration:8,
         pauseAfterInhale:7, pauseAfterExhale:0,
-        recoveryHold:15, ramp:'off', holdMode:'fixed'
+        recoveryHold:15, ramp:'off', holdMode:'fixed', breathStyle:'standard'
+      },
+      coherent: {
+        breathsPerRound:50, breathStep:0, holdStartTime:0, holdIncrement:0,
+        rounds:1, inhaleDuration:5.5, exhaleDuration:5.5,
+        pauseAfterInhale:0, pauseAfterExhale:0,
+        recoveryHold:15, ramp:'off', holdMode:'fixed', breathStyle:'standard'
+      },
+      physio_sigh: {
+        breathsPerRound:25, breathStep:0, holdStartTime:0, holdIncrement:0,
+        rounds:1, inhaleDuration:3.5, exhaleDuration:6.5,
+        pauseAfterInhale:0, pauseAfterExhale:1,
+        recoveryHold:15, ramp:'off', holdMode:'fixed', breathStyle:'doubleInhale'
+      },
+      nadi_shodhana: {
+        breathsPerRound:24, breathStep:0, holdStartTime:0, holdIncrement:0,
+        rounds:1, inhaleDuration:4, exhaleDuration:4,
+        pauseAfterInhale:4, pauseAfterExhale:0,
+        recoveryHold:15, ramp:'off', holdMode:'fixed', breathStyle:'alternateNostril'
       },
       journey_d1: {
         breathsPerRound:20, breathStep:0, holdStartTime:45, holdIncrement:10,
         rounds:2, inhaleDuration:2, exhaleDuration:2.5,
         pauseAfterInhale:0, pauseAfterExhale:0,
-        recoveryHold:15, ramp:'off', holdMode:'fixed'
+        recoveryHold:15, ramp:'off', holdMode:'fixed', breathStyle:'standard'
       },
       journey_d2: {
         breathsPerRound:20, breathStep:0, holdStartTime:45, holdIncrement:15,
         rounds:3, inhaleDuration:2, exhaleDuration:2.5,
         pauseAfterInhale:0, pauseAfterExhale:0,
-        recoveryHold:15, ramp:'off', holdMode:'fixed'
+        recoveryHold:15, ramp:'off', holdMode:'fixed', breathStyle:'standard'
       },
       journey_d3: {
         breathsPerRound:25, breathStep:0, holdStartTime:60, holdIncrement:15,
         rounds:3, inhaleDuration:2, exhaleDuration:2.5,
         pauseAfterInhale:0, pauseAfterExhale:0,
-        recoveryHold:15, ramp:'off', holdMode:'fixed'
+        recoveryHold:15, ramp:'off', holdMode:'fixed', breathStyle:'standard'
       },
       journey_d4: {
         breathsPerRound:30, breathStep:0, holdStartTime:60, holdIncrement:15,
         rounds:3, inhaleDuration:2, exhaleDuration:2,
         pauseAfterInhale:1, pauseAfterExhale:0,
-        recoveryHold:15, ramp:'off', holdMode:'fixed'
+        recoveryHold:15, ramp:'off', holdMode:'fixed', breathStyle:'standard'
       },
       journey_d5: {
         breathsPerRound:30, breathStep:0, holdStartTime:60, holdIncrement:20,
         rounds:4, inhaleDuration:1.5, exhaleDuration:2,
         pauseAfterInhale:0, pauseAfterExhale:0,
-        recoveryHold:15, ramp:'off', holdMode:'fixed'
+        recoveryHold:15, ramp:'off', holdMode:'fixed', breathStyle:'standard'
       },
       journey_d6: {
         breathsPerRound:30, breathStep:0, holdStartTime:75, holdIncrement:15,
         rounds:4, inhaleDuration:1.5, exhaleDuration:1.5,
         pauseAfterInhale:0, pauseAfterExhale:0,
-        recoveryHold:15, ramp:'speedup', holdMode:'fixed'
+        recoveryHold:15, ramp:'speedup', holdMode:'fixed', breathStyle:'standard'
       },
       journey_d7: {
         breathsPerRound:35, breathStep:0, holdStartTime:90, holdIncrement:20,
         rounds:4, inhaleDuration:2, exhaleDuration:3,
         pauseAfterInhale:0, pauseAfterExhale:0,
-        recoveryHold:15, ramp:'speedup', holdMode:'adaptive'
+        recoveryHold:15, ramp:'speedup', holdMode:'adaptive', breathStyle:'standard'
       },
       apnea_co2: {
         breathsPerRound:25, breathStep:-5, holdStartTime:60, holdIncrement:0,
         rounds:4, inhaleDuration:2, exhaleDuration:2,
         pauseAfterInhale:0, pauseAfterExhale:0,
-        recoveryHold:10, ramp:'off', holdMode:'fixed'
+        recoveryHold:10, ramp:'off', holdMode:'fixed', breathStyle:'standard'
       },
       apnea_o2: {
         breathsPerRound:25, breathStep:0, holdStartTime:60, holdIncrement:20,
         rounds:4, inhaleDuration:2, exhaleDuration:2.5,
         pauseAfterInhale:0, pauseAfterExhale:0,
-        recoveryHold:15, ramp:'off', holdMode:'fixed'
+        recoveryHold:15, ramp:'off', holdMode:'fixed', breathStyle:'standard'
       }
     };
     var CUSTOM_SK = 'whm_custom_presets';
     var JOURNEY_SK = 'whm_journey_done';
     var PARAM_KEYS = ['breathsPerRound','breathStep','holdStartTime','holdIncrement','rounds',
                       'inhaleDuration','exhaleDuration','pauseAfterInhale','pauseAfterExhale',
-                      'recoveryHold','ramp','holdMode'];
+                      'recoveryHold','ramp','holdMode','breathStyle'];
     /* fill for presets saved before these keys existed */
-    var PARAM_FILL = { breathStep:0, recoveryHold:15, ramp:'off', holdMode:'fixed' };
+    var PARAM_FILL = { breathStep:0, recoveryHold:15, ramp:'off', holdMode:'fixed', breathStyle:'standard' };
     var inputMap = {
       breathsPerRound:'cfg-breaths', breathStep:'cfg-breath-step',
       holdStartTime:'cfg-hold-start',
       holdIncrement:'cfg-hold-incr', rounds:'cfg-rounds',
       inhaleDuration:'cfg-inhale', exhaleDuration:'cfg-exhale',
       pauseAfterInhale:'cfg-pause-inhale', pauseAfterExhale:'cfg-pause-exhale',
-      recoveryHold:'cfg-recovery-hold', ramp:'cfg-ramp', holdMode:'cfg-hold-mode'
+      recoveryHold:'cfg-recovery-hold', ramp:'cfg-ramp', holdMode:'cfg-hold-mode',
+      breathStyle:'cfg-breath-style'
     };
     var selectEl, saveBtn, deleteBtn;
 
@@ -2642,6 +2822,7 @@
     return {
       init: init,
       apply: apply,
+      detectPreset: detectPreset,
       updateSelect: updateSelect,
       getCurrentLabel: getCurrentLabel,
       getJourneyDone: getJourneyDone,
@@ -3686,7 +3867,35 @@
         src.start(t); src.stop(t + dur + 0.05);
       } catch(e) {}
     }
-    return { play:play };
+    function playSip(durMs) {
+      if(App.Config.get('pacer') !== 'on') return;
+      if(App.Audio && App.Audio.isMasterMuted()) return;
+      var c = App.Audio.getCtx();
+      if(!c) return;
+      App.Audio.resume();
+      var vol = 0.25 * (App.Config.get('volCues') / 100);
+      if(vol <= 0) return;
+      try {
+        var dur = Math.max(0.25, durMs / 1000);
+        var t = Math.max(c.currentTime, c.currentTime + 0.005);
+        var src = c.createBufferSource();
+        src.buffer = ensureBuf(c); src.loop = true;
+        var bp = c.createBiquadFilter();
+        bp.type = 'bandpass'; bp.Q.value = 2.6;
+        bp.frequency.setValueAtTime(780, t);
+        bp.frequency.exponentialRampToValueAtTime(1250, t + dur*0.9);
+        var g = c.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(vol, t + dur*0.25);
+        g.gain.setValueAtTime(vol, t + dur*0.65);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        src.connect(bp); bp.connect(g);
+        var dest = (App.Audio.getDestination && App.Audio.getDestination()) || c.destination;
+        g.connect(dest);
+        src.start(t); src.stop(t + dur + 0.05);
+      } catch(e) {}
+    }
+    return { play:play, playSip:playSip };
   })();
 
   /* ======== App.Scene ========
@@ -3878,7 +4087,7 @@
     var sentinel = null, wanted = false;
     function request() {
       wanted = true;
-      if(!('wakeLock' in navigator) || sentinel) return;
+      if(!('wakeLock' in navigator) || !navigator.wakeLock || sentinel) return;
       navigator.wakeLock.request('screen').then(function(s) {
         sentinel = s;
         s.addEventListener('release', function() { sentinel = null; });
@@ -3892,6 +4101,95 @@
       if(!document.hidden && wanted) request();
     });
     return { request:request, release:release };
+  })();
+
+  /* ======== App.Bolt ========
+     Body Oxygen Level Test (CO2 Tolerance Baseline):
+     Resting breath-hold after a gentle nasal exhale until the first definite urge to breathe. */
+  App.Bolt = (function() {
+    var SK = 'whm_bolt_history', MAX = 100;
+    function getHistory() {
+      try { return JSON.parse(localStorage.getItem(SK)) || []; } catch(e) { return []; }
+    }
+    function getLatest() {
+      var h = getHistory();
+      return h.length ? (h[h.length - 1].score || 0) : 0;
+    }
+    function getBest() {
+      var h = getHistory();
+      var best = 0;
+      for(var i = 0; i < h.length; i++) {
+        if(h[i].score > best) best = h[i].score;
+      }
+      return best;
+    }
+    function getTier(score) {
+      if(score >= 40) {
+        return {
+          tier: 'ELITE CO₂ TOLERANCE',
+          summary: 'Optimal chemoreceptor sensitivity and aerobic efficiency (40s+).',
+          advice: 'Your ventilatory response to CO₂ is exceptionally calm. Ideal protocols: Deep Dive Mastery, Apnea O₂/CO₂ Tables, or Pranayama with Adaptive Hold targets.'
+        };
+      }
+      if(score >= 25) {
+        return {
+          tier: 'ADVANCED BASELINE',
+          summary: 'Strong everyday breath control and balanced CO₂ tolerance (25–39s).',
+          advice: 'You have solid respiratory resilience. To reach 40s+, practice Coherent Breathing (5.5s), Nadi Shodhana, or CO₂ Apnea Tables 3–4 times per week.'
+        };
+      }
+      if(score >= 15) {
+        return {
+          tier: 'FUNCTIONAL BASELINE',
+          summary: 'Developing CO₂ tolerance with room to reduce air hunger (15–24s).',
+          advice: 'Focus on slow nasal cadence and gentle exhale retention. Recommended: Coherent Breathing (5.5s), Box Breathing, or the 7-Day Guided Journey.'
+        };
+      }
+      return {
+        tier: 'DEVELOPING BASELINE',
+        summary: 'High chemoreceptor sensitivity to CO₂ (<15s).',
+        advice: 'Prioritize gentle nasal breathing and extended exhales before long retention holds. Recommended: Physiological Sigh, 4-7-8 Relaxing Breath, or Day 1 Foundations.'
+      };
+    }
+    function updateSettingsHint() {
+      var el = document.getElementById('bolt-settings-hint');
+      if(!el) return;
+      var latest = getLatest();
+      var best = getBest();
+      if(latest > 0) {
+        el.textContent = 'Latest BOLT: ' + latest + 's (Best: ' + best + 's) • Calibrates Adaptive Holds';
+      } else {
+        el.textContent = 'Resting exhale breath-hold to first urge (calibrates Adaptive Holds)';
+      }
+    }
+    function record(score) {
+      var s = Math.max(1, Math.round(score));
+      var h = getHistory();
+      var prevBest = getBest();
+      var prevLatest = getLatest();
+      h.push({ ts: Date.now(), score: s });
+      if(h.length > MAX) h = h.slice(h.length - MAX);
+      try { localStorage.setItem(SK, JSON.stringify(h)); } catch(e) {}
+      if(App.Achievements && s >= 40) {
+        App.Achievements.unlock('bolt_high');
+      }
+      updateSettingsHint();
+      return {
+        score: s,
+        best: Math.max(prevBest, s),
+        isNewBest: s > prevBest && prevBest > 0,
+        delta: prevLatest > 0 ? (s - prevLatest) : 0,
+        tierInfo: getTier(s)
+      };
+    }
+    return {
+      getHistory: getHistory,
+      getLatest: getLatest,
+      getBest: getBest,
+      getTier: getTier,
+      record: record,
+      updateSettingsHint: updateSettingsHint
+    };
   })();
 
   /* ======== App.History ======== */
@@ -3978,14 +4276,17 @@
       try { customPresets = JSON.parse(localStorage.getItem('whm_custom_presets')) || {}; } catch(e) {}
       var journeyDone = {};
       try { journeyDone = JSON.parse(localStorage.getItem('whm_journey_done')) || {}; } catch(e) {}
+      var boltHistory = [];
+      try { boltHistory = JSON.parse(localStorage.getItem('whm_bolt_history')) || []; } catch(e) {}
       var payload = {
-        version: 2,
+        version: 3,
         exportedAt: new Date().toISOString(),
         history: all,
         achievements: achievements,
         config: config,
         customPresets: customPresets,
-        journeyDone: journeyDone
+        journeyDone: journeyDone,
+        boltHistory: boltHistory
       };
       var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       var url = URL.createObjectURL(blob);
@@ -4017,9 +4318,15 @@
         if(data.journeyDone && typeof data.journeyDone === 'object') {
           localStorage.setItem('whm_journey_done', JSON.stringify(data.journeyDone));
         }
+        if(data.boltHistory && Array.isArray(data.boltHistory)) {
+          localStorage.setItem('whm_bolt_history', JSON.stringify(data.boltHistory.slice(-100)));
+        }
         if(App.Config) {
           App.Config.load();
           App.Config.populateInputs();
+        }
+        if(App.Bolt && App.Bolt.updateSettingsHint) {
+          App.Bolt.updateSettingsHint();
         }
         if(App.Presets) {
           if(App.Presets.rebuildCustomOptions) App.Presets.rebuildCustomOptions();
@@ -4837,7 +5144,8 @@
   App.Session = (function() {
     var state='IDLE', currentRound=0, breathCount=0;
     var holdAchieved=0, holdTarget=0;
-    var stateBeforePause=null, roundHolds=[], sessionStartMs=0;
+    var stateBeforePause=null, roundHolds=[], roundTargets=[], sessionStartMs=0;
+    var actualBreathsCompleted=0, sipTriggered=false;
     var roundUrges=[], urgeMarked=false, urgeTime=0;
     var prevBestEver=0, prevSessionBest=0, newRecord=false;
     var sleepStartTs=0, lastSleepSec=0;
@@ -4941,14 +5249,18 @@
 
     function beginBreathingIn() {
       breathCount++;
+      actualBreathsCompleted++;
+      sipTriggered = false;
       holdTarget = App.Config.getHoldTarget(currentRound);
+      roundTargets[currentRound - 1] = holdTarget;
       transition(STATES.BREATHING_IN);
       checkFlowSync();
       cueBreath(true);
       App.Haptics.inhale();
       App.Audio.playBreathTick();
       var durMs = App.Config.get('inhaleDuration') * App.Config.getRampFactor(currentRound) * 1000;
-      App.Pacer.play(true, durMs);
+      var isDouble = App.Config.get('breathStyle') === 'doubleInhale';
+      App.Pacer.play(true, isDouble ? durMs * 0.65 : durMs);
       var pauseInhale = App.Config.get('pauseAfterInhale');
       var nextFn = pauseInhale > 0 ? beginPauseAfterInhale : beginBreathingOut;
       var lastElapsed = 0;
@@ -4956,6 +5268,12 @@
         var dt = Math.max(0, elapsed - lastElapsed);
         lastElapsed = elapsed;
         updateFlowTick(dt);
+        if(isDouble && !sipTriggered && elapsed >= durMs * 0.68) {
+          sipTriggered = true;
+          App.Audio.playBreathTick();
+          App.Haptics.tick();
+          if(App.Pacer.playSip) App.Pacer.playSip(durMs * 0.32);
+        }
         App.UI.updateBreathingProgress(elapsed, durMs, true);
       });
     }
@@ -4974,7 +5292,7 @@
         if (holdTarget > 0) {
           nextFn = beginHold;
         } else {
-          /* zero hold target (e.g. Box / 4-7-8 presets): skip retention + recovery */
+          /* zero hold target (e.g. Box / 4-7-8 / Coherent / Sigh / Nadi presets): skip retention + recovery */
           nextFn = currentRound >= App.Config.get('rounds') ? beginSessionComplete : beginRoundComplete;
         }
       } else if (pauseExhale > 0) {
@@ -5019,6 +5337,9 @@
       urgeMarked = false; urgeTime = 0;
       lastMilestoneSec = 0; roundGhostOvertaken = false;
       var targetReachedChimed = false;
+      if(roundTargets[currentRound - 1] === undefined) {
+        roundTargets[currentRound - 1] = holdTarget;
+      }
       ghostSec = prevSessionBest > 0 ? prevSessionBest : (prevBestEver > 0 ? prevBestEver : 0);
       App.UI.hideFlowIndicator();
       transition(STATES.HOLD);
@@ -5059,6 +5380,96 @@
       });
     }
 
+    /* Skip remaining breaths in the current round and immediately enter retention hold */
+    function holdNow() {
+      var isBreathingPhase = (state === STATES.BREATHING_IN || state === STATES.BREATHING_OUT ||
+                              state === STATES.PAUSE_AFTER_INHALE || state === STATES.PAUSE_AFTER_EXHALE);
+      if(!isBreathingPhase || holdTarget <= 0) return;
+      App.Timer.stop();
+      App.UI.hideFlowIndicator();
+      beginHold();
+    }
+
+    /* Finish session early and save completed rounds/holds to history */
+    function finishAndSave() {
+      if(!this.isActive() || state === STATES.SLEEPING || state === STATES.BOLT_PREP || state === STATES.BOLT_HOLD) return;
+      var activeOrPausedHold = (state === STATES.HOLD) || (state === STATES.PAUSED && stateBeforePause === STATES.HOLD);
+      if(activeOrPausedHold) {
+        var elSec = App.Timer.getElapsed() / 1000;
+        if(elSec >= 1) {
+          holdAchieved = elSec;
+          roundHolds.push(holdAchieved);
+          roundUrges.push(urgeMarked ? Math.round(urgeTime*10)/10 : null);
+          if(roundTargets[currentRound - 1] === undefined) {
+            roundTargets[currentRound - 1] = holdTarget;
+          }
+        }
+      }
+      App.Timer.stop();
+      stateBeforePause = null;
+      App.UI.hideGhostTarget();
+      App.UI.hideHoldMilestone();
+      App.UI.hideFlowIndicator();
+      beginSessionComplete(true);
+    }
+
+    /* Guided BOLT (Body Oxygen Level Test) Flow */
+    function beginBoltHold() {
+      transition(STATES.BOLT_HOLD);
+      App.UI.setStartButton('end_bolt');
+      App.Audio.playHoldStart();
+      App.Voice.speak('hold');
+      App.Haptics.holdStart();
+      App.Timer.startPhase(null, null, function(elapsed) {
+        var secs = Math.floor(elapsed / 1000);
+        App.UI.updateBoltTimer(secs);
+      });
+    }
+
+    function startBolt() {
+      if(App.SettingsDrawer && App.SettingsDrawer.isOpen()) App.SettingsDrawer.close();
+      if(typeof Stats !== 'undefined' && Stats.isOpen && Stats.isOpen()) Stats.close();
+      App.UI.hideVictoryModal();
+      App.UI.hideBoltModal();
+      App.Audio.init();
+      App.Audio.resume();
+      App.Voice.init();
+      App.Config.setInputsDisabled(true);
+      App.UI.setStartButton('pause');
+      currentRound = 0; breathCount = 0; holdTarget = 0;
+      roundHolds = []; roundTargets = []; roundUrges = [];
+      stateBeforePause = null;
+      App.WakeLock.request();
+      transition(STATES.BOLT_PREP);
+      App.Audio.playBreathTick();
+      App.Pacer.play(true, 4000);
+      var exhaleCued = false;
+      App.Timer.startPhase(8000, beginBoltHold, function(elapsed) {
+        if(!exhaleCued && elapsed >= 4000) {
+          exhaleCued = true;
+          App.Audio.playBreathTick();
+          App.Haptics.exhale();
+          App.Pacer.play(false, 4000);
+          App.UI.setBoltPrepPhase(false);
+        }
+        App.UI.updateBoltPrepProgress(elapsed, 8000);
+      });
+    }
+
+    function endBolt() {
+      if(state !== STATES.BOLT_HOLD) return;
+      var score = Math.max(1, Math.round(App.Timer.getElapsed() / 1000));
+      App.Timer.stop();
+      App.WakeLock.release();
+      App.Audio.playHoldEnd();
+      App.Haptics.complete();
+      var res = App.Bolt.record(score);
+      App.Config.setInputsDisabled(false);
+      App.UI.setStartButton('start');
+      transition(STATES.IDLE);
+      App.UI.showBoltModal(res);
+    }
+
     /* mark the first urge to breathe (CO2-tolerance metric) */
     function markUrge() {
       if(state !== STATES.HOLD || urgeMarked) return;
@@ -5074,6 +5485,9 @@
       holdAchieved = App.Timer.getElapsed() / 1000;
       roundHolds.push(holdAchieved);
       roundUrges.push(urgeMarked ? Math.round(urgeTime*10)/10 : null);
+      if(roundTargets[currentRound - 1] === undefined) {
+        roundTargets[currentRound - 1] = holdTarget;
+      }
       App.Timer.stop();
       App.UI.hideGhostTarget();
       App.UI.hideHoldMilestone();
@@ -5123,11 +5537,12 @@
         roundNumber:  currentRound,
         holdAchieved: holdAchieved,
         holdTarget:   holdTarget,
-        urge:         roundUrges.length ? roundUrges[roundUrges.length-1] : null,
+        urge:         roundUrges.length ? roundUrges.length && roundUrges[roundUrges.length-1] : null,
         totalRounds:  App.Config.get('rounds')
       };
       currentRound++; breathCount=0;
       holdTarget = App.Config.getHoldTarget(currentRound);
+      roundTargets[currentRound - 1] = holdTarget;
       transition(STATES.ROUND_COMPLETE);
       App.Voice.speak('roundComplete');
       App.UI.showRoundSummary(summary);
@@ -5160,8 +5575,9 @@
         App.UI.showVictoryModal({
           sessionBest: roundHolds.length ? Math.max.apply(null, roundHolds) : 0,
           holds: roundHolds,
+          targets: sessionEntry.targets || roundTargets.slice(),
           urges: roundUrges,
-          rounds: App.Config.get('rounds'),
+          rounds: sessionEntry.rounds || App.Config.get('rounds'),
           breaths: App.Config.get('breathsPerRound'),
           totalBreaths: sessionEntry.totalBreaths,
           newRecord: newRecord,
@@ -5175,14 +5591,23 @@
     }
 
     function computeSessionTotalBreaths() {
+      if(actualBreathsCompleted > 0) return actualBreathsCompleted;
       var rCount = App.Config.get('rounds');
       var sum = 0;
       for(var r = 1; r <= rCount; r++) sum += App.Config.getBreathsForRound(r);
       return sum;
     }
 
-    function beginSessionComplete() {
+    function beginSessionComplete(isEarly) {
       App.Timer.stop();
+      var completedRounds = isEarly
+        ? Math.max(1, roundHolds.length > 0 ? roundHolds.length : currentRound)
+        : App.Config.get('rounds');
+      var targetsSnapshot = [];
+      for(var r = 1; r <= completedRounds; r++) {
+        targetsSnapshot.push(roundTargets[r - 1] !== undefined ? roundTargets[r - 1] : App.Config.getHoldTarget(r));
+      }
+
       var sessionBest = roundHolds.length ? Math.max.apply(null, roundHolds) : 0;
       var isFirstEver = prevBestEver === 0 || App.History.stats().sessions === 0;
       newRecord = (sessionBest > 0) && (isFirstEver || sessionBest > prevBestEver);
@@ -5191,7 +5616,7 @@
         ? Math.min(100, Math.round((flowInSyncMs / flowTotalMs) * 100))
         : null;
 
-      var journeyDay = App.Presets && App.Presets.getActiveJourneyDay ? App.Presets.getActiveJourneyDay() : 0;
+      var journeyDay = (!isEarly && App.Presets && App.Presets.getActiveJourneyDay) ? App.Presets.getActiveJourneyDay() : 0;
       if(journeyDay > 0 && App.Presets.markJourneyDay) {
         App.Presets.markJourneyDay(journeyDay);
       }
@@ -5201,10 +5626,11 @@
       var sessionEntry = {
         ts: Date.now(),
         preset: App.Presets.getCurrentLabel(),
-        rounds: App.Config.get('rounds'),
+        rounds: completedRounds,
         breaths: App.Config.get('breathsPerRound'),
         totalBreaths: totalBreaths,
         holds: roundHolds.map(function(h) { return Math.round(h*10)/10; }),
+        targets: targetsSnapshot,
         urges: roundUrges,
         durationSec: Math.round((performance.now() - sessionStartMs) / 1000),
         flowScore: flowScore,
@@ -5230,7 +5656,7 @@
 
       App.UI.updateStreakBadge();
 
-      if(App.Config.get('sleepMode') === 'on') { beginSleep(); return; }
+      if(App.Config.get('sleepMode') === 'on' && !isEarly) { beginSleep(); return; }
       showComplete(false, sessionEntry, currentStreak);
     }
 
@@ -5252,10 +5678,11 @@
       var streak = App.History.getStreak();
       var journeyDay = App.Presets && App.Presets.getActiveJourneyDay ? App.Presets.getActiveJourneyDay() : 0;
       var totalBreaths = computeSessionTotalBreaths();
-      showComplete(true, { sessionBest: sessionBest, durationSec: dur, flowScore: null, totalBreaths: totalBreaths, journeyDay: journeyDay }, streak);
+      showComplete(true, { sessionBest: sessionBest, durationSec: dur, flowScore: null, totalBreaths: totalBreaths, journeyDay: journeyDay, targets: roundTargets.slice() }, streak);
       App.UI.showVictoryModal({
         sessionBest: sessionBest,
         holds: roundHolds,
+        targets: roundTargets.slice(),
         urges: roundUrges,
         rounds: App.Config.get('rounds'),
         breaths: App.Config.get('breathsPerRound'),
@@ -5273,11 +5700,17 @@
       getState: function() { return state; },
       getCurrentRound: function() { return currentRound; },
       getBreathCount: function() { return breathCount; },
+      getHoldTarget: function() { return holdTarget; },
       getRoundHolds: function() { return roundHolds.slice(); },
+      getRoundTargets: function() { return roundTargets.slice(); },
       getRoundUrges: function() { return roundUrges.slice(); },
       isNewRecord: function() { return newRecord; },
       getPrevSessionBest: function() { return prevSessionBest; },
       markUrge: markUrge,
+      holdNow: holdNow,
+      finishAndSave: finishAndSave,
+      startBolt: startBolt,
+      endBolt: endBolt,
       onFlowPointerDown: onFlowPointerDown,
       onFlowPointerUp: onFlowPointerUp,
       isActive: function() {
@@ -5292,7 +5725,8 @@
         App.Config.setInputsDisabled(true);
         App.UI.setStartButton('pause');
         currentRound=1; breathCount=0; holdAchieved=0;
-        roundHolds=[]; roundUrges=[]; stateBeforePause=null;
+        actualBreathsCompleted=0; sipTriggered=false;
+        roundHolds=[]; roundTargets=[]; roundUrges=[]; stateBeforePause=null;
         newRecord=false; sleepStartTs=0; lastSleepSec=0;
         lastMilestoneSec=0; ghostSec=0;
         roundGhostOvertaken=false; sessionGhostOvertaken=false;
@@ -5301,13 +5735,14 @@
         prevSessionBest = App.History.recentBest(1);
         sessionStartMs = performance.now();
         holdTarget = App.Config.getHoldTarget(1);
+        roundTargets[0] = holdTarget;
         App.WakeLock.request();
         App.Ambience.start();
         requestFullscreen();
         beginGetReady();
       },
       pause: function() {
-        if(!this.isActive() || state === STATES.PAUSED || state === STATES.SLEEPING) return;
+        if(!this.isActive() || state === STATES.PAUSED || state === STATES.SLEEPING || state === STATES.BOLT_PREP || state === STATES.BOLT_HOLD) return;
         stateBeforePause = state;
         App.Timer.pause();
         App.Voice.speak('pause');
@@ -5336,7 +5771,8 @@
         App.Ambience.stop(true);
         exitFullscreen();
         currentRound=0; breathCount=0; holdAchieved=0;
-        roundHolds=[]; roundUrges=[]; stateBeforePause=null;
+        actualBreathsCompleted=0; sipTriggered=false;
+        roundHolds=[]; roundTargets=[]; roundUrges=[]; stateBeforePause=null;
         App.UI.hideGhostTarget();
         App.UI.hideHoldMilestone();
         App.UI.hideFlowIndicator();
@@ -5364,6 +5800,8 @@
       e.idleTitle         = document.getElementById('idle-title');
       e.idleSubtitle      = document.getElementById('idle-subtitle');
       e.phaseLabel        = document.getElementById('phase-label');
+      e.nostrilIndicator  = document.getElementById('nostril-indicator');
+      e.nostrilArc        = document.getElementById('nostril-arc');
       e.breathCounter     = document.getElementById('breath-counter');
       e.holdTimer         = document.getElementById('hold-timer');
       e.holdTargetDisplay = document.getElementById('hold-target-display');
@@ -5412,7 +5850,8 @@
       var btn = document.getElementById('btn-start');
       if(!btn) return;
       btn.disabled = false;
-      btn.textContent = mode === 'pause' ? 'PAUSE' : (mode === 'resume' ? 'RESUME' : 'START');
+      if(mode === 'end_bolt') btn.textContent = 'FIRST URGE (DONE)';
+      else btn.textContent = mode === 'pause' ? 'PAUSE' : (mode === 'resume' ? 'RESUME' : 'START');
     }
 
     var ALL_TOGGLES = [
@@ -5427,6 +5866,48 @@
         if(ids.indexOf(id) >= 0) { el.classList.remove('hidden'); }
         else { el.classList.add('hidden'); }
       });
+    }
+
+    function updateNostrilUI(state) {
+      if(!e.nostrilIndicator || !e.nostrilArc) return;
+      var style = App.Config.get('breathStyle');
+      var activePhase = (state === STATES.BREATHING_IN || state === STATES.BREATHING_OUT ||
+                         state === STATES.PAUSE_AFTER_INHALE || state === STATES.PAUSE_AFTER_EXHALE);
+      if(style !== 'alternateNostril' || !activePhase) {
+        e.nostrilIndicator.classList.add('hidden');
+        e.nostrilArc.classList.add('hidden');
+        return;
+      }
+      var breath = App.Session.getBreathCount();
+      var isOdd = (breath % 2) === 1;
+      e.nostrilIndicator.classList.remove('hidden', 'nostril-right', 'nostril-both');
+      e.nostrilArc.classList.remove('hidden', 'arc-right');
+
+      if(state === STATES.PAUSE_AFTER_INHALE) {
+        e.nostrilIndicator.textContent = '◆ BOTH NOSTRILS CLOSED';
+        e.nostrilIndicator.classList.add('nostril-both');
+        e.nostrilArc.classList.add('hidden');
+      } else if(state === STATES.BREATHING_IN) {
+        if(isOdd) {
+          e.nostrilIndicator.textContent = '◀ LEFT NOSTRIL';
+          e.nostrilArc.setAttribute('d', 'M 100 12 A 88 88 0 0 0 100 188');
+        } else {
+          e.nostrilIndicator.textContent = 'RIGHT NOSTRIL ▶';
+          e.nostrilIndicator.classList.add('nostril-right');
+          e.nostrilArc.classList.add('arc-right');
+          e.nostrilArc.setAttribute('d', 'M 100 12 A 88 88 0 0 1 100 188');
+        }
+      } else { /* BREATHING_OUT or PAUSE_AFTER_EXHALE */
+        if(isOdd) {
+          e.nostrilIndicator.textContent = 'RIGHT NOSTRIL ▶';
+          e.nostrilIndicator.classList.add('nostril-right');
+          e.nostrilArc.classList.add('arc-right');
+          e.nostrilArc.setAttribute('d', 'M 100 12 A 88 88 0 0 1 100 188');
+        } else {
+          e.nostrilIndicator.textContent = '◀ LEFT NOSTRIL';
+          e.nostrilArc.setAttribute('d', 'M 100 12 A 88 88 0 0 0 100 188');
+        }
+      }
     }
 
     function announce(msg) {
@@ -5477,6 +5958,25 @@
         }
       }
 
+      /* HOLD NOW button: visible during active breathing phases when holdTarget > 0 */
+      var holdNowBtn = document.getElementById('hold-now-btn');
+      if(holdNowBtn) {
+        var canHoldNow = (state === STATES.BREATHING_IN || state === STATES.BREATHING_OUT ||
+                          state === STATES.PAUSE_AFTER_INHALE || state === STATES.PAUSE_AFTER_EXHALE) &&
+                         App.Session.getHoldTarget() > 0;
+        holdNowBtn.classList.toggle('hidden', !canHoldNow);
+      }
+
+      /* FINISH & SAVE button: visible when PAUSED or after at least 1 round/hold */
+      var finishBtn = document.getElementById('btn-finish');
+      if(finishBtn) {
+        var canFinish = state === STATES.PAUSED ||
+          ((state !== STATES.IDLE && state !== STATES.SESSION_COMPLETE &&
+            state !== STATES.SLEEPING && state !== STATES.BOLT_PREP && state !== STATES.BOLT_HOLD) &&
+           (round > 1 || App.Session.getRoundHolds().length > 0));
+        finishBtn.classList.toggle('hidden', !canFinish);
+      }
+
       /* Urge-to-breathe button only during retention holds */
       var urgeBtn = document.getElementById('urge-btn');
       if(urgeBtn) {
@@ -5487,6 +5987,8 @@
           urgeBtn.disabled = false;
         }
       }
+
+      updateNostrilUI(state);
 
       /* Auto-dim: fade to black during long retention holds */
       cancelDim();
@@ -5522,6 +6024,36 @@
           announce('Get ready. Starting in ' + GET_READY_DUR + ' seconds.');
           break;
 
+        case STATES.BOLT_PREP:
+          setPhaseColor(COLORS.BOLT_PREP);
+          css('--phase-duration', '4s');
+          setScale('scale-inhale');
+          showOnly(['phase-label','idle-subtitle','breath-time-remaining']);
+          e.phaseLabel.textContent = 'NORMAL INHALE';
+          e.idleSubtitle.textContent = 'Gentle nasal breath before BOLT hold';
+          e.roundIndicator.textContent = 'BOLT CO₂ Baseline Test';
+          setRingProgress(0);
+          makeTappable(false);
+          App.Liquid.set(COLORS.BOLT_PREP, {mode:'breath', agitation:0.45});
+          announce('BOLT test preparation. Take a normal breath in, then exhale gently.');
+          break;
+
+        case STATES.BOLT_HOLD:
+          setPhaseColor(COLORS.BOLT_HOLD);
+          css('--phase-duration', '1.0s');
+          setScale('scale-hold');
+          showOnly(['phase-label','hold-timer','hold-target-display','tap-prompt']);
+          e.phaseLabel.textContent = 'BOLT HOLD';
+          e.holdTimer.textContent = '0';
+          e.holdTargetDisplay.textContent = 'Stop at FIRST definite urge to breathe';
+          e.tapPrompt.textContent = 'TAP ON FIRST URGE';
+          e.roundIndicator.textContent = 'BOLT CO₂ Baseline Test';
+          setRingProgress(0);
+          makeTappable(true, 'Tap to record BOLT score');
+          App.Liquid.set(COLORS.BOLT_HOLD, {mode:'fixed', scale:0.15, agitation:0.15});
+          announce('BOLT hold started. Tap or press Space at the first definite urge to breathe.');
+          break;
+
         case STATES.PAUSED:
           setPhaseColor( COLORS.PAUSED);
           css('--phase-duration', '0.5s');
@@ -5539,11 +6071,12 @@
         case STATES.BREATHING_IN:
           var breath1 = App.Session.getBreathCount();
           var max1    = cfg.getBreathsForRound(round);
+          var isDoubleIn = cfg.get('breathStyle') === 'doubleInhale';
           setPhaseColor( COLORS.BREATHING_IN);
           css('--phase-duration', (cfg.get('inhaleDuration') * cfg.getRampFactor(round)) + 's');
           setScale('scale-inhale');
           showOnly(['phase-label','breath-counter','breath-time-remaining']);
-          e.phaseLabel.textContent    = 'INHALE';
+          e.phaseLabel.textContent    = isDoubleIn ? 'INHALE 1/2' : 'INHALE';
           e.breathCounter.textContent = breath1 + ' / ' + max1;
           e.roundIndicator.textContent = roundText;
           setRingProgress(0);
@@ -5600,7 +6133,7 @@
           break;
 
         case STATES.HOLD:
-          var target = cfg.getHoldTarget(round);
+          var target = App.Session.getHoldTarget() || cfg.getHoldTarget(round);
           setPhaseColor( COLORS.HOLD);
           css('--phase-duration', '1.2s');
           setScale('scale-hold');
@@ -5611,6 +6144,7 @@
           void e.holdTimer.offsetWidth;
           e.holdTimer.classList.add('hold-bloom');
           e.holdTargetDisplay.textContent = 'Target: ' + target + 's';
+          e.tapPrompt.textContent        = 'TAP TO BREATHE';
           e.roundIndicator.textContent    = roundText;
           setRingProgress(0);
           makeTappable(true);
@@ -5742,7 +6276,24 @@
     }
 
     function updateBreathingProgress(elapsed, durationMs, isInhale) {
-      var progress = Math.min(1, elapsed / durationMs);
+      var rawP = Math.min(1, Math.max(0, elapsed / durationMs));
+      var progress = rawP;
+      if(isInhale && App.Config.get('breathStyle') === 'doubleInhale') {
+        if(rawP < 0.68) {
+          progress = (rawP / 0.68) * 0.76;
+          if(e.phaseLabel && e.phaseLabel.textContent !== 'INHALE 1/2') {
+            e.phaseLabel.textContent = 'INHALE 1/2';
+          }
+        } else {
+          progress = 0.76 + ((rawP - 0.68) / 0.32) * 0.24;
+          if(e.phaseLabel && e.phaseLabel.textContent !== 'SIP IN 2/2') {
+            e.phaseLabel.textContent = 'SIP IN 2/2';
+            e.phaseLabel.classList.remove('label-swap');
+            void e.phaseLabel.offsetWidth;
+            e.phaseLabel.classList.add('label-swap');
+          }
+        }
+      }
       /* Inhale: ring fills 0→1; Exhale: ring empties 1→0 */
       setRingProgress(isInhale ? progress : 1 - progress);
       /* Liquid blob + ambience track the same progress (frame-locked to the timer) */
@@ -5753,6 +6304,60 @@
       if(e.breathTimeRemaining) {
         e.breathTimeRemaining.textContent = remaining.toFixed(1) + 's';
       }
+    }
+
+    function setBoltPrepPhase(isInhale) {
+      if(!e.phaseLabel) return;
+      if(isInhale) {
+        setPhaseColor(COLORS.BOLT_PREP);
+        setScale('scale-inhale');
+        e.phaseLabel.textContent = 'NORMAL INHALE';
+      } else {
+        setPhaseColor(COLORS.BREATHING_OUT);
+        setScale('scale-exhale');
+        e.phaseLabel.textContent = 'GENTLE EXHALE';
+        if(e.idleSubtitle) e.idleSubtitle.textContent = 'Exhale normally through nose, then hold';
+      }
+    }
+
+    function updateBoltPrepProgress(elapsed, durMs) {
+      var half = durMs / 2;
+      var p = elapsed < half ? (elapsed / half) : (1 - (elapsed - half) / half);
+      p = Math.min(1, Math.max(0, p));
+      setRingProgress(p);
+      App.Liquid.setBreath(p);
+      var rem = Math.max(0, (durMs - elapsed) / 1000);
+      if(e.breathTimeRemaining) e.breathTimeRemaining.textContent = rem.toFixed(1) + 's';
+    }
+
+    function updateBoltTimer(secs) {
+      if(e.holdTimer) e.holdTimer.textContent = secs;
+      setRingProgress(Math.min(1, secs / 40));
+      App.Liquid.setPressure(Math.min(1.2, secs / 40));
+    }
+
+    function showBoltModal(res) {
+      var ov = document.getElementById('bolt-overlay');
+      if(!ov || !res) return;
+      var scoreEl = document.getElementById('bolt-val-score');
+      var badgeEl = document.getElementById('bolt-badge');
+      var subEl   = document.getElementById('bolt-sub');
+      var advEl   = document.getElementById('bolt-advice');
+      if(scoreEl) scoreEl.textContent = res.score + 's';
+      if(badgeEl && res.tierInfo) badgeEl.textContent = res.tierInfo.tier;
+      if(subEl) {
+        var deltaTxt = res.delta !== 0 ? (' · ' + (res.delta > 0 ? '+' : '') + res.delta + 's vs last') : '';
+        subEl.textContent = (res.isNewBest ? '🔥 New Personal Best! ' : ('Personal Best: ' + res.best + 's')) + deltaTxt;
+      }
+      if(advEl && res.tierInfo) {
+        advEl.innerHTML = '<strong>' + res.tierInfo.summary + '</strong><br>' + res.tierInfo.advice;
+      }
+      ov.classList.remove('hidden');
+    }
+
+    function hideBoltModal() {
+      var ov = document.getElementById('bolt-overlay');
+      if(ov) ov.classList.add('hidden');
     }
 
     function updateHoldTimer(secs, target) {
@@ -6076,8 +6681,14 @@
         if(co2El) co2El.textContent = Math.round(avgUrge) + 's';
         if(subCo2El) subCo2El.textContent = 'Grade: ' + tier;
       } else {
-        if(co2El) co2El.textContent = '–';
-        if(subCo2El) subCo2El.textContent = 'Tap Urge to grade';
+        var boltLatest = (App.Bolt && App.Bolt.getLatest) ? App.Bolt.getLatest() : 0;
+        if(boltLatest > 0) {
+          if(co2El) co2El.textContent = boltLatest + 's';
+          if(subCo2El) subCo2El.textContent = 'BOLT Baseline';
+        } else {
+          if(co2El) co2El.textContent = '–';
+          if(subCo2El) subCo2El.textContent = 'Tap Urge to grade';
+        }
       }
 
       var barsEl = document.getElementById('victory-rounds-bars');
@@ -6088,7 +6699,9 @@
         var totalRounds = data.rounds || (data.holds ? data.holds.length : 1);
         for(var r = 1; r <= totalRounds; r++) {
           var actual = (data.holds && data.holds[r-1]) ? data.holds[r-1] : 0;
-          var target = App.Config.getHoldTarget(r);
+          var target = (data.targets && data.targets[r-1] !== undefined)
+            ? data.targets[r-1]
+            : App.Config.getHoldTarget(r);
           var denom = Math.max(target, actual, 1);
           var pct = target > 0 ? Math.min(100, Math.round((actual / denom) * 100)) : 100;
           var urgeVal = (data.urges && typeof data.urges[r-1] === 'number' && data.urges[r-1] > 0) ? data.urges[r-1] : null;
@@ -6176,6 +6789,8 @@
              hideGhostTarget:hideGhostTarget, showHoldMilestone:showHoldMilestone,
              hideHoldMilestone:hideHoldMilestone, updateFlowIndicator:updateFlowIndicator,
              hideFlowIndicator:hideFlowIndicator, updateStreakBadge:updateStreakBadge,
+             setBoltPrepPhase:setBoltPrepPhase, updateBoltPrepProgress:updateBoltPrepProgress,
+             updateBoltTimer:updateBoltTimer, showBoltModal:showBoltModal, hideBoltModal:hideBoltModal,
              showVictoryModal:showVictoryModal, hideVictoryModal:hideVictoryModal };
   })();
 
@@ -6374,7 +6989,7 @@
       if(urgePts.length > 0) {
         var leg = el('div', 'chart-legend');
         var i1 = el('span', 'chart-legend-item');
-        i1.innerHTML = '<span class="chart-legend-swatch" style="background:var(--color-accent)"></span>Peak Hold';
+        i1.innerHTML = '<span class="chart-legend-swatch" style="background:var(--chart-line)"></span>Peak Hold';
         var i2 = el('span', 'chart-legend-item');
         i2.innerHTML = '<span class="chart-legend-swatch" style="background:#F59E0B"></span>First Urge (CO₂)';
         leg.appendChild(i1);
@@ -6382,6 +6997,37 @@
         wrap.appendChild(leg);
       }
       wrap.appendChild(tip);
+      return wrap;
+    }
+
+    function buildBoltChart(boltSeries) {
+      var W = 520, H = 110, padL = 34, padR = 16, padT = 14, padB = 18;
+      var wrap = el('div');
+      var svg = svgEl('svg', { 'class':'stats-chart', viewBox:'0 0 ' + W + ' ' + H,
+                               role:'img', 'aria-label':'BOLT CO2 tolerance progression' });
+      var maxV = 40;
+      boltSeries.forEach(function(b) { maxV = Math.max(maxV, b.score || 0); });
+      var yMax = Math.max(45, Math.ceil(maxV * 1.15 / 15) * 15);
+      function x(i) { return padL + (W - padL - padR) * (boltSeries.length === 1 ? 0.5 : i / (boltSeries.length - 1)); }
+      function y(v) { return H - padB - (H - padT - padB) * (v / yMax); }
+      [0, 25, 40].forEach(function(v) {
+        if(v > yMax) return;
+        svg.appendChild(svgEl('line', {class:'chart-grid', x1:padL, x2:W-padR, y1:y(v), y2:y(v)}));
+        var lbl = svgEl('text', {class:'chart-label', x:padL-5, y:y(v)+3, 'text-anchor':'end'});
+        lbl.textContent = v + 's';
+        svg.appendChild(lbl);
+      });
+      var pts = boltSeries.map(function(b, i) { return x(i) + ',' + y(b.score); }).join(' ');
+      svg.appendChild(svgEl('polyline', {class:'chart-line-urge', points:pts, style:'stroke-dasharray:none;stroke-width:2'}));
+      boltSeries.forEach(function(b, i) {
+        svg.appendChild(svgEl('circle', {class:'chart-dot-urge', cx:x(i), cy:y(b.score), r: i === boltSeries.length - 1 ? 4 : 2.8}));
+        if(i === boltSeries.length - 1) {
+          var vl = svgEl('text', {class:'chart-label', x:x(i), y:y(b.score)-7, 'text-anchor':'end'});
+          vl.textContent = b.score + 's';
+          svg.appendChild(vl);
+        }
+      });
+      wrap.appendChild(svg);
       return wrap;
     }
 
@@ -6420,6 +7066,42 @@
 
     function build() {
       body.innerHTML = '';
+
+      /* BOLT Score (CO2 Tolerance Baseline) Card */
+      var boltLatest = (App.Bolt && App.Bolt.getLatest) ? App.Bolt.getLatest() : 0;
+      var boltBest   = (App.Bolt && App.Bolt.getBest) ? App.Bolt.getBest() : 0;
+      var boltHist   = (App.Bolt && App.Bolt.getHistory) ? App.Bolt.getHistory() : [];
+      var boltBanner = el('div', 'bolt-stats-banner');
+      var boltInfo   = el('div', 'bolt-stats-info');
+      boltInfo.appendChild(el('div', 'bolt-stats-title', '🫁 BOLT Score (CO₂ Baseline)'));
+      if(boltLatest > 0) {
+        var tierObj = App.Bolt.getTier(boltLatest);
+        boltInfo.appendChild(el('div', 'bolt-stats-sub',
+          'Latest: ' + boltLatest + 's · Best: ' + boltBest + 's · ' + tierObj.tier));
+      } else {
+        boltInfo.appendChild(el('div', 'bolt-stats-sub',
+          'Measure resting breath-hold to first urge to calibrate Adaptive Holds'));
+      }
+      var boltBtn = document.createElement('button');
+      boltBtn.type = 'button';
+      boltBtn.id = 'btn-start-bolt-stats';
+      boltBtn.className = 'bolt-trigger-btn';
+      boltBtn.style.width = 'auto';
+      boltBtn.textContent = boltLatest > 0 ? 'Retest BOLT' : 'Measure BOLT';
+      boltBtn.addEventListener('click', function() {
+        if(App.Session && App.Session.isActive()) return;
+        close();
+        App.Session.startBolt();
+      });
+      boltBanner.appendChild(boltInfo);
+      boltBanner.appendChild(boltBtn);
+      body.appendChild(boltBanner);
+
+      if(boltHist.length >= 2) {
+        body.appendChild(el('div', 'stats-chart-title', 'BOLT Score Progression (CO₂ Tolerance)'));
+        body.appendChild(buildBoltChart(boltHist.slice(-20)));
+      }
+
       var st = App.History.stats();
       if(!st.sessions) {
         body.appendChild(el('div', 'stats-empty',
@@ -6825,6 +7507,7 @@
     App.UI.init();
     App.Config.populateInputs();
     App.Presets.init();
+    if(App.Bolt && App.Bolt.updateSettingsHint) App.Bolt.updateSettingsHint();
     App.Liquid.init();
     App.Scene.init();
     Stats.init();
@@ -6845,7 +7528,7 @@
 
     /* Settings input listeners */
     ['cfg-breaths','cfg-breath-step','cfg-hold-start','cfg-hold-incr','cfg-rounds','cfg-inhale','cfg-exhale',
-     'cfg-pause-inhale','cfg-pause-exhale','cfg-recovery-hold','cfg-ramp','cfg-hold-mode',
+     'cfg-pause-inhale','cfg-pause-exhale','cfg-recovery-hold','cfg-ramp','cfg-hold-mode','cfg-breath-style',
      'cfg-voice','cfg-vibration','cfg-ambience','cfg-ambience2','cfg-pacer','cfg-material',
      'cfg-fullscreen','cfg-autodim','cfg-sleep','cfg-night-oled','cfg-flow']
       .forEach(function(id) {
@@ -6891,6 +7574,7 @@
     var qsVolVoice = document.getElementById('qs-vol-voice');
     var qsVolCues = document.getElementById('qs-vol-cues');
     var qsVolAmb = document.getElementById('qs-vol-amb');
+    var qsVolAmb2 = document.getElementById('qs-vol-amb2');
     var soundIconOn = document.getElementById('sound-icon-on');
     var soundIconMute = document.getElementById('sound-icon-mute');
 
@@ -6904,6 +7588,7 @@
       if(qsVolVoice) qsVolVoice.value = App.Config.get('volVoice') !== undefined ? App.Config.get('volVoice') : 90;
       if(qsVolCues) qsVolCues.value = App.Config.get('volCues') !== undefined ? App.Config.get('volCues') : 70;
       if(qsVolAmb) qsVolAmb.value = App.Config.get('volAmbience') !== undefined ? App.Config.get('volAmbience') : 50;
+      if(qsVolAmb2) qsVolAmb2.value = App.Config.get('volAmbience2') !== undefined ? App.Config.get('volAmbience2') : 50;
     }
     syncQuickSoundUI();
 
@@ -6956,6 +7641,16 @@
         App.Config.save();
         App.Ambience.applyVolume();
         var drawerSlider = document.getElementById('cfg-vol-amb');
+        if(drawerSlider) drawerSlider.value = val;
+      });
+    }
+    if(qsVolAmb2) {
+      qsVolAmb2.addEventListener('input', function() {
+        var val = Number(this.value);
+        App.Config.set('volAmbience2', val);
+        App.Config.save();
+        App.Ambience.applyVolume();
+        var drawerSlider = document.getElementById('cfg-vol-amb2');
         if(drawerSlider) drawerSlider.value = val;
       });
     }
@@ -7049,6 +7744,41 @@
       });
     }
 
+    /* BOLT Test Actions & Modal */
+    var boltStartSettingsBtn = document.getElementById('btn-start-bolt-settings');
+    if(boltStartSettingsBtn) {
+      boltStartSettingsBtn.addEventListener('click', function() {
+        if(App.Session.isActive()) return;
+        App.Session.startBolt();
+      });
+    }
+    var boltCalibrateBtn = document.getElementById('btn-bolt-calibrate');
+    var boltStatsBtn     = document.getElementById('btn-bolt-stats');
+    var boltCloseBtn     = document.getElementById('btn-bolt-close');
+    if(boltCalibrateBtn) {
+      boltCalibrateBtn.addEventListener('click', function() {
+        App.Config.set('holdMode', 'adaptive');
+        var hmEl = document.getElementById('cfg-hold-mode');
+        if(hmEl) hmEl.value = 'adaptive';
+        App.Config.save();
+        App.Presets.updateSelect();
+        if(App.SettingsDrawer) App.SettingsDrawer.updateSummaryPill();
+        App.UI.hideBoltModal();
+        App.UI.render(STATES.IDLE);
+      });
+    }
+    if(boltStatsBtn) {
+      boltStatsBtn.addEventListener('click', function() {
+        App.UI.hideBoltModal();
+        Stats.open();
+      });
+    }
+    if(boltCloseBtn) {
+      boltCloseBtn.addEventListener('click', function() {
+        App.UI.hideBoltModal();
+      });
+    }
+
     if(vFeelingRow) {
       vFeelingRow.addEventListener('click', function(ev) {
         var btn = ev.target.closest ? ev.target.closest('.feeling-btn') : null;
@@ -7112,7 +7842,13 @@
       });
     }
 
-    /* Urge-to-breathe marker */
+    /* HOLD NOW & Urge-to-breathe buttons */
+    var holdNowBtn = document.getElementById('hold-now-btn');
+    if(holdNowBtn) {
+      holdNowBtn.addEventListener('click', function() {
+        App.Session.holdNow();
+      });
+    }
     document.getElementById('urge-btn').addEventListener('click', function() {
       App.Session.markUrge();
     });
@@ -7140,12 +7876,14 @@
       }, 6000);
     });
 
-    /* START / PAUSE / RESUME button */
+    /* START / PAUSE / RESUME / END BOLT button */
     document.getElementById('btn-start').addEventListener('click', function() {
       if(App.SettingsDrawer && App.SettingsDrawer.isOpen()) App.SettingsDrawer.close();
       var st = App.Session.getState();
       if(st === STATES.IDLE || st === STATES.SESSION_COMPLETE) {
         App.Session.start();
+      } else if(st === STATES.BOLT_HOLD) {
+        App.Session.endBolt();
       } else if(st === STATES.PAUSED) {
         App.Session.resume();
       } else {
@@ -7153,15 +7891,24 @@
       }
     });
 
+    /* FINISH & SAVE button */
+    var finishBtn = document.getElementById('btn-finish');
+    if(finishBtn) {
+      finishBtn.addEventListener('click', function() {
+        App.Session.finishAndSave();
+      });
+    }
+
     /* RESET button */
     document.getElementById('btn-reset').addEventListener('click', function() {
       App.Session.reset();
     });
 
-    /* Circle tap — end hold / resume from pause */
+    /* Circle tap — end hold / end BOLT / resume from pause */
     function circleActivate() {
       var st = App.Session.getState();
       if(st === STATES.HOLD) App.Session.endHold();
+      else if(st === STATES.BOLT_HOLD) App.Session.endBolt();
       else if(st === STATES.PAUSED) App.Session.resume();
     }
     document.getElementById('circle-content').addEventListener('click', circleActivate);
@@ -7179,30 +7926,52 @@
       if(ev.key === 'Escape') {
         if(App.SettingsDrawer && App.SettingsDrawer.isOpen()) { App.SettingsDrawer.close(); return; }
         if(Stats.isOpen()) { Stats.close(); return; }
+        var boltOv = document.getElementById('bolt-overlay');
+        if(boltOv && !boltOv.classList.contains('hidden')) { App.UI.hideBoltModal(); return; }
+        if(victoryOverlay && !victoryOverlay.classList.contains('hidden')) { App.UI.hideVictoryModal(); return; }
         if(st !== STATES.IDLE) App.Session.reset();
         return;
       }
-      if(ev.key === ' ' && ev.target.id !== 'dismiss-disclaimer'
-          && ev.target.tagName !== 'INPUT' && ev.target.tagName !== 'BUTTON'
-          && ev.target.tagName !== 'SELECT') {
+      if(ev.target.id === 'dismiss-disclaimer' || ev.target.tagName === 'INPUT' ||
+         ev.target.tagName === 'BUTTON' || ev.target.tagName === 'SELECT') {
+        return;
+      }
+      if(ev.key === ' ') {
         ev.preventDefault();
         if(st === STATES.IDLE || st === STATES.SESSION_COMPLETE) {
-          App.Session.start();
+          if(!ev.repeat) App.Session.start();
         } else if(st === STATES.HOLD) {
-          App.Session.endHold();
+          if(!ev.repeat) App.Session.endHold();
+        } else if(st === STATES.BOLT_HOLD) {
+          if(!ev.repeat) App.Session.endBolt();
         } else if(st === STATES.PAUSED) {
-          App.Session.resume();
+          if(!ev.repeat) App.Session.resume();
         } else if(st === STATES.SLEEPING) {
-          App.UI.peekSleep();
+          if(!ev.repeat) App.UI.peekSleep();
         } else if(st === STATES.BREATHING_IN || st === STATES.BREATHING_OUT) {
           if(App.Config.get('flowMode') === 'on') {
+            if(ev.repeat) return;
             App.Session.onFlowPointerDown();
-          } else {
+          } else if(!ev.repeat) {
             App.Session.pause();
           }
-        } else {
+        } else if(!ev.repeat) {
           App.Session.pause();
         }
+        return;
+      }
+      if(!ev.repeat && (ev.key === 'p' || ev.key === 'P')) {
+        if(st === STATES.PAUSED) App.Session.resume();
+        else if(App.Session.isActive()) App.Session.pause();
+        return;
+      }
+      if(!ev.repeat && (ev.key === 'h' || ev.key === 'H')) {
+        App.Session.holdNow();
+        return;
+      }
+      if(!ev.repeat && (ev.key === 'f' || ev.key === 'F')) {
+        App.Session.finishAndSave();
+        return;
       }
     });
     document.addEventListener('keyup', function(ev) {

@@ -1,28 +1,31 @@
 """Generate female neural TTS voice clips for the breathing app.
 
 Regeneration:  python gen_voice.py  (requires: pip install edge-tts, internet)
-Output: D:/GIT/_FUN/wimhoff/docs/voice/*.mp3 + voice_data.js (base64 map)
+Output: ./docs/voice/*.mp3 + voice_data.js (base64 map)
 """
 import asyncio, base64, json, os
+from pathlib import Path
 import edge_tts
 
 VOICE = "en-US-JennyNeural"
 RATE = "-15%"          # calm, slightly slow delivery
-OUT_DIR = r"D:\GIT\_FUN\wimhoff\docs\voice"
+OUT_DIR = Path(__file__).resolve().parent
 
 CLIPS = {
-    "breatheIn":    "Breathe in",
-    "breatheOut":   "Breathe out",
-    "lastBreath":   "Last breath",
-    "hold":         "Hold your breath",
-    "recoveryIn":   "Breathe in deeply",
-    "recoveryOut":  "Let it go",
-    "roundComplete":"Round complete",
-    "wellDone":     "Well done. Session complete.",
-    "getReady":     "Get ready",
-    "ten":          "Ten",
-    "twenty":       "Twenty",
-    "pause":        "Pause",
+    "breatheIn":        "Breathe in",
+    "breatheOut":       "Breathe out",
+    "lastBreath":       "Last breath",
+    "threeBreathsLeft": "Three breaths left",
+    "hold":             "Hold your breath",
+    "recoveryIn":       "Breathe in deeply",
+    "recoveryOut":      "Let it go",
+    "roundComplete":    "Round complete",
+    "wellDone":         "Well done. Session complete.",
+    "getReady":         "Get ready",
+    "ten":              "Ten",
+    "twenty":           "Twenty",
+    "pause":            "Pause",
+    "newRecord":        "New record",
 }
 
 async def gen(name, text):

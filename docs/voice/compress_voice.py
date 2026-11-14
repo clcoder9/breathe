@@ -1,12 +1,13 @@
 """Trim silence + re-encode voice clips to 32kbps mono MP3, then emit base64 JS map."""
 import base64, json, os, subprocess
+from pathlib import Path
 import imageio_ffmpeg
 
 FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
-VOICE_DIR = r"D:\GIT\_FUN\wimhoff\docs\voice"
+VOICE_DIR = Path(__file__).resolve().parent
 
-names = ["breatheIn","breatheOut","lastBreath","hold","recoveryIn","recoveryOut",
-         "roundComplete","wellDone","getReady","ten","twenty","pause"]
+names = ["breatheIn","breatheOut","lastBreath","threeBreathsLeft","hold","recoveryIn","recoveryOut",
+         "roundComplete","wellDone","getReady","ten","twenty","pause","newRecord"]
 
 total = 0
 data = {}
