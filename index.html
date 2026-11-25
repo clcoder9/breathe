@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
   <meta name="theme-color" content="#0A0E1A">
   <meta name="mobile-web-app-capable" content="yes">
   <link rel="manifest" href="manifest.json">
@@ -10,24 +11,30 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <title>Breathe</title>
   <script>
-    // Flash prevention: apply theme before paint
+    // Flash prevention: apply theme & accent palette before paint
     (function(){
-      var t = null;
+      var t = null, p = null;
       try { t = localStorage.getItem('pranayama_theme'); } catch(e){}
       if(!t) t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
       if(t === 'light') document.documentElement.setAttribute('data-theme','light');
       else if(t === 'oled') document.documentElement.setAttribute('data-theme','oled');
+      try {
+        var cfgRaw = localStorage.getItem('whm_config');
+        if(cfgRaw) p = JSON.parse(cfgRaw).palette;
+      } catch(e){}
+      if(p && p !== 'ocean') document.documentElement.setAttribute('data-palette', p);
     })();
   </script>
   <style>
     :root {
+      color-scheme: dark;
       --color-bg:             #0A0E1A;
       --color-surface:        #111827;
       --color-surface-raised: #1F2937;
       --color-border:         #374151;
       --color-text-primary:   #F1F5F9;
       --color-text-secondary: #94A3B8;
-      --color-text-muted:     #475569;
+      --color-text-muted:     #64748B;
       --color-inhale:   #22D3EE;
       --color-exhale:   #0E7490;
       --color-hold:     #F59E0B;
@@ -46,13 +53,14 @@
 
     /* LIGHT THEME — rich jewel tones and soft ambient depth */
     html[data-theme="light"] {
+      color-scheme: light;
       --color-bg:             #F1F5F9;
       --color-surface:        #FFFFFF;
       --color-surface-raised: #E2E8F0;
       --color-border:         #CBD5E1;
       --color-text-primary:   #0F172A;
       --color-text-secondary: #334155;
-      --color-text-muted:     #64748B;
+      --color-text-muted:     #475569;
       --color-inhale:   #0284C7;
       --color-exhale:   #0369A1;
       --color-hold:     #D97706;
@@ -64,15 +72,59 @@
       --color-accent:   #0284C7;
       --current-phase-color: #475569;
     }
+
+    /* ACCENT PALETTES (E5) — orthogonal to Dark/Light/OLED */
+    html[data-palette="ember"] {
+      --color-inhale: #FB923C; --color-exhale: #C2410C; --color-hold: #FBBF24;
+      --color-recovery: #F472B6; --color-complete: #34D399; --color-pause: #FB7185;
+      --color-accent: #FB923C; --chart-line: #EA580C;
+    }
+    html[data-theme="light"][data-palette="ember"] {
+      --color-inhale: #EA580C; --color-exhale: #9A3412; --color-hold: #B45309;
+      --color-recovery: #DB2777; --color-complete: #059669; --color-pause: #BE123C;
+      --color-accent: #EA580C; --chart-line: #C2410C;
+    }
+    html[data-palette="forest"] {
+      --color-inhale: #34D399; --color-exhale: #047857; --color-hold: #FBBF24;
+      --color-recovery: #38BDF8; --color-complete: #A3E635; --color-pause: #2DD4BF;
+      --color-accent: #34D399; --chart-line: #10B981;
+    }
+    html[data-theme="light"][data-palette="forest"] {
+      --color-inhale: #059669; --color-exhale: #065F46; --color-hold: #B45309;
+      --color-recovery: #0284C7; --color-complete: #4D7C0F; --color-pause: #0D9488;
+      --color-accent: #059669; --chart-line: #047857;
+    }
+    html[data-palette="amethyst"] {
+      --color-inhale: #C084FC; --color-exhale: #7E22CE; --color-hold: #F472B6;
+      --color-recovery: #60A5FA; --color-complete: #34D399; --color-pause: #E879F9;
+      --color-accent: #C084FC; --chart-line: #A855F7;
+    }
+    html[data-theme="light"][data-palette="amethyst"] {
+      --color-inhale: #7C3AED; --color-exhale: #5B21B6; --color-hold: #BE185D;
+      --color-recovery: #2563EB; --color-complete: #059669; --color-pause: #A21CAF;
+      --color-accent: #7C3AED; --chart-line: #6D28D9;
+    }
+    html[data-palette="monochrome"] {
+      --color-inhale: #E2E8F0; --color-exhale: #64748B; --color-hold: #CBD5E1;
+      --color-recovery: #94A3B8; --color-complete: #F8FAFC; --color-pause: #94A3B8;
+      --color-accent: #E2E8F0; --chart-line: #94A3B8;
+    }
+    html[data-theme="light"][data-palette="monochrome"] {
+      --color-inhale: #1E293B; --color-exhale: #475569; --color-hold: #334155;
+      --color-recovery: #64748B; --color-complete: #0F172A; --color-pause: #475569;
+      --color-accent: #1E293B; --chart-line: #334155;
+    }
+
     html[data-theme="light"] #atmosphere { opacity: 0.08; filter: blur(55px); }
     html[data-theme="light"] .circle-glow { opacity: 0.12; filter: blur(36px); }
 
     /* OLED TRUE-BLACK THEME — pure zero-nit blacks & hairline borders */
     html[data-theme="oled"] {
+      color-scheme: dark;
       --color-bg:             #000000;
       --color-surface:        #000000;
       --color-surface-raised: #0D0D11;
-      --color-border:         rgba(255, 255, 255, 0.08);
+      --color-border:         rgba(255, 255, 255, 0.12);
     }
     html[data-theme="oled"] #settings-panel { background: rgba(0,0,0,0.98); border-bottom-color: rgba(255,255,255,0.08); }
     html[data-theme="oled"] #safety-footer  { background: rgba(0,0,0,0.98); border-top-color: rgba(255,255,255,0.08); }
@@ -762,6 +814,7 @@
     }
     .settings-tab-bar::-webkit-scrollbar { display: none; }
     .tab-btn {
+      position: relative;
       display: flex;
       align-items: center;
       gap: 5px;
@@ -782,11 +835,19 @@
       color: var(--color-text-primary);
       background: rgba(255,255,255,0.06);
     }
-    .tab-btn.active {
+    .tab-btn.active,
+    .tab-btn[aria-selected="true"] {
       color: var(--color-text-primary);
       background: var(--color-surface);
       border-color: var(--color-border);
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .tab-btn[aria-selected="true"]::after {
+      content: "";
+      position: absolute;
+      inset: auto 8px 0;
+      border-block-end: 2px solid var(--color-accent);
+      border-radius: 2px;
     }
     .tab-icon { font-size: 0.95rem; }
 
@@ -1541,6 +1602,147 @@
       .label-swap { animation: none !important; }
       #atmosphere { display: none !important; }
     }
+
+    /* FAVORITE CHIPS BAR (E2) & ROUTINE STAGE PILL (F2) */
+    .favorite-chips-bar {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+      gap: 8px; max-width: 680px; z-index: 5;
+    }
+    .fav-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 6px 13px; border-radius: 18px;
+      background: var(--color-surface-raised); border: 1px solid var(--color-border);
+      color: var(--color-text-secondary); font-size: 0.76rem; font-weight: 600;
+      cursor: pointer; font-family: var(--font-stack);
+      transition: border-color 0.2s, color 0.2s, transform 0.15s, background 0.2s;
+    }
+    .fav-chip:hover { border-color: var(--color-accent); color: var(--color-text-primary); transform: translateY(-1px); }
+    .fav-chip[aria-pressed="true"] {
+      border-color: var(--color-accent); color: var(--color-text-primary);
+      background: color-mix(in oklab, var(--color-accent) 15%, transparent);
+    }
+    .fav-chip-star { font-size: 0.72rem; color: var(--color-hold); }
+    .icon-btn.pinned { color: var(--color-hold); border-color: var(--color-hold); }
+    .routine-stage-pill {
+      font-size: 0.74rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 4px 12px; border-radius: 14px;
+      background: rgba(167, 139, 250, 0.14); border: 1px solid rgba(167, 139, 250, 0.42);
+      color: var(--color-recovery);
+    }
+    .setting-card.dimmed-card { opacity: 0.52; }
+
+    /* ROUTINE BUILDER (F2) */
+    .routine-saved-row { display: flex; gap: 6px; align-items: center; margin-bottom: 10px; }
+    .routine-saved-row select { flex: 1; }
+    .routine-stages-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .routine-stage-row {
+      background: var(--color-surface); border: 1px solid var(--color-border);
+      border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .routine-stage-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+    .routine-stage-num { font-size: 0.72rem; font-weight: 700; color: var(--color-accent); text-transform: uppercase; }
+    .routine-stage-btns { display: flex; gap: 4px; }
+    .routine-stage-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .routine-mini-field { display: flex; flex-direction: column; gap: 2px; font-size: 0.66rem; color: var(--color-text-secondary); }
+    .routine-mini-field input { padding: 4px 6px; font-size: 0.8rem; }
+    .routine-action-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .routine-action-row .btn { flex: 1; min-height: 38px; padding: 7px 10px; font-size: 0.78rem; }
+
+    /* BLE HEART RATE BIOFEEDBACK (F5) */
+    .hr-wrap { position: relative; }
+    .hr-btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      height: 36px; padding: 0 10px; border-radius: 18px; border: 1px solid var(--color-border);
+      background: rgba(255,255,255,0.06); color: var(--color-text-secondary);
+      font-size: 0.74rem; font-weight: 600; cursor: pointer; font-family: var(--font-stack);
+      transition: all 0.2s ease; flex-shrink: 0;
+    }
+    html[data-theme="light"] .hr-btn { background: rgba(0,0,0,0.05); }
+    .hr-btn:hover { border-color: var(--color-accent); color: var(--color-text-primary); }
+    .hr-btn.connected { border-color: #F43F5E; color: #FB7185; background: rgba(244, 63, 94, 0.12); }
+    .hr-heart { display: inline-block; font-size: 0.85rem; }
+    .hr-btn.connected .hr-heart { animation: hr-beat 1.1s ease-in-out infinite; }
+    @keyframes hr-beat { 0%, 100% { transform: scale(1); } 25% { transform: scale(1.22); } }
+    .hr-popover {
+      position: absolute; top: calc(100% + 10px); left: 0;
+      background: var(--color-surface); border: 1px solid var(--color-border);
+      border-radius: 12px; padding: 14px; min-width: 245px; max-width: 290px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.55); z-index: 130;
+      display: flex; flex-direction: column; gap: 8px; font-size: 0.78rem;
+    }
+    .hr-metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; text-align: center; }
+    .hr-m-box { background: var(--color-surface-raised); border-radius: 6px; padding: 6px 4px; }
+    .hr-m-val { font-size: 1rem; font-weight: 600; color: var(--color-text-primary); font-variant-numeric: tabular-nums; }
+    .hr-m-lbl { font-size: 0.6rem; color: var(--color-text-secondary); text-transform: uppercase; }
+    .hr-hold-badge {
+      font-size: 0.72rem; font-weight: 600; color: #FB7185;
+      background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.35);
+      border-radius: 14px; padding: 2px 10px; margin-top: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+    .hr-note { font-size: 0.7rem; color: var(--color-text-secondary); line-height: 1.4; }
+
+    /* 52-WEEK HEATMAP (F3) & RESPONSIVE HISTORY TABLE (E4) */
+    .heatmap-wrap { margin-bottom: 16px; position: relative; }
+    .heatmap-svg { width: 100%; height: auto; display: block; }
+    .hm-cell { rx: 2; ry: 2; stroke: rgba(255,255,255,0.04); stroke-width: 0.5; }
+    .hm-lvl-0 { fill: var(--color-surface-raised); }
+    .hm-lvl-1 { fill: color-mix(in oklab, var(--color-inhale) 35%, transparent); }
+    .hm-lvl-2 { fill: color-mix(in oklab, var(--color-inhale) 62%, transparent); }
+    .hm-lvl-3 { fill: var(--color-inhale); }
+    .hm-lvl-4 { fill: var(--color-complete); }
+    .heatmap-legend {
+      display: flex; align-items: center; justify-content: flex-end; gap: 4px;
+      font-size: 0.62rem; color: var(--color-text-secondary); margin-top: 4px;
+    }
+    .hm-swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+    .stats-history-controls {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 8px 0;
+    }
+    .stats-history-controls select {
+      background: var(--color-surface-raised); border: 1px solid var(--color-border);
+      color: var(--color-text-primary); border-radius: 6px; padding: 5px 8px;
+      font-size: 0.75rem; font-family: var(--font-stack);
+    }
+    .table-wrapper {
+      overflow: auto; max-inline-size: 100%; max-block-size: min(340px, 48vh);
+      container-type: inline-size; border: 1px solid var(--color-border); border-radius: 8px;
+    }
+    .stats-list .table-wrapper table { border-collapse: separate; border-spacing: 0; }
+    .stats-list .table-wrapper thead { position: sticky; inset-block-start: 0; z-index: 1; background: var(--color-surface); }
+    .btn-del-session {
+      background: transparent; border: none; color: var(--color-text-muted);
+      cursor: pointer; padding: 2px 6px; font-size: 0.78rem; border-radius: 4px;
+    }
+    .btn-del-session:hover { color: #F87171; background: rgba(248, 113, 113, 0.12); }
+    .stats-more-btn {
+      width: 100%; margin-top: 8px; padding: 7px; border-radius: 6px;
+      background: var(--color-surface-raised); border: 1px solid var(--color-border);
+      color: var(--color-text-secondary); font-size: 0.76rem; cursor: pointer; font-family: var(--font-stack);
+    }
+    .stats-more-btn:hover { color: var(--color-text-primary); border-color: var(--color-accent); }
+
+    /* NATIVE CONFIRM DIALOG (dialog guide) */
+    dialog#app-confirm-dialog {
+      margin: auto; border: 1px solid var(--color-border); border-radius: 14px;
+      background: var(--color-surface); color: var(--color-text-primary);
+      padding: 22px; max-width: 400px; width: calc(100% - 32px);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.65);
+    }
+    dialog#app-confirm-dialog:modal { overscroll-behavior: contain; }
+    dialog#app-confirm-dialog::backdrop {
+      background: rgba(0,0,0,0.72); backdrop-filter: blur(4px);
+      overflow: hidden; overscroll-behavior: contain;
+    }
+    .confirm-dialog-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 8px; }
+    .confirm-dialog-msg { font-size: 0.84rem; color: var(--color-text-secondary); line-height: 1.5; margin-bottom: 16px; }
+    .confirm-dialog-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+    .confirm-dialog-actions .btn { min-height: 38px; padding: 7px 14px; font-size: 0.8rem; }
+
+    @media (forced-colors: active) {
+      .tab-btn[aria-selected="true"]::after { border-block-end: 3px solid Highlight; }
+      .fav-chip[aria-pressed="true"], .btn, .hr-btn.connected { border: 2px solid Highlight; }
+    }
   </style>
 </head>
 <body>
@@ -1556,6 +1758,16 @@
       <button id="stats-close">Close</button>
     </div>
   </div>
+
+  <!-- NATIVE CONFIRMATION DIALOG -->
+  <dialog id="app-confirm-dialog" aria-labelledby="confirm-dialog-title">
+    <h1 id="confirm-dialog-title" class="confirm-dialog-title">Confirm Action</h1>
+    <p id="confirm-dialog-msg" class="confirm-dialog-msg"></p>
+    <form method="dialog" id="confirm-dialog-actions" class="confirm-dialog-actions">
+      <button type="submit" value="cancel" class="btn btn-secondary" autofocus>Cancel</button>
+      <button type="submit" value="confirm" id="confirm-dialog-ok" class="btn btn-primary">Confirm</button>
+    </form>
+  </dialog>
 
   <!-- DISCLAIMER MODAL -->
   <div id="disclaimer-overlay" role="dialog" aria-modal="true" aria-labelledby="disclaimer-title">
@@ -1603,12 +1815,16 @@
           <option value="">Custom</option>
           <optgroup label="Core Protocols">
             <option value="pranayama">Pranayama</option>
+            <option value="energize">Quick Energize</option>
             <option value="box">Box Breathing (4-4-4-4)</option>
             <option value="fourSevenEight">4-7-8 Relaxing Breath</option>
             <option value="a52">A52 Cadence (5-5-2)</option>
             <option value="coherent">Coherent Breathing (5.5s HRV)</option>
             <option value="physio_sigh">Physiological Sigh (Double Inhale)</option>
             <option value="nadi_shodhana">Nadi Shodhana (Alternate Nostril)</option>
+            <option value="kapalabhati">Kapalabhati (Breath of Fire)</option>
+            <option value="bhramari">Bhramari (Humming Bee)</option>
+            <option value="sleep_winddown">Sleep Wind-Down (4-8-2)</option>
           </optgroup>
           <optgroup label="7-Day Journey">
             <option value="journey_d1">Day 1: Foundations</option>
@@ -1623,7 +1839,13 @@
             <option value="apnea_co2">CO2 Tolerance Table (Decreasing Rest)</option>
             <option value="apnea_o2">O2 Endurance Table (Increasing Holds)</option>
           </optgroup>
+          <optgroup label="Multi-Phase Routines" id="cfg-preset-routines">
+            <option value="r:morning_charge">Routine: Morning Awakening</option>
+            <option value="r:deep_reset">Routine: Stress Reset &amp; Coherence</option>
+            <option value="r:evening_slumber">Routine: Deep Evening Downshift</option>
+          </optgroup>
         </select>
+        <button class="icon-btn" id="btn-pin-preset" title="Pin or unpin from home chips" aria-label="Pin or unpin preset">☆</button>
         <button class="icon-btn" id="btn-save-preset" title="Save current settings as preset" aria-label="Save current settings as preset">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
@@ -1640,23 +1862,27 @@
 
     <!-- TABS -->
     <nav class="settings-tab-bar" role="tablist" aria-label="Settings Categories">
-      <button type="button" class="tab-btn active" role="tab" aria-selected="true" aria-controls="panel-pattern" id="tab-pattern" data-tab="pattern">
+      <button type="button" class="tab-btn active" role="tab" aria-selected="true" id="tab-pattern" data-tab="pattern">
         <span class="tab-icon">🌬️</span>
         <span class="tab-label">Pattern</span>
       </button>
-      <button type="button" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-holds" id="tab-holds" data-tab="holds">
+      <button type="button" class="tab-btn" role="tab" aria-selected="false" id="tab-holds" data-tab="holds">
         <span class="tab-icon">⏱️</span>
         <span class="tab-label">Holds</span>
       </button>
-      <button type="button" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-audio" id="tab-audio" data-tab="audio">
+      <button type="button" class="tab-btn" role="tab" aria-selected="false" id="tab-routine" data-tab="routine">
+        <span class="tab-icon">⛓️</span>
+        <span class="tab-label">Routine</span>
+      </button>
+      <button type="button" class="tab-btn" role="tab" aria-selected="false" id="tab-audio" data-tab="audio">
         <span class="tab-icon">🔊</span>
         <span class="tab-label">Audio</span>
       </button>
-      <button type="button" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-ambience" id="tab-ambience" data-tab="ambience">
+      <button type="button" class="tab-btn" role="tab" aria-selected="false" id="tab-ambience" data-tab="ambience">
         <span class="tab-icon">🌊</span>
         <span class="tab-label">Ambience</span>
       </button>
-      <button type="button" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-visuals" id="tab-visuals" data-tab="visuals">
+      <button type="button" class="tab-btn" role="tab" aria-selected="false" id="tab-visuals" data-tab="visuals">
         <span class="tab-icon">🎨</span>
         <span class="tab-label">Visuals</span>
       </button>
@@ -1707,7 +1933,7 @@
             <label for="cfg-inhale">Inhale Duration (s)</label>
             <div class="stepper-wrap">
               <button type="button" class="stepper-btn btn-dec" data-target="cfg-inhale" aria-label="Decrease inhale duration">&minus;</button>
-              <input type="number" id="cfg-inhale" min="0.5" max="15" step="0.5" value="1.5">
+              <input type="number" id="cfg-inhale" min="0.3" max="15" step="0.5" value="1.5">
               <button type="button" class="stepper-btn btn-inc" data-target="cfg-inhale" aria-label="Increase inhale duration">&plus;</button>
             </div>
             <span class="setting-hint">Seconds per breath expansion</span>
@@ -1717,7 +1943,7 @@
             <label for="cfg-exhale">Exhale Duration (s)</label>
             <div class="stepper-wrap">
               <button type="button" class="stepper-btn btn-dec" data-target="cfg-exhale" aria-label="Decrease exhale duration">&minus;</button>
-              <input type="number" id="cfg-exhale" min="0.5" max="15" step="0.5" value="1.5">
+              <input type="number" id="cfg-exhale" min="0.3" max="15" step="0.5" value="1.5">
               <button type="button" class="stepper-btn btn-inc" data-target="cfg-exhale" aria-label="Increase exhale duration">&plus;</button>
             </div>
             <span class="setting-hint">Seconds per breath release</span>
@@ -1727,18 +1953,30 @@
             <label for="cfg-pause-inhale">Pause After Inhale (s)</label>
             <div class="stepper-wrap">
               <button type="button" class="stepper-btn btn-dec" data-target="cfg-pause-inhale" aria-label="Decrease pause after inhale">&minus;</button>
-              <input type="number" id="cfg-pause-inhale" min="0" max="10" step="0.5" value="0">
+              <input type="number" id="cfg-pause-inhale" min="0" max="30" step="0.5" value="0">
               <button type="button" class="stepper-btn btn-inc" data-target="cfg-pause-inhale" aria-label="Increase pause after inhale">&plus;</button>
             </div>
-            <span class="setting-hint">Top-of-breath pause (e.g. Box breathing)</span>
+            <div class="chip-row">
+              <button type="button" class="chip-btn" data-target="cfg-pause-inhale" data-val="0">0s</button>
+              <button type="button" class="chip-btn" data-target="cfg-pause-inhale" data-val="4">4s</button>
+              <button type="button" class="chip-btn" data-target="cfg-pause-inhale" data-val="7">7s</button>
+              <button type="button" class="chip-btn" data-target="cfg-pause-inhale" data-val="16">16s</button>
+            </div>
+            <span class="setting-hint">Top-of-breath pause (e.g. Box breathing, 1:4:2 Kumbhaka)</span>
           </div>
 
           <div class="setting-card">
             <label for="cfg-pause-exhale">Pause After Exhale (s)</label>
             <div class="stepper-wrap">
               <button type="button" class="stepper-btn btn-dec" data-target="cfg-pause-exhale" aria-label="Decrease pause after exhale">&minus;</button>
-              <input type="number" id="cfg-pause-exhale" min="0" max="10" step="0.5" value="0">
+              <input type="number" id="cfg-pause-exhale" min="0" max="30" step="0.5" value="0">
               <button type="button" class="stepper-btn btn-inc" data-target="cfg-pause-exhale" aria-label="Increase pause after exhale">&plus;</button>
+            </div>
+            <div class="chip-row">
+              <button type="button" class="chip-btn" data-target="cfg-pause-exhale" data-val="0">0s</button>
+              <button type="button" class="chip-btn" data-target="cfg-pause-exhale" data-val="2">2s</button>
+              <button type="button" class="chip-btn" data-target="cfg-pause-exhale" data-val="4">4s</button>
+              <button type="button" class="chip-btn" data-target="cfg-pause-exhale" data-val="8">8s</button>
             </div>
             <span class="setting-hint">Bottom-of-breath pause</span>
           </div>
@@ -1749,8 +1987,10 @@
               <option value="standard">Standard (Continuous)</option>
               <option value="doubleInhale">Double Inhale (Physiological Sigh)</option>
               <option value="alternateNostril">Alternate Nostril (Nadi Shodhana)</option>
+              <option value="kapalabhati">Kapalabhati (Rapid Pump)</option>
+              <option value="bhramari">Bhramari (Humming Exhale)</option>
             </select>
-            <span class="setting-hint">Specialized inhale or nostril alternation mechanics</span>
+            <span class="setting-hint">Specialized inhale, exhale, or nostril alternation mechanics</span>
           </div>
 
           <div class="setting-card">
@@ -1794,11 +2034,11 @@
             <span class="setting-hint">Total cycles in session</span>
           </div>
 
-          <div class="setting-card">
+          <div class="setting-card" id="card-hold-start">
             <label for="cfg-hold-start">Initial Hold (s)</label>
             <div class="stepper-wrap">
               <button type="button" class="stepper-btn btn-dec" data-target="cfg-hold-start" aria-label="Decrease hold start">&minus;</button>
-              <input type="number" id="cfg-hold-start" min="0" max="300" step="5" value="60">
+              <input type="number" id="cfg-hold-start" min="0" max="600" step="5" value="60">
               <button type="button" class="stepper-btn btn-inc" data-target="cfg-hold-start" aria-label="Increase hold start">&plus;</button>
             </div>
             <div class="chip-row">
@@ -1810,11 +2050,11 @@
             <span class="setting-hint">Round 1 retention target duration</span>
           </div>
 
-          <div class="setting-card">
+          <div class="setting-card" id="card-hold-incr">
             <label for="cfg-hold-incr">Hold Increment (s)</label>
             <div class="stepper-wrap">
               <button type="button" class="stepper-btn btn-dec" data-target="cfg-hold-incr" aria-label="Decrease hold increment">&minus;</button>
-              <input type="number" id="cfg-hold-incr" min="0" max="60" step="5" value="15">
+              <input type="number" id="cfg-hold-incr" min="0" max="120" step="5" value="15">
               <button type="button" class="stepper-btn btn-inc" data-target="cfg-hold-incr" aria-label="Increase hold increment">&plus;</button>
             </div>
             <span class="setting-hint">Added duration per subsequent round</span>
@@ -1826,7 +2066,7 @@
               <option value="fixed">Fixed Target</option>
               <option value="adaptive">Adaptive (Auto-adjust)</option>
             </select>
-            <span class="setting-hint">Scale target to your actual breath capacity</span>
+            <span class="setting-hint" id="adaptive-preview-hint">Scale target to your actual breath capacity</span>
           </div>
 
           <div class="setting-card">
@@ -1850,6 +2090,45 @@
               <button type="button" class="chip-btn" data-target="cfg-recovery-hold" data-val="20">20s</button>
             </div>
             <span class="setting-hint">Post-retention recovery inhale hold</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2b. ROUTINE BUILDER (F2) -->
+      <section class="tab-panel" id="panel-routine" role="tabpanel" aria-labelledby="tab-routine" hidden>
+        <div class="settings-group-title">Multi-Phase Routine Sequencer</div>
+        <div class="settings-card-grid">
+          <div class="setting-card">
+            <label for="routine-select">Load Saved or Signature Routine</label>
+            <div class="routine-saved-row">
+              <select id="routine-select"></select>
+              <button type="button" id="btn-routine-delete" class="icon-btn hidden" title="Delete custom routine" aria-label="Delete custom routine">🗑</button>
+            </div>
+            <span class="setting-hint" id="routine-active-status">No routine active — select or build 2–6 chained protocols</span>
+          </div>
+
+          <div class="setting-card">
+            <label for="routine-name-input">Routine Name &amp; Stage Bridge</label>
+            <div class="routine-stage-grid" style="grid-template-columns: 2fr 1fr;">
+              <input type="text" id="routine-name-input" maxlength="28" placeholder="My Custom Routine" style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:8px;color:var(--color-text-primary);padding:7px 10px;font-size:0.86rem;">
+              <select id="routine-bridge-sec" aria-label="Stage bridge seconds">
+                <option value="3">3s Bridge</option>
+                <option value="5" selected>5s Bridge</option>
+                <option value="10">10s Bridge</option>
+              </select>
+            </div>
+            <span class="setting-hint">Calm singing-bowl transition between stages</span>
+          </div>
+
+          <div class="setting-card">
+            <label>Stages (2–6 Protocols)</label>
+            <div id="routine-stages-list" class="routine-stages-list"></div>
+            <button type="button" id="btn-routine-add-stage" class="btn btn-secondary" style="min-height:36px;font-size:0.78rem;">+ Add Stage</button>
+            <div class="routine-action-row">
+              <button type="button" id="btn-routine-save" class="btn btn-secondary">Save Routine</button>
+              <button type="button" id="btn-routine-pin" class="btn btn-secondary">☆ Pin</button>
+              <button type="button" id="btn-routine-use" class="btn btn-primary">Activate</button>
+            </div>
           </div>
         </div>
       </section>
@@ -1966,6 +2245,18 @@
         <div class="settings-group-title">Visuals & Display Environment</div>
         <div class="settings-card-grid">
           <div class="setting-card">
+            <label for="cfg-palette">Accent Color Palette</label>
+            <select id="cfg-palette">
+              <option value="ocean">Ocean (Cyan &amp; Amber)</option>
+              <option value="ember">Ember (Coral &amp; Gold)</option>
+              <option value="forest">Forest (Emerald &amp; Sage)</option>
+              <option value="amethyst">Amethyst (Violet &amp; Rose)</option>
+              <option value="monochrome">Monochrome (Silver &amp; Slate)</option>
+            </select>
+            <span class="setting-hint">Applies across Dark, Light, and OLED modes</span>
+          </div>
+
+          <div class="setting-card">
             <label for="cfg-material">Blob Material Look</label>
             <select id="cfg-material">
               <option value="chrome">Chrome</option>
@@ -2044,6 +2335,25 @@
           <span class="streak-flame">🔥</span>
           <span id="streak-badge-val">0</span>
         </button>
+        <div class="hr-wrap">
+          <button type="button" id="hr-connect-btn" class="hr-btn" aria-label="Bluetooth Heart Rate Monitor" title="Heart Rate & HRV Biofeedback">
+            <span class="hr-heart" aria-hidden="true">♥</span>
+            <span id="hr-live-bpm">HR</span>
+          </button>
+          <div id="hr-popover" class="hr-popover hidden" role="region" aria-label="Bluetooth Heart Rate Biofeedback">
+            <div style="display:flex;justify-content:space-between;align-items:center;font-weight:700;color:var(--color-text-primary);">
+              <span>BLE HR &amp; HRV</span>
+              <span id="hr-conn-status" style="font-size:0.68rem;color:var(--color-text-secondary);">Disconnected</span>
+            </div>
+            <div id="hr-metrics-grid" class="hr-metrics-grid hidden">
+              <div class="hr-m-box"><div class="hr-m-val" id="hr-pop-bpm">–</div><div class="hr-m-lbl">BPM</div></div>
+              <div class="hr-m-box"><div class="hr-m-val" id="hr-pop-rmssd">–</div><div class="hr-m-lbl">RMSSD</div></div>
+              <div class="hr-m-box"><div class="hr-m-val" id="hr-pop-coh">–</div><div class="hr-m-lbl">Coher.</div></div>
+            </div>
+            <div id="hr-note" class="hr-note">Pair a Bluetooth Low Energy heart rate strap or watch to track Diving Reflex &amp; HRV.</div>
+            <button type="button" id="hr-action-btn" class="btn btn-primary" style="min-height:36px;font-size:0.78rem;padding:6px 12px;">Connect Sensor</button>
+          </div>
+        </div>
       </div>
 
       <div class="header-center">
@@ -2112,6 +2422,8 @@
 
   <!-- MAIN CONTENT -->
   <main id="main" role="main">
+    <div id="favorite-chips-bar" class="favorite-chips-bar" aria-label="Pinned Favorites"></div>
+    <div id="routine-stage-pill" class="routine-stage-pill hidden"></div>
     <div id="round-indicator" aria-live="polite"></div>
     <div class="circle-container" role="presentation">
       <div class="circle-glow" aria-hidden="true"></div>
@@ -2150,6 +2462,7 @@
           <div id="flow-indicator" class="flow-indicator hidden"></div>
           <div id="breath-time-remaining" class="hidden"></div>
           <div id="hold-timer" class="hidden"></div>
+          <div id="hr-hold-badge" class="hr-hold-badge hidden"></div>
           <div id="ghost-label" class="ghost-label hidden"></div>
           <div id="hold-milestone-banner" class="hold-milestone-banner hidden"></div>
           <div id="hold-target-display" class="hidden"></div>
@@ -2232,6 +2545,18 @@
       <div id="victory-flow-wrap" class="victory-flow-wrap hidden">
         <span class="v-flow-icon">⚡</span>
         <span id="victory-flow-text">Cadence Flow: 94% synchronized</span>
+      </div>
+
+      <!-- Routine stages breakdown if routine session -->
+      <div id="victory-stages-wrap" class="victory-flow-wrap hidden" style="flex-direction:column;align-items:stretch;gap:4px;">
+        <span style="font-weight:700;font-size:0.74rem;text-transform:uppercase;letter-spacing:0.06em;">Routine Stages Completed</span>
+        <div id="victory-stages-list" style="font-size:0.75rem;color:var(--color-text-secondary);"></div>
+      </div>
+
+      <!-- BLE Heart Rate & HRV Biofeedback summary if recorded -->
+      <div id="victory-hr-wrap" class="victory-flow-wrap hidden" style="flex-direction:column;align-items:stretch;gap:4px;border-color:rgba(244,63,94,0.35);background:rgba(244,63,94,0.08);color:#FB7185;">
+        <span style="font-weight:700;font-size:0.74rem;text-transform:uppercase;letter-spacing:0.06em;">♥ Autonomic Biofeedback</span>
+        <div id="victory-hr-text" style="font-size:0.76rem;color:var(--color-text-primary);"></div>
       </div>
 
       <!-- 7-Day Journey advancement banner if completed a journey day -->
@@ -2336,6 +2661,7 @@
     PAUSE_AFTER_INHALE:'PAUSE_AFTER_INHALE', PAUSE_AFTER_EXHALE:'PAUSE_AFTER_EXHALE',
     HOLD:'HOLD', RECOVERY_IN:'RECOVERY_IN', RECOVERY_HOLD:'RECOVERY_HOLD',
     RECOVERY_OUT:'RECOVERY_OUT', ROUND_COMPLETE:'ROUND_COMPLETE',
+    STAGE_TRANSITION:'STAGE_TRANSITION',
     SESSION_COMPLETE:'SESSION_COMPLETE', PAUSED:'PAUSED', SLEEPING:'SLEEPING',
     BOLT_PREP:'BOLT_PREP', BOLT_HOLD:'BOLT_HOLD'
   };
@@ -2344,13 +2670,110 @@
     BREATHING_IN:'#22D3EE', BREATHING_OUT:'#0E7490',
     PAUSE_AFTER_INHALE:'#F472B6', PAUSE_AFTER_EXHALE:'#F472B6',
     HOLD:'#F59E0B', RECOVERY_IN:'#A78BFA', RECOVERY_HOLD:'#A78BFA',
-    RECOVERY_OUT:'#A78BFA', ROUND_COMPLETE:'#34D399', SESSION_COMPLETE:'#34D399',
-    PAUSED:'#F472B6', SLEEPING:'#475569',
+    RECOVERY_OUT:'#A78BFA', ROUND_COMPLETE:'#34D399', STAGE_TRANSITION:'#A78BFA',
+    SESSION_COMPLETE:'#34D399', PAUSED:'#F472B6', SLEEPING:'#475569',
     BOLT_PREP:'#22D3EE', BOLT_HOLD:'#F59E0B'
   };
   var GET_READY_DUR = 3;
   var RECOVERY_BREATH_DUR = 3;
   var ROUND_SUMMARY_DUR   = 3;
+
+  /* ======== App.ModalFocus & App.ConfirmDialog ======== */
+  App.ModalFocus = (function() {
+    var stack = [];
+    function getFocusable(root) {
+      if(!root || !root.querySelectorAll) return [];
+      var els = root.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])');
+      return Array.prototype.slice.call(els || []).filter(function(el) {
+        return !(el.classList && el.classList.contains('hidden')) && !el.hidden;
+      });
+    }
+    function trap(overlayEl) {
+      if(!overlayEl) return;
+      var prev = document.activeElement || null;
+      function onKey(ev) {
+        if(ev.key !== 'Tab') return;
+        var list = getFocusable(overlayEl);
+        if(!list.length) return;
+        var first = list[0], last = list[list.length - 1];
+        if(ev.shiftKey && document.activeElement === first) {
+          ev.preventDefault();
+          if(last && last.focus) last.focus();
+        } else if(!ev.shiftKey && document.activeElement === last) {
+          ev.preventDefault();
+          if(first && first.focus) first.focus();
+        }
+      }
+      overlayEl.addEventListener('keydown', onKey);
+      stack.push({ overlay: overlayEl, prev: prev, onKey: onKey });
+      var list = getFocusable(overlayEl);
+      if(list.length && list[0].focus) {
+        try { list[0].focus({ preventScroll: true }); } catch(e) { try { list[0].focus(); } catch(e2) {} }
+      }
+    }
+    function release(overlayEl) {
+      for(var i = stack.length - 1; i >= 0; i--) {
+        if(!overlayEl || stack[i].overlay === overlayEl) {
+          var item = stack.splice(i, 1)[0];
+          if(item.overlay && item.overlay.removeEventListener) {
+            item.overlay.removeEventListener('keydown', item.onKey);
+          }
+          if(item.prev && item.prev.focus) {
+            try { item.prev.focus({ preventScroll: true }); } catch(e) { try { item.prev.focus(); } catch(e2) {} }
+          }
+          if(overlayEl) break;
+        }
+      }
+    }
+    return { trap: trap, release: release };
+  })();
+
+  App.ConfirmDialog = (function() {
+    function open(opts) {
+      opts = opts || {};
+      var dlg = document.getElementById('app-confirm-dialog');
+      if(!dlg || typeof dlg.showModal !== 'function') {
+        if(opts.fallbackConfirm && typeof confirm === 'function') {
+          var ok = confirm(opts.message || opts.title || 'Confirm?');
+          if(opts.onResult) opts.onResult(ok ? 'confirm' : 'cancel');
+        } else if(opts.onResult) {
+          opts.onResult(opts.defaultTestResult || 'confirm');
+        }
+        return;
+      }
+      var titleEl = document.getElementById('confirm-dialog-title');
+      var msgEl   = document.getElementById('confirm-dialog-msg');
+      var formEl  = document.getElementById('confirm-dialog-actions');
+      if(titleEl) titleEl.textContent = opts.title || 'Confirm Action';
+      if(msgEl)   msgEl.textContent = opts.message || '';
+      if(formEl) {
+        formEl.innerHTML = '';
+        var buttons = opts.buttons || [
+          { label: 'Cancel', value: 'cancel', cls: 'btn btn-secondary', autofocus: true },
+          { label: opts.okLabel || 'Confirm', value: 'confirm', cls: 'btn btn-primary' }
+        ];
+        buttons.forEach(function(b) {
+          var btn = document.createElement('button');
+          btn.type = 'submit';
+          btn.value = b.value;
+          btn.className = b.cls || 'btn btn-secondary';
+          btn.textContent = b.label;
+          if(b.autofocus) btn.setAttribute('autofocus', '');
+          formEl.appendChild(btn);
+        });
+      }
+      dlg.returnValue = '';
+      function onClose() {
+        dlg.removeEventListener('close', onClose);
+        var val = dlg.returnValue || 'cancel';
+        dlg.returnValue = '';
+        if(opts.onResult) opts.onResult(val);
+      }
+      dlg.addEventListener('close', onClose);
+      dlg.showModal();
+    }
+    return { open: open };
+  })();
 
   /* ======== App.Config ======== */
   App.Config = (function() {
@@ -2362,15 +2785,15 @@
       recoveryHold:15, ramp:'off', holdMode:'fixed', breathStyle:'standard',
       voiceMode:'smart', vibration:'on', ambience:'off', ambience2:'off',
       volVoice:90, volCues:70, volAmbience:50, volAmbience2:50,
-      pacer:'on', fullscreen:'off', material:'chrome', autoDim:'on',
+      pacer:'on', fullscreen:'off', material:'chrome', palette:'ocean', autoDim:'on',
       sleepMode:'off', nightOled:'off', flowMode:'off', masterMute:'off'
     };
     var ranges = {
       breathsPerRound:{min:1,max:500}, breathStep:{min:-15,max:20},
-      holdStartTime:{min:0,max:300},
-      holdIncrement:{min:0,max:60},    rounds:{min:1,max:10},
-      inhaleDuration:{min:0.5,max:15}, exhaleDuration:{min:0.5,max:15},
-      pauseAfterInhale:{min:0,max:10}, pauseAfterExhale:{min:0,max:10},
+      holdStartTime:{min:0,max:600},
+      holdIncrement:{min:0,max:120},   rounds:{min:1,max:10},
+      inhaleDuration:{min:0.3,max:15}, exhaleDuration:{min:0.3,max:15},
+      pauseAfterInhale:{min:0,max:30}, pauseAfterExhale:{min:0,max:30},
       recoveryHold:{min:5,max:60},
       volVoice:{min:0,max:100}, volCues:{min:0,max:100}, volAmbience:{min:0,max:100},
       volAmbience2:{min:0,max:100}
@@ -2387,12 +2810,13 @@
       vibration:['on','off'],
       ramp:['off','speedup','slowdown'],
       holdMode:['fixed','adaptive'],
-      breathStyle:['standard','doubleInhale','alternateNostril'],
+      breathStyle:['standard','doubleInhale','alternateNostril','kapalabhati','bhramari'],
       ambience:['off','pranayama','bowls','theta','harmonic','delta','ocean','rain','stream','forest','fire','wind'],
       ambience2:['off','ocean','rain','stream','forest','fire','wind','bowls','theta','harmonic','delta'],
       pacer:['on','off'],
       fullscreen:['on','off'],
       material:['chrome','gold','lava','aurora'],
+      palette:['ocean','ember','forest','amethyst','monochrome'],
       autoDim:['on','off'],
       sleepMode:['off','on'],
       nightOled:['off','on'],
@@ -2437,23 +2861,42 @@
       ambience2:'cfg-ambience2',
       volVoice:'cfg-vol-voice', volCues:'cfg-vol-cues', volAmbience:'cfg-vol-amb',
       volAmbience2:'cfg-vol-amb2',
-      pacer:'cfg-pacer', fullscreen:'cfg-fullscreen', material:'cfg-material', autoDim:'cfg-autodim',
-      sleepMode:'cfg-sleep', nightOled:'cfg-night-oled', flowMode:'cfg-flow'
+      pacer:'cfg-pacer', fullscreen:'cfg-fullscreen', material:'cfg-material', palette:'cfg-palette',
+      autoDim:'cfg-autodim', sleepMode:'cfg-sleep', nightOled:'cfg-night-oled', flowMode:'cfg-flow'
     };
     /* settings the user may adjust while a session is running */
     var LIVE_KEYS = ['voiceMode','vibration','ambience','ambience2','volVoice','volCues',
-                     'volAmbience','volAmbience2','pacer','material','autoDim','sleepMode','nightOled','flowMode','masterMute'];
+                     'volAmbience','volAmbience2','pacer','material','palette','autoDim','sleepMode','nightOled','flowMode','masterMute'];
+    function updateAdaptiveUI() {
+      var isAd = v.holdMode === 'adaptive';
+      var cStart = document.getElementById('card-hold-start');
+      var cIncr  = document.getElementById('card-hold-incr');
+      if(cStart) cStart.classList.toggle('dimmed-card', isAd);
+      if(cIncr)  cIncr.classList.toggle('dimmed-card', isAd);
+      var hint = document.getElementById('adaptive-preview-hint');
+      if(hint) {
+        if(isAd) {
+          var targets = [];
+          for(var r = 1; r <= v.rounds; r++) targets.push(getHoldTarget(r) + 's');
+          hint.textContent = 'Active targets: ' + targets.join(' → ');
+        } else {
+          hint.textContent = 'Scale target to your actual breath capacity';
+        }
+      }
+    }
     function readFromInputs() {
       Object.keys(inputMap).forEach(function(k) {
         var el = document.getElementById(inputMap[k]);
         if(el) v[k] = clamp(k, el.value);
       });
+      updateAdaptiveUI();
     }
     function populateInputs() {
       Object.keys(inputMap).forEach(function(k) {
         var el = document.getElementById(inputMap[k]);
         if(el) el.value = v[k];
       });
+      updateAdaptiveUI();
     }
     function setInputsDisabled(dis) {
       Object.keys(inputMap).forEach(function(k) {
@@ -2461,7 +2904,7 @@
         var el = document.getElementById(inputMap[k]);
         if(el) el.disabled = dis;
       });
-      ['cfg-preset','btn-save-preset','btn-delete-preset'].forEach(function(id) {
+      ['cfg-preset','btn-save-preset','btn-delete-preset','btn-pin-preset'].forEach(function(id) {
         var el = document.getElementById(id);
         if(el) el.disabled = dis;
       });
@@ -2478,7 +2921,6 @@
     }
 
     function getHoldTarget(round) {
-      if(v.holdStartTime === 0 && v.holdIncrement === 0) return 0;
       if(v.holdMode === 'adaptive') {
         var base = App.History ? App.History.recentBest(5) : 0;
         var boltLatest = (App.Bolt && App.Bolt.getLatest) ? App.Bolt.getLatest() : 0;
@@ -2493,7 +2935,9 @@
           var t = v.rounds > 1 ? (round-1)/(v.rounds-1) : 1;
           return Math.max(10, Math.round(finalT * (0.7 + 0.3*t)));
         }
+        return Math.max(30, v.holdStartTime) + (round-1)*(v.holdIncrement || 10);
       }
+      if(v.holdStartTime === 0 && v.holdIncrement === 0) return 0;
       return v.holdStartTime + (round-1)*v.holdIncrement;
     }
 
@@ -2520,7 +2964,7 @@
 
     return { load:load, save:save, readFromInputs:readFromInputs, populateInputs:populateInputs,
              setInputsDisabled:setInputsDisabled, getHoldTarget:getHoldTarget,
-             getBreathsForRound:getBreathsForRound,
+             getBreathsForRound:getBreathsForRound, updateAdaptiveUI:updateAdaptiveUI,
              getRampFactor:getRampFactor, estimateSeconds:estimateSeconds,
              get:function(k){ return v[k]; },
              set:function(k, val){ v[k]=clamp(k,val); } };
@@ -2532,6 +2976,12 @@
       pranayama: {
         breathsPerRound:30, breathStep:0, holdStartTime:60, holdIncrement:15,
         rounds:5, inhaleDuration:1.5, exhaleDuration:1.5,
+        pauseAfterInhale:0, pauseAfterExhale:0,
+        recoveryHold:15, ramp:'off', holdMode:'fixed', breathStyle:'standard'
+      },
+      energize: {
+        breathsPerRound:25, breathStep:0, holdStartTime:45, holdIncrement:15,
+        rounds:3, inhaleDuration:1.2, exhaleDuration:1.2,
         pauseAfterInhale:0, pauseAfterExhale:0,
         recoveryHold:15, ramp:'off', holdMode:'fixed', breathStyle:'standard'
       },
@@ -2570,6 +3020,24 @@
         rounds:1, inhaleDuration:4, exhaleDuration:4,
         pauseAfterInhale:4, pauseAfterExhale:0,
         recoveryHold:15, ramp:'off', holdMode:'fixed', breathStyle:'alternateNostril'
+      },
+      kapalabhati: {
+        breathsPerRound:40, breathStep:0, holdStartTime:45, holdIncrement:15,
+        rounds:3, inhaleDuration:0.6, exhaleDuration:0.4,
+        pauseAfterInhale:0, pauseAfterExhale:0,
+        recoveryHold:15, ramp:'off', holdMode:'fixed', breathStyle:'kapalabhati'
+      },
+      bhramari: {
+        breathsPerRound:12, breathStep:0, holdStartTime:0, holdIncrement:0,
+        rounds:1, inhaleDuration:4, exhaleDuration:8,
+        pauseAfterInhale:0, pauseAfterExhale:1,
+        recoveryHold:15, ramp:'off', holdMode:'fixed', breathStyle:'bhramari'
+      },
+      sleep_winddown: {
+        breathsPerRound:20, breathStep:0, holdStartTime:0, holdIncrement:0,
+        rounds:1, inhaleDuration:4, exhaleDuration:8,
+        pauseAfterInhale:0, pauseAfterExhale:2,
+        recoveryHold:15, ramp:'slowdown', holdMode:'fixed', breathStyle:'standard'
       },
       journey_d1: {
         breathsPerRound:20, breathStep:0, holdStartTime:45, holdIncrement:10,
@@ -2691,7 +3159,14 @@
       return null;
     }
 
-    function apply(value) {
+    function apply(value, keepRoutine) {
+      if(value && value.indexOf('r:') === 0 && App.Routines && App.Routines.activate) {
+        App.Routines.activate(value);
+        return;
+      }
+      if(!keepRoutine && App.Routines && App.Routines.clearActive) {
+        App.Routines.clearActive(true);
+      }
       var p = getPreset(value);
       if(!p) return;
       PARAM_KEYS.forEach(function(k) {
@@ -2704,6 +3179,7 @@
         App.SettingsDrawer.updateSummaryPill();
         App.SettingsDrawer.updatePresetBadge();
       }
+      if(App.Favorites && App.Favorites.renderBar) App.Favorites.renderBar();
     }
 
     function matches(p) {
@@ -2715,6 +3191,10 @@
     }
 
     function detectPreset() {
+      if(App.Routines && App.Routines.getActive) {
+        var act = App.Routines.getActive();
+        if(act) return act.id;
+      }
       for(var name in presets) { if(matches(presets[name])) return name; }
       var custom = loadCustom();
       for(var cname in custom) { if(matches(custom[cname])) return 'c:' + cname; }
@@ -2740,14 +3220,33 @@
       selectEl.appendChild(og);
     }
 
+    var LABEL_FALLBACKS = {
+      pranayama:'Pranayama', energize:'Quick Energize', box:'Box Breathing', fourSevenEight:'4-7-8 Relaxing',
+      a52:'A52 Cadence', coherent:'Coherent Breathing', physio_sigh:'Physiological Sigh',
+      nadi_shodhana:'Nadi Shodhana', kapalabhati:'Kapalabhati', bhramari:'Bhramari Humming',
+      sleep_winddown:'Sleep Wind-Down', apnea_co2:'CO2 Tolerance Table', apnea_o2:'O2 Endurance Table'
+    };
+
+    function getLabelFor(id) {
+      if(!id) return 'Custom';
+      if(id.indexOf('r:') === 0 && App.Routines && App.Routines.get) {
+        var r = App.Routines.get(id);
+        return r ? r.name : 'Routine';
+      }
+      if(id.indexOf('c:') === 0) return id.slice(2);
+      if(selectEl) {
+        var opt = selectEl.querySelector('option[value="' + id + '"]');
+        if(opt && opt.textContent) return opt.textContent.replace(/^✓\s*/, '');
+      }
+      if(LABEL_FALLBACKS[id]) return LABEL_FALLBACKS[id];
+      if(id.indexOf('journey_d') === 0) return 'Journey Day ' + id.slice(9);
+      return id;
+    }
+
     function getCurrentLabel() {
       var name = detectPreset();
-      if(name.indexOf('c:') === 0) return name.slice(2);
-      if(selectEl) {
-        var opt = selectEl.querySelector('option[value="' + (name || '') + '"]');
-        if(opt) return opt.textContent.replace(/^✓\s*/, '');
-      }
-      return name || 'Custom';
+      if(!name) return 'Custom';
+      return getLabelFor(name);
     }
 
     function updateDeleteBtn() {
@@ -2763,17 +3262,19 @@
         App.SettingsDrawer.updatePresetBadge();
         App.SettingsDrawer.updateSummaryPill();
       }
+      if(App.Favorites && App.Favorites.renderBar) App.Favorites.renderBar();
     }
 
     function savePresetFromInputs() {
+      if(App.Routines && App.Routines.clearActive) App.Routines.clearActive(true);
       App.Config.readFromInputs();
       App.Config.save();
       var existing = detectPreset();
-      if(existing && existing.indexOf('c:') !== 0) {
-        alert('These settings already match the built-in preset "' + getCurrentLabel() + '".');
+      if(existing && existing.indexOf('c:') !== 0 && existing.indexOf('r:') !== 0) {
+        if(typeof alert === 'function') alert('These settings already match the built-in preset "' + getCurrentLabel() + '".');
         return;
       }
-      var name = prompt('Preset name:', existing.indexOf('c:') === 0 ? existing.slice(2) : '');
+      var name = typeof prompt === 'function' ? prompt('Preset name:', existing.indexOf('c:') === 0 ? existing.slice(2) : '') : '';
       if(!name) return;
       name = name.trim().slice(0, 24);
       if(!name) return;
@@ -2788,13 +3289,24 @@
 
     function deleteSelectedPreset() {
       if(!selectEl || selectEl.value.indexOf('c:') !== 0) return;
-      var name = selectEl.value.slice(2);
-      if(!confirm('Delete preset "' + name + '"?')) return;
-      var custom = loadCustom();
-      delete custom[name];
-      saveCustom(custom);
-      rebuildCustomOptions();
-      updateSelect();
+      var val = selectEl.value;
+      var name = val.slice(2);
+      function doDelete() {
+        var custom = loadCustom();
+        delete custom[name];
+        saveCustom(custom);
+        if(App.Favorites && App.Favorites.unpin) App.Favorites.unpin(val);
+        rebuildCustomOptions();
+        updateSelect();
+      }
+      if(App.ConfirmDialog) {
+        App.ConfirmDialog.open({
+          title: 'Delete Preset',
+          message: 'Delete custom preset "' + name + '"?',
+          okLabel: 'Delete',
+          onResult: function(res) { if(res === 'confirm') doDelete(); }
+        });
+      } else { doDelete(); }
     }
 
     function init() {
@@ -2808,12 +3320,14 @@
       updateDeleteBtn();
       selectEl.addEventListener('change', function() {
         if(selectEl.value) apply(selectEl.value);
+        else if(App.Routines && App.Routines.clearActive) App.Routines.clearActive();
         updateDeleteBtn();
         if(App.UI && App.UI.refreshIdleTitle) App.UI.refreshIdleTitle();
         if(App.SettingsDrawer) {
           App.SettingsDrawer.updateSummaryPill();
           App.SettingsDrawer.updatePresetBadge();
         }
+        if(App.Favorites && App.Favorites.renderBar) App.Favorites.renderBar();
       });
       if(saveBtn)   saveBtn.addEventListener('click', savePresetFromInputs);
       if(deleteBtn) deleteBtn.addEventListener('click', deleteSelectedPreset);
@@ -2822,6 +3336,9 @@
     return {
       init: init,
       apply: apply,
+      getPreset: getPreset,
+      getAllBuiltInIds: function() { return Object.keys(presets); },
+      getLabelFor: getLabelFor,
       detectPreset: detectPreset,
       updateSelect: updateSelect,
       getCurrentLabel: getCurrentLabel,
@@ -2833,13 +3350,512 @@
     };
   })();
 
+  /* ======== App.Favorites (E2) ======== */
+  App.Favorites = (function() {
+    var SK = 'whm_favorites';
+    var DEFAULT_FAVS = ['pranayama', 'coherent', 'physio_sigh'];
+    var MAX = 4;
+
+    function load() {
+      try {
+        var raw = localStorage.getItem(SK);
+        if(!raw) return DEFAULT_FAVS.slice();
+        var arr = JSON.parse(raw);
+        if(!Array.isArray(arr)) return DEFAULT_FAVS.slice();
+        return arr.slice(0, MAX);
+      } catch(e) { return DEFAULT_FAVS.slice(); }
+    }
+    function save(arr) {
+      try { localStorage.setItem(SK, JSON.stringify((arr || []).slice(0, MAX))); } catch(e) {}
+    }
+    function isPinned(id) {
+      return !!id && load().indexOf(id) !== -1;
+    }
+    function pin(id) {
+      if(!id) return false;
+      var arr = load();
+      if(arr.indexOf(id) !== -1) return true;
+      if(arr.length >= MAX) return false;
+      arr.push(id);
+      save(arr);
+      renderBar();
+      return true;
+    }
+    function unpin(id) {
+      var arr = load().filter(function(x) { return x !== id; });
+      save(arr);
+      renderBar();
+    }
+    function toggle(id) {
+      if(!id) return false;
+      if(isPinned(id)) { unpin(id); return false; }
+      return pin(id);
+    }
+    function updatePinBtn() {
+      var btn = document.getElementById('btn-pin-preset');
+      if(!btn) return;
+      var cur = App.Presets ? App.Presets.detectPreset() : '';
+      var pinned = isPinned(cur);
+      btn.textContent = pinned ? '★' : '☆';
+      btn.classList.toggle('pinned', pinned);
+      btn.disabled = !cur || (App.Session && App.Session.isActive());
+      btn.title = cur ? (pinned ? 'Unpin from home chips' : 'Pin to home chips (max 4)') : 'Save preset first to pin';
+    }
+    function renderBar() {
+      var bar = document.getElementById('favorite-chips-bar');
+      updatePinBtn();
+      if(!bar) return;
+      var st = (App.Session && App.Session.getState) ? App.Session.getState() : STATES.IDLE;
+      bar.classList.toggle('hidden', st !== STATES.IDLE);
+      var favs = load();
+      var activeId = App.Presets ? App.Presets.detectPreset() : '';
+      bar.innerHTML = '';
+      favs.forEach(function(id) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'fav-chip';
+        var isMatch = (id === activeId);
+        btn.setAttribute('aria-pressed', isMatch ? 'true' : 'false');
+        btn.setAttribute('data-fav-id', id);
+        var label = App.Presets ? App.Presets.getLabelFor(id) : id;
+        btn.innerHTML = '<span class="fav-chip-star" aria-hidden="true">' + (id.indexOf('r:') === 0 ? '⛓' : '★') + '</span>' +
+                        '<span>' + label.replace(/</g, '&lt;') + '</span>';
+        btn.addEventListener('click', function() {
+          if(App.Session && App.Session.isActive()) return;
+          if(App.Presets && App.Presets.apply) App.Presets.apply(id);
+          if(App.Presets && App.Presets.updateSelect) App.Presets.updateSelect();
+          if(App.UI && App.UI.render) App.UI.render(STATES.IDLE);
+        });
+        bar.appendChild(btn);
+      });
+    }
+    function init() {
+      var pinBtn = document.getElementById('btn-pin-preset');
+      if(pinBtn) {
+        pinBtn.addEventListener('click', function() {
+          var cur = App.Presets ? App.Presets.detectPreset() : '';
+          if(!cur) return;
+          if(!isPinned(cur) && load().length >= MAX) {
+            var toast = document.getElementById('copy-toast');
+            if(toast) {
+              toast.textContent = 'Max 4 favorites pinned — unpin one first';
+              toast.classList.remove('hidden');
+              setTimeout(function() { toast.classList.add('hidden'); toast.textContent = 'Copied summary to clipboard!'; }, 2200);
+            }
+            return;
+          }
+          toggle(cur);
+        });
+      }
+      renderBar();
+    }
+    return { init: init, load: load, save: save, isPinned: isPinned, pin: pin, unpin: unpin, toggle: toggle, renderBar: renderBar };
+  })();
+
+  /* ======== App.Routines (F2) ======== */
+  App.Routines = (function() {
+    var SK = 'whm_routines';
+    var ACTIVE_SK = 'whm_active_routine';
+    var BUILTIN = {
+      'r:morning_charge': {
+        id: 'r:morning_charge',
+        name: 'Morning Awakening',
+        bridgeSec: 5,
+        builtin: true,
+        stages: [
+          { preset: 'energize',    rounds: 2, breathsPerRound: 25, holdStartTime: 45 },
+          { preset: 'kapalabhati', rounds: 2, breathsPerRound: 35, holdStartTime: 45 },
+          { preset: 'coherent',    rounds: 1, breathsPerRound: 25, holdStartTime: 0  }
+        ]
+      },
+      'r:deep_reset': {
+        id: 'r:deep_reset',
+        name: 'Stress Reset & Coherence',
+        bridgeSec: 5,
+        builtin: true,
+        stages: [
+          { preset: 'physio_sigh',   rounds: 1, breathsPerRound: 10, holdStartTime: 0 },
+          { preset: 'nadi_shodhana', rounds: 1, breathsPerRound: 16, holdStartTime: 0 },
+          { preset: 'coherent',      rounds: 1, breathsPerRound: 30, holdStartTime: 0 }
+        ]
+      },
+      'r:evening_slumber': {
+        id: 'r:evening_slumber',
+        name: 'Deep Evening Downshift',
+        bridgeSec: 5,
+        builtin: true,
+        stages: [
+          { preset: 'nadi_shodhana',  rounds: 1, breathsPerRound: 12, holdStartTime: 0 },
+          { preset: 'bhramari',       rounds: 1, breathsPerRound: 10, holdStartTime: 0 },
+          { preset: 'sleep_winddown', rounds: 1, breathsPerRound: 15, holdStartTime: 0 }
+        ]
+      }
+    };
+    var activeId = null;
+    var draft = { id: '', name: 'Custom Flow', bridgeSec: 5, stages: [
+      { preset: 'pranayama', rounds: 2, breathsPerRound: 25, holdStartTime: 45 },
+      { preset: 'coherent',  rounds: 1, breathsPerRound: 20, holdStartTime: 0  }
+    ]};
+
+    function loadCustom() {
+      try { return JSON.parse(localStorage.getItem(SK)) || {}; } catch(e) { return {}; }
+    }
+    function saveCustomMap(m) {
+      try { localStorage.setItem(SK, JSON.stringify(m)); } catch(e) {}
+    }
+    function get(id) {
+      if(!id) return null;
+      if(BUILTIN[id]) return BUILTIN[id];
+      var custom = loadCustom();
+      return custom[id] || null;
+    }
+    function getAll() {
+      var out = [];
+      Object.keys(BUILTIN).forEach(function(k) { out.push(BUILTIN[k]); });
+      var custom = loadCustom();
+      Object.keys(custom).sort().forEach(function(k) { out.push(custom[k]); });
+      return out;
+    }
+    function getActive() {
+      return activeId ? get(activeId) : null;
+    }
+    function activate(id) {
+      var r = get(id);
+      if(!r || !r.stages || !r.stages.length) return false;
+      activeId = r.id;
+      try { localStorage.setItem(ACTIVE_SK, activeId); } catch(e) {}
+      draft = JSON.parse(JSON.stringify(r));
+      renderBuilderUI();
+      if(App.Presets && App.Presets.updateSelect) App.Presets.updateSelect();
+      if(App.UI && App.UI.refreshIdleTitle) App.UI.refreshIdleTitle();
+      return true;
+    }
+    function clearActive(silent) {
+      activeId = null;
+      try { localStorage.removeItem(ACTIVE_SK); } catch(e) {}
+      updateStatusText();
+      if(!silent && App.Presets && App.Presets.updateSelect) App.Presets.updateSelect();
+    }
+    function saveCustom(obj) {
+      if(!obj || !obj.name || !Array.isArray(obj.stages) || obj.stages.length < 2) return null;
+      var cleanName = String(obj.name).trim().slice(0, 28) || 'Custom Routine';
+      var id = (obj.id && obj.id.indexOf('r:c_') === 0)
+        ? obj.id
+        : ('r:c_' + cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') + '_' + (Date.now() % 10000));
+      var entry = {
+        id: id,
+        name: cleanName,
+        bridgeSec: Math.max(3, Math.min(10, Number(obj.bridgeSec) || 5)),
+        builtin: false,
+        stages: obj.stages.slice(0, 6).map(function(st) {
+          return {
+            preset: st.preset || 'pranayama',
+            rounds: Math.max(1, Math.min(10, Number(st.rounds) || 1)),
+            breathsPerRound: Math.max(1, Math.min(500, Number(st.breathsPerRound) || 20)),
+            holdStartTime: Math.max(0, Math.min(600, Number(st.holdStartTime) || 0))
+          };
+        })
+      };
+      var m = loadCustom();
+      m[id] = entry;
+      saveCustomMap(m);
+      rebuildSelectOptions();
+      activate(id);
+      return entry;
+    }
+    function deleteCustom(id) {
+      if(!id || BUILTIN[id]) return;
+      var m = loadCustom();
+      delete m[id];
+      saveCustomMap(m);
+      if(activeId === id) clearActive(true);
+      if(App.Favorites && App.Favorites.unpin) App.Favorites.unpin(id);
+      rebuildSelectOptions();
+      draft = JSON.parse(JSON.stringify(BUILTIN['r:deep_reset']));
+      renderBuilderUI();
+      if(App.Presets && App.Presets.updateSelect) App.Presets.updateSelect();
+    }
+    function estimateSeconds(routine) {
+      var r = routine || getActive();
+      if(!r || !r.stages) return 0;
+      var total = GET_READY_DUR;
+      r.stages.forEach(function(st, idx) {
+        var p = (App.Presets && App.Presets.getPreset) ? App.Presets.getPreset(st.preset) : null;
+        var inh = p ? p.inhaleDuration : 2;
+        var exh = p ? p.exhaleDuration : 2;
+        var pi  = p ? p.pauseAfterInhale : 0;
+        var pe  = p ? p.pauseAfterExhale : 0;
+        var hIncr = p ? p.holdIncrement : 0;
+        var rec = p ? p.recoveryHold : 15;
+        var rounds = st.rounds || 1;
+        var breaths = st.breathsPerRound || 20;
+        var holdBase = st.holdStartTime !== undefined ? st.holdStartTime : (p ? p.holdStartTime : 0);
+        for(var k = 1; k <= rounds; k++) {
+          total += breaths * (inh + exh + pi + pe);
+          var ht = holdBase > 0 ? (holdBase + (k - 1) * hIncr) : 0;
+          if(ht > 0) total += ht + 2 * RECOVERY_BREATH_DUR + rec;
+          if(k < rounds) total += ROUND_SUMMARY_DUR;
+        }
+        if(idx < r.stages.length - 1) total += (r.bridgeSec || 5);
+      });
+      return total;
+    }
+    function updateStatusText() {
+      var el = document.getElementById('routine-active-status');
+      if(!el) return;
+      var act = getActive();
+      if(act) {
+        var mins = Math.max(1, Math.round(estimateSeconds(act) / 60));
+        el.textContent = 'Active: ' + act.name + ' (' + act.stages.length + ' stages · ~' + mins + 'm)';
+      } else {
+        el.textContent = 'No routine active — select or build 2–6 chained protocols';
+      }
+    }
+    function rebuildSelectOptions() {
+      var all = getAll();
+      var og = document.getElementById('cfg-preset-routines');
+      if(og) {
+        og.innerHTML = '';
+        all.forEach(function(r) {
+          var o = document.createElement('option');
+          o.value = r.id;
+          o.textContent = 'Routine: ' + r.name;
+          og.appendChild(o);
+        });
+      }
+      var rSel = document.getElementById('routine-select');
+      if(rSel) {
+        rSel.innerHTML = '';
+        all.forEach(function(r) {
+          var o = document.createElement('option');
+          o.value = r.id;
+          o.textContent = (r.builtin ? '★ ' : '') + r.name + ' (' + r.stages.length + ' stages)';
+          rSel.appendChild(o);
+        });
+        if(draft && draft.id && get(draft.id)) rSel.value = draft.id;
+      }
+    }
+    function renderBuilderUI() {
+      var rSel = document.getElementById('routine-select');
+      var nameInp = document.getElementById('routine-name-input');
+      var bridgeSel = document.getElementById('routine-bridge-sec');
+      var listEl = document.getElementById('routine-stages-list');
+      var delBtn = document.getElementById('btn-routine-delete');
+      var pinBtn = document.getElementById('btn-routine-pin');
+      updateStatusText();
+      if(rSel && draft.id && get(draft.id)) rSel.value = draft.id;
+      if(nameInp) nameInp.value = draft.name || '';
+      if(bridgeSel) bridgeSel.value = String(draft.bridgeSec || 5);
+      if(delBtn) delBtn.classList.toggle('hidden', !draft.id || !!BUILTIN[draft.id]);
+      if(pinBtn && App.Favorites) {
+        var isP = draft.id && App.Favorites.isPinned(draft.id);
+        pinBtn.textContent = isP ? '★ Pinned' : '☆ Pin';
+      }
+      if(!listEl) return;
+      listEl.innerHTML = '';
+      var presetIds = App.Presets ? App.Presets.getAllBuiltInIds() : ['pranayama','coherent','physio_sigh','nadi_shodhana'];
+      draft.stages.forEach(function(st, idx) {
+        var row = document.createElement('div');
+        row.className = 'routine-stage-row';
+        var head = document.createElement('div');
+        head.className = 'routine-stage-head';
+        var num = document.createElement('span');
+        num.className = 'routine-stage-num';
+        num.textContent = 'Stage ' + (idx + 1);
+        var btns = document.createElement('div');
+        btns.className = 'routine-stage-btns';
+        function mkBtn(txt, title, fn) {
+          var b = document.createElement('button');
+          b.type = 'button'; b.className = 'icon-btn'; b.style.width = '26px'; b.style.height = '26px';
+          b.textContent = txt; b.title = title;
+          b.addEventListener('click', fn);
+          return b;
+        }
+        if(idx > 0) btns.appendChild(mkBtn('↑', 'Move up', function() {
+          var tmp = draft.stages[idx-1]; draft.stages[idx-1] = draft.stages[idx]; draft.stages[idx] = tmp; renderBuilderUI();
+        }));
+        if(idx < draft.stages.length - 1) btns.appendChild(mkBtn('↓', 'Move down', function() {
+          var tmp = draft.stages[idx+1]; draft.stages[idx+1] = draft.stages[idx]; draft.stages[idx] = tmp; renderBuilderUI();
+        }));
+        if(draft.stages.length > 2) btns.appendChild(mkBtn('×', 'Remove stage', function() {
+          draft.stages.splice(idx, 1); renderBuilderUI();
+        }));
+        head.appendChild(num); head.appendChild(btns);
+        row.appendChild(head);
+
+        var sel = document.createElement('select');
+        presetIds.forEach(function(pid) {
+          var o = document.createElement('option');
+          o.value = pid;
+          o.textContent = App.Presets ? App.Presets.getLabelFor(pid) : pid;
+          sel.appendChild(o);
+        });
+        sel.value = st.preset;
+        sel.addEventListener('change', function() {
+          st.preset = sel.value;
+          var p = App.Presets && App.Presets.getPreset(st.preset);
+          if(p) {
+            st.rounds = p.rounds; st.breathsPerRound = p.breathsPerRound; st.holdStartTime = p.holdStartTime;
+          }
+          renderBuilderUI();
+        });
+        row.appendChild(sel);
+
+        var grid = document.createElement('div');
+        grid.className = 'routine-stage-grid';
+        function mkField(lbl, key, min, max) {
+          var wrap = document.createElement('label');
+          wrap.className = 'routine-mini-field';
+          wrap.textContent = lbl;
+          var inp = document.createElement('input');
+          inp.type = 'number'; inp.min = String(min); inp.max = String(max); inp.value = String(st[key]);
+          inp.addEventListener('change', function() {
+            st[key] = Math.max(min, Math.min(max, Number(inp.value) || min));
+          });
+          wrap.appendChild(inp);
+          return wrap;
+        }
+        grid.appendChild(mkField('Rounds', 'rounds', 1, 10));
+        grid.appendChild(mkField('Breaths', 'breathsPerRound', 1, 500));
+        grid.appendChild(mkField('Hold (s)', 'holdStartTime', 0, 600));
+        row.appendChild(grid);
+        listEl.appendChild(row);
+      });
+    }
+    function init() {
+      try {
+        var savedAct = localStorage.getItem(ACTIVE_SK);
+        if(savedAct && get(savedAct)) activeId = savedAct;
+      } catch(e) {}
+      var seed = getActive() || BUILTIN['r:deep_reset'];
+      draft = JSON.parse(JSON.stringify(seed));
+      rebuildSelectOptions();
+      renderBuilderUI();
+
+      var rSel = document.getElementById('routine-select');
+      if(rSel) rSel.addEventListener('change', function() {
+        var r = get(rSel.value);
+        if(r) { draft = JSON.parse(JSON.stringify(r)); renderBuilderUI(); }
+      });
+      var nameInp = document.getElementById('routine-name-input');
+      if(nameInp) nameInp.addEventListener('input', function() { draft.name = nameInp.value; });
+      var bridgeSel = document.getElementById('routine-bridge-sec');
+      if(bridgeSel) bridgeSel.addEventListener('change', function() { draft.bridgeSec = Number(bridgeSel.value) || 5; });
+      var addBtn = document.getElementById('btn-routine-add-stage');
+      if(addBtn) addBtn.addEventListener('click', function() {
+        if(draft.stages.length >= 6) return;
+        draft.stages.push({ preset: 'coherent', rounds: 1, breathsPerRound: 20, holdStartTime: 0 });
+        renderBuilderUI();
+      });
+      var saveBtn = document.getElementById('btn-routine-save');
+      if(saveBtn) saveBtn.addEventListener('click', function() {
+        if(BUILTIN[draft.id]) draft.id = '';
+        saveCustom(draft);
+      });
+      var delBtn = document.getElementById('btn-routine-delete');
+      if(delBtn) delBtn.addEventListener('click', function() {
+        if(draft.id && !BUILTIN[draft.id]) deleteCustom(draft.id);
+      });
+      var useBtn = document.getElementById('btn-routine-use');
+      if(useBtn) useBtn.addEventListener('click', function() {
+        var targetId = draft.id && get(draft.id) ? draft.id : null;
+        if(!targetId || BUILTIN[targetId] === undefined && !get(targetId)) {
+          var saved = saveCustom(draft);
+          targetId = saved && saved.id;
+        } else if(!BUILTIN[targetId]) {
+          var saved2 = saveCustom(draft);
+          targetId = saved2 && saved2.id;
+        }
+        if(targetId) activate(targetId);
+      });
+      var pinBtn = document.getElementById('btn-routine-pin');
+      if(pinBtn) pinBtn.addEventListener('click', function() {
+        if(!draft.id || !get(draft.id)) {
+          var saved = saveCustom(draft);
+          if(saved) draft.id = saved.id;
+        }
+        if(draft.id && App.Favorites) {
+          App.Favorites.toggle(draft.id);
+          renderBuilderUI();
+        }
+      });
+    }
+    return {
+      init: init, get: get, getAll: getAll, getActive: getActive,
+      activate: activate, clearActive: clearActive,
+      saveCustom: saveCustom, deleteCustom: deleteCustom,
+      estimateSeconds: estimateSeconds, rebuildSelectOptions: rebuildSelectOptions,
+      renderBuilderUI: renderBuilderUI
+    };
+  })();
+
   /* ======== App.Theme ======== */
   App.Theme = (function() {
     var SK = 'pranayama_theme';
     var ORDER = ['dark', 'light', 'oled'];
     var LABELS = { dark: 'light', light: 'OLED black', oled: 'dark' };
     var current = 'dark';
+    var currentPalette = 'ocean';
     var btn, icons = {};
+
+    var PALETTE_MAP = {
+      ocean: {
+        dark:  { IN:'#22D3EE', EX:'#0E7490', HOLD:'#F59E0B', REC:'#A78BFA', COMP:'#34D399', PAUSE:'#F472B6' },
+        light: { IN:'#0284C7', EX:'#0369A1', HOLD:'#D97706', REC:'#7C3AED', COMP:'#059669', PAUSE:'#DB2777' }
+      },
+      ember: {
+        dark:  { IN:'#FB923C', EX:'#C2410C', HOLD:'#FBBF24', REC:'#F472B6', COMP:'#34D399', PAUSE:'#FB7185' },
+        light: { IN:'#EA580C', EX:'#9A3412', HOLD:'#B45309', REC:'#DB2777', COMP:'#059669', PAUSE:'#BE123C' }
+      },
+      forest: {
+        dark:  { IN:'#34D399', EX:'#047857', HOLD:'#FBBF24', REC:'#38BDF8', COMP:'#A3E635', PAUSE:'#2DD4BF' },
+        light: { IN:'#059669', EX:'#065F46', HOLD:'#B45309', REC:'#0284C7', COMP:'#4D7C0F', PAUSE:'#0D9488' }
+      },
+      amethyst: {
+        dark:  { IN:'#C084FC', EX:'#7E22CE', HOLD:'#F472B6', REC:'#60A5FA', COMP:'#34D399', PAUSE:'#E879F9' },
+        light: { IN:'#7C3AED', EX:'#5B21B6', HOLD:'#BE185D', REC:'#2563EB', COMP:'#059669', PAUSE:'#A21CAF' }
+      },
+      monochrome: {
+        dark:  { IN:'#E2E8F0', EX:'#64748B', HOLD:'#CBD5E1', REC:'#94A3B8', COMP:'#F8FAFC', PAUSE:'#94A3B8' },
+        light: { IN:'#1E293B', EX:'#475569', HOLD:'#334155', REC:'#64748B', COMP:'#0F172A', PAUSE:'#475569' }
+      }
+    };
+
+    function syncColors() {
+      var p = PALETTE_MAP[currentPalette] || PALETTE_MAP.ocean;
+      var m = (current === 'light') ? p.light : p.dark;
+      COLORS.BREATHING_IN = m.IN;
+      COLORS.BOLT_PREP = m.IN;
+      COLORS.BREATHING_OUT = m.EX;
+      COLORS.HOLD = m.HOLD;
+      COLORS.BOLT_HOLD = m.HOLD;
+      COLORS.RECOVERY_IN = m.REC;
+      COLORS.RECOVERY_HOLD = m.REC;
+      COLORS.RECOVERY_OUT = m.REC;
+      COLORS.STAGE_TRANSITION = m.REC;
+      COLORS.ROUND_COMPLETE = m.COMP;
+      COLORS.SESSION_COMPLETE = m.COMP;
+      COLORS.PAUSE_AFTER_INHALE = m.PAUSE;
+      COLORS.PAUSE_AFTER_EXHALE = m.PAUSE;
+      COLORS.PAUSED = m.PAUSE;
+    }
+
+    function applyPalette(pal, skipRender) {
+      currentPalette = PALETTE_MAP[pal] ? pal : 'ocean';
+      if(currentPalette === 'ocean') {
+        document.documentElement.removeAttribute('data-palette');
+      } else {
+        document.documentElement.setAttribute('data-palette', currentPalette);
+      }
+      if(App.Config && App.Config.get('palette') !== currentPalette) {
+        App.Config.set('palette', currentPalette);
+        App.Config.save();
+      }
+      syncColors();
+      if(!skipRender && App.UI && App.UI.render && App.Session) {
+        App.UI.render(App.Session.getState(), { resuming: true });
+      }
+    }
 
     function apply(theme) {
       current = theme;
@@ -2848,6 +3864,7 @@
       } else {
         document.documentElement.setAttribute('data-theme', theme);
       }
+      syncColors();
       updateToggle();
     }
 
@@ -2897,7 +3914,21 @@
         current = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
       }
       base = current;
+      applyPalette(App.Config ? App.Config.get('palette') : 'ocean', true);
       apply(current);
+      if(window.matchMedia) {
+        var mq = window.matchMedia('(prefers-color-scheme: light)');
+        if(mq && mq.addEventListener) {
+          mq.addEventListener('change', function(ev) {
+            var hasStored = null;
+            try { hasStored = localStorage.getItem(SK); } catch(e) {}
+            if(!hasStored && !autoActive) {
+              base = ev.matches ? 'light' : 'dark';
+              apply(base);
+            }
+          });
+        }
+      }
       // Enable transitions after initial render
       setTimeout(function() { document.documentElement.classList.add('theme-ready'); }, 0);
       // Bind toggle
@@ -2906,7 +3937,8 @@
       setInterval(autoCheck, 60000);
     }
 
-    return { init: init, toggle: toggle, get: function() { return current; },
+    return { init: init, toggle: toggle, apply: apply, applyPalette: applyPalette,
+             get: function() { return current; }, getPalette: function() { return currentPalette; },
              autoCheck: autoCheck };
   })();
 
@@ -2983,13 +4015,21 @@
       if(App.Voice && App.Voice.applyVolume) App.Voice.applyVolume();
     }
 
-    function beep(freq, dur, t, vol) {
+    function beep(freq, dur, t, vol, pan) {
       if(!ctx || isMasterMuted()) return;
       vol = (vol||0.3) * (App.Config.get('volCues') / 100);
       if(vol <= 0) return;
       try {
         var o=ctx.createOscillator(), g=ctx.createGain();
-        o.connect(g); g.connect(getDestination());
+        o.connect(g);
+        if(pan && typeof ctx.createStereoPanner === 'function') {
+          var panner = ctx.createStereoPanner();
+          panner.pan.value = Math.max(-1, Math.min(1, pan));
+          g.connect(panner);
+          panner.connect(getDestination());
+        } else {
+          g.connect(getDestination());
+        }
         o.type='sine'; o.frequency.value=freq;
         t = Math.max(ctx.currentTime, t || ctx.currentTime);
         g.gain.setValueAtTime(0,t);
@@ -3060,6 +4100,11 @@
       },
       playBreathTick: function() {
         if(!ctx) return; resume(); beep(1000,0.04,ctx.currentTime,0.06);
+      },
+      playNostrilTick: function(pan) {
+        if(!ctx) return; resume();
+        var freq = pan < 0 ? 840 : (pan > 0 ? 1160 : 1000);
+        beep(freq, 0.045, ctx.currentTime, 0.075, pan || 0);
       },
       playMilestoneChime: function() {
         playSingingBowl(350, 2.6);
@@ -3167,18 +4212,42 @@
       } catch(e) {}
     }
 
+    var SPEECH_FALLBACK = {
+      breatheIn:'Breathe in', breatheOut:'Breathe out', lastBreath:'Last breath',
+      threeBreathsLeft:'Three breaths left', hold:'Hold your breath', recoveryIn:'Breathe in deeply',
+      recoveryOut:'Let it go', roundComplete:'Round complete', wellDone:'Well done',
+      getReady:'Get ready', ten:'Ten', twenty:'Twenty', pause:'Pause', newRecord:'New record',
+      inhaleLeft:'Inhale left', exhaleRight:'Exhale right', inhaleRight:'Inhale right',
+      exhaleLeft:'Exhale left', humOut:'Hum out', nextStage:'Next stage'
+    };
+
+    function speakFallback(name) {
+      if(typeof window === 'undefined' || !window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') return;
+      var txt = SPEECH_FALLBACK[name];
+      if(!txt) return;
+      try {
+        window.speechSynthesis.cancel();
+        var u = new SpeechSynthesisUtterance(txt);
+        u.rate = 0.88;
+        u.volume = Math.max(0, Math.min(1, App.Config.get('volVoice') / 100));
+        window.speechSynthesis.speak(u);
+      } catch(e) {}
+    }
+
     function speak(name) {
       if(App.Config.get('voiceMode') === 'off') return;
       if(App.Audio && App.Audio.isMasterMuted()) return;
       var c = App.Audio.getCtx();
-      if(!c) return;
+      if(!c) { speakFallback(name); return; }
       App.Audio.resume();
       if(buffers[name]) {
         playBuffer(c, buffers[name], name);
-      } else {
+      } else if(typeof VOICE_CLIPS !== 'undefined' && VOICE_CLIPS[name]) {
         decodeClip(c, name, function(buf) {
           playBuffer(c, buf, name);
         });
+      } else {
+        speakFallback(name);
       }
     }
 
@@ -3234,27 +4303,34 @@
     var rawBuffers = {};
     var pendingNatureCallbacks = {};
 
-    function earlyFetch() {
+    function earlyFetch(forceWarm) {
       if(typeof App === 'undefined' || !App.Config) return;
       var t1 = App.Config.get('ambience'), t2 = App.Config.get('ambience2');
       var priority = [t1, t2].filter(function(t) { return NATURE_TRACKS[t]; });
       var rest = Object.keys(NATURE_TRACKS).filter(function(t) { return priority.indexOf(t) === -1; });
+      var musicUrls = ['./music/active-flow.mp3', './music/deep-retention.mp3'];
 
       function fetchOne(type) {
-        if(!NATURE_TRACKS[type] || rawBuffers[type] || natureBuffers[type]) return Promise.resolve();
+        if(!NATURE_TRACKS[type] || (!forceWarm && (rawBuffers[type] || natureBuffers[type]))) return Promise.resolve();
         return fetch(NATURE_TRACKS[type])
           .then(function(res) { if(res.ok) return res.arrayBuffer(); })
-          .then(function(arr) { if(arr) rawBuffers[type] = arr; })
+          .then(function(arr) { if(arr && !rawBuffers[type]) rawBuffers[type] = arr; })
           .catch(function() {});
+      }
+      function fetchMusicUrl(u) {
+        return fetch(u).then(function(res) { if(res.ok) return res.arrayBuffer(); }).catch(function() {});
       }
 
       Promise.all(priority.map(fetchOne)).then(function() {
         var idx = 0;
         function next() {
-          if(idx >= rest.length) return;
-          fetchOne(rest[idx++]).then(function() {
-            setTimeout(next, 150);
-          });
+          if(idx < rest.length) {
+            fetchOne(rest[idx++]).then(function() {
+              setTimeout(next, 150);
+            });
+          } else {
+            musicUrls.forEach(fetchMusicUrl);
+          }
         }
         setTimeout(next, 300);
       });
@@ -3362,7 +4438,7 @@
         var currentSource = null;
 
         function startBuffer(buf, fadeDur) {
-          if(!running && !previewTimer) return;
+          if(!running && !previewingType) return;
           try {
             var src = c.createBufferSource();
             src.buffer = buf;
@@ -3759,9 +4835,12 @@
       else stop(true);
     }
 
-    /* Preview soundscape outside a session (settings button) */
+    /* Preview soundscape without disturbing an active session's audio or scene (B8) */
     var previewTimer = null;
     var previewingType = null;
+    var previewMaster = null;
+    var previewScene = null;
+    var previewMusic = null;
 
     function preview(targetType, slot) {
       stopPreview();
@@ -3774,30 +4853,34 @@
 
       var isMusic = !!IS_MUSIC[t];
       previewingType = t;
-      running = true;
-      runningKey = 'preview:' + t;
-
-      if(isMusic) {
-        music.start(t);
-      } else if(NATURE_TRACKS[t]) {
-        var c = App.Audio.getCtx();
-        if(c) {
-          try {
-            master = c.createGain();
-            master.gain.setValueAtTime(0.0001, c.currentTime);
-            master.gain.linearRampToValueAtTime(MASTER, c.currentTime + 0.15);
-            var dest = (App.Audio.getDestination && App.Audio.getDestination()) || c.destination;
-            master.connect(dest);
-            scenes = [buildScene(c, t, slot !== undefined ? slot : 0, true)];
-            scenes[0].gain.connect(master);
-          } catch(e) { scenes = []; master = null; running = false; runningKey = null; }
-        }
-      }
-
       clearTimeout(previewTimer);
       previewTimer = setTimeout(function() {
         stopPreview();
       }, 6000);
+      if(running) duck(true);
+
+      if(isMusic) {
+        try {
+          previewMusic = new Audio(MUSIC_TRACKS.active);
+          previewMusic.loop = true;
+          previewMusic.volume = Math.max(0.5, App.Config.get('volAmbience') / 100);
+          previewMusic.play().catch(function(){});
+        } catch(e) {}
+      } else if(NATURE_TRACKS[t]) {
+        var c = App.Audio.getCtx();
+        if(c) {
+          try {
+            previewMaster = c.createGain();
+            previewMaster.gain.setValueAtTime(0.0001, c.currentTime);
+            previewMaster.gain.linearRampToValueAtTime(MASTER, c.currentTime + 0.15);
+            var dest = (App.Audio.getDestination && App.Audio.getDestination()) || c.destination;
+            previewMaster.connect(dest);
+            previewScene = buildScene(c, t, slot !== undefined ? slot : 0, true);
+            previewScene.gain.connect(previewMaster);
+          } catch(e) { previewScene = null; previewMaster = null; }
+        }
+      }
+
       return true;
     }
 
@@ -3813,7 +4896,20 @@
         previewTimer = null;
       }
       previewingType = null;
-      stop(true);
+      if(previewMusic) {
+        try { previewMusic.pause(); previewMusic.src = ''; } catch(e) {}
+        previewMusic = null;
+      }
+      if(previewScene) {
+        try { if(previewScene.stop) previewScene.stop(); } catch(e) {}
+        (previewScene.extras || []).forEach(function(x) { try { x.stop(); } catch(e) {} });
+        previewScene = null;
+      }
+      if(previewMaster) {
+        try { previewMaster.disconnect(); } catch(e) {}
+        previewMaster = null;
+      }
+      if(running) duck(false);
       document.querySelectorAll('.amb-preview').forEach(function(b) { b.classList.remove('playing'); });
       if(App.Session && App.Session.isActive() && App.Session.getState() !== STATES.PAUSED) {
         sync();
@@ -3831,6 +4927,34 @@
      without a voice cue on every breath. */
   App.Pacer = (function() {
     var noiseBuf = null;
+    var activeNodes = [];
+    function trackNode(src, g) {
+      activeNodes.push({ src: src, g: g });
+      if(src) {
+        src.onended = function() {
+          activeNodes = activeNodes.filter(function(item) { return item.src !== src; });
+        };
+      }
+    }
+    function stop() {
+      activeNodes.forEach(function(item) {
+        try { if(item.g && item.g.gain) item.g.gain.value = 0; } catch(e) {}
+        try { if(item.src) item.src.stop(); } catch(e) {}
+        try { if(item.g) item.g.disconnect(); } catch(e) {}
+      });
+      activeNodes = [];
+    }
+    function connectOut(c, g, pan) {
+      var dest = (App.Audio.getDestination && App.Audio.getDestination()) || c.destination;
+      if(pan && typeof c.createStereoPanner === 'function') {
+        var panner = c.createStereoPanner();
+        panner.pan.value = Math.max(-1, Math.min(1, pan));
+        g.connect(panner);
+        panner.connect(dest);
+      } else {
+        g.connect(dest);
+      }
+    }
     function ensureBuf(c) {
       if(noiseBuf) return noiseBuf;
       var b = c.createBuffer(1, c.sampleRate, c.sampleRate);
@@ -3839,7 +4963,7 @@
       noiseBuf = b;
       return b;
     }
-    function play(isIn, durMs) {
+    function play(isIn, durMs, pan) {
       if(App.Config.get('pacer') !== 'on') return;
       if(App.Audio && App.Audio.isMasterMuted()) return;
       var c = App.Audio.getCtx();
@@ -3848,7 +4972,7 @@
       var vol = 0.22 * (App.Config.get('volCues') / 100);
       if(vol <= 0) return;
       try {
-        var dur = Math.max(0.4, durMs / 1000);
+        var dur = Math.max(0.25, durMs / 1000);
         var t = Math.max(c.currentTime, c.currentTime + 0.005);
         var src = c.createBufferSource();
         src.buffer = ensureBuf(c); src.loop = true;
@@ -3862,8 +4986,8 @@
         g.gain.setValueAtTime(vol, t + dur*0.7);
         g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
         src.connect(bp); bp.connect(g);
-        var dest = (App.Audio.getDestination && App.Audio.getDestination()) || c.destination;
-        g.connect(dest);
+        connectOut(c, g, pan);
+        trackNode(src, g);
         src.start(t); src.stop(t + dur + 0.05);
       } catch(e) {}
     }
@@ -3890,12 +5014,71 @@
         g.gain.setValueAtTime(vol, t + dur*0.65);
         g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
         src.connect(bp); bp.connect(g);
-        var dest = (App.Audio.getDestination && App.Audio.getDestination()) || c.destination;
-        g.connect(dest);
+        connectOut(c, g, 0);
+        trackNode(src, g);
         src.start(t); src.stop(t + dur + 0.05);
       } catch(e) {}
     }
-    return { play:play, playSip:playSip };
+    function playPump(durMs) {
+      if(App.Config.get('pacer') !== 'on') return;
+      if(App.Audio && App.Audio.isMasterMuted()) return;
+      var c = App.Audio.getCtx();
+      if(!c) return;
+      App.Audio.resume();
+      var vol = 0.30 * (App.Config.get('volCues') / 100);
+      if(vol <= 0) return;
+      try {
+        var dur = Math.max(0.18, Math.min(0.5, (durMs || 350) / 1000));
+        var t = Math.max(c.currentTime, c.currentTime + 0.005);
+        var src = c.createBufferSource();
+        src.buffer = ensureBuf(c); src.loop = true;
+        var bp = c.createBiquadFilter();
+        bp.type = 'bandpass'; bp.Q.value = 1.8;
+        bp.frequency.setValueAtTime(680, t);
+        bp.frequency.exponentialRampToValueAtTime(260, t + dur);
+        var g = c.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.linearRampToValueAtTime(vol, t + 0.03);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        src.connect(bp); bp.connect(g);
+        connectOut(c, g, 0);
+        trackNode(src, g);
+        src.start(t); src.stop(t + dur + 0.03);
+      } catch(e) {}
+    }
+    function playHum(durMs) {
+      if(App.Config.get('pacer') !== 'on') return;
+      if(App.Audio && App.Audio.isMasterMuted()) return;
+      var c = App.Audio.getCtx();
+      if(!c) return;
+      App.Audio.resume();
+      var vol = 0.16 * (App.Config.get('volCues') / 100);
+      if(vol <= 0) return;
+      try {
+        var dur = Math.max(1.0, (durMs || 8000) / 1000);
+        var t = Math.max(c.currentTime, c.currentTime + 0.005);
+        var lp = c.createBiquadFilter();
+        lp.type = 'lowpass'; lp.frequency.value = 650;
+        var masterG = c.createGain();
+        masterG.gain.setValueAtTime(0.0001, t);
+        masterG.gain.linearRampToValueAtTime(vol, t + Math.min(0.6, dur * 0.15));
+        masterG.gain.setValueAtTime(vol, Math.max(t + 0.6, t + dur - 0.5));
+        masterG.gain.linearRampToValueAtTime(0.0001, t + dur);
+        lp.connect(masterG);
+        connectOut(c, masterG, 0);
+        [136.1, 272.2, 408.3].forEach(function(freq, idx) {
+          var osc = c.createOscillator();
+          var og = c.createGain();
+          osc.type = idx === 0 ? 'sine' : 'triangle';
+          osc.frequency.value = freq;
+          og.gain.value = idx === 0 ? 0.68 : (idx === 1 ? 0.22 : 0.10);
+          osc.connect(og); og.connect(lp);
+          trackNode(osc, masterG);
+          osc.start(t); osc.stop(t + dur + 0.05);
+        });
+      } catch(e) {}
+    }
+    return { play:play, playSip:playSip, playPump:playPump, playHum:playHum, stop:stop };
   })();
 
   /* ======== App.Scene ========
@@ -4103,6 +5286,238 @@
     return { request:request, release:release };
   })();
 
+  /* ======== App.Biofeedback (F5 — Web Bluetooth HR & HRV) ======== */
+  App.Biofeedback = (function() {
+    var device = null, server = null, charac = null;
+    var connected = false, deviceName = '';
+    var currentBpm = 0, rrWindow = [], rmssd = 0, coherence = 0;
+    var sessSamples = [], holdActive = false, holdEntryBpm = 0, holdMinBpm = 0, maxHoldDrop = 0;
+
+    function isSupported() {
+      return !!(typeof navigator !== 'undefined' && navigator.bluetooth && typeof navigator.bluetooth.requestDevice === 'function');
+    }
+
+    function parseHeartRate(dv) {
+      if(!dv || dv.byteLength < 2) return null;
+      var flags = dv.getUint8(0);
+      var is16Bit = (flags & 0x01) !== 0;
+      var hasEnergy = (flags & 0x08) !== 0;
+      var hasRR = (flags & 0x10) !== 0;
+      var offset = 1;
+      var bpm = is16Bit ? dv.getUint16(offset, true) : dv.getUint8(offset);
+      offset += is16Bit ? 2 : 1;
+      if(hasEnergy) offset += 2;
+      var rrs = [];
+      if(hasRR) {
+        while(offset + 1 < dv.byteLength) {
+          var rawRR = dv.getUint16(offset, true);
+          rrs.push((rawRR / 1024) * 1000);
+          offset += 2;
+        }
+      }
+      return { bpm: bpm, rrs: rrs };
+    }
+
+    function computeHRVMetrics() {
+      if(rrWindow.length < 4) { rmssd = 0; coherence = 0; return; }
+      var sqSum = 0, count = 0;
+      var minRR = Infinity, maxRR = 0;
+      for(var i = 1; i < rrWindow.length; i++) {
+        var diff = rrWindow[i] - rrWindow[i - 1];
+        sqSum += diff * diff;
+        count++;
+      }
+      for(var j = 0; j < rrWindow.length; j++) {
+        if(rrWindow[j] < minRR) minRR = rrWindow[j];
+        if(rrWindow[j] > maxRR) maxRR = rrWindow[j];
+      }
+      rmssd = count > 0 ? Math.round(Math.sqrt(sqSum / count)) : 0;
+      /* Coherence heuristic: smooth RSA peak-to-trough swing (50-240ms range) with low erratic jitter */
+      var swing = Math.max(0, maxRR - minRR);
+      var signChanges = 0;
+      for(var k = 2; k < rrWindow.length; k++) {
+        var d1 = rrWindow[k - 1] - rrWindow[k - 2];
+        var d2 = rrWindow[k] - rrWindow[k - 1];
+        if((d1 > 4 && d2 < -4) || (d1 < -4 && d2 > 4)) signChanges++;
+      }
+      var expectedCycles = Math.max(1, rrWindow.length / 8);
+      var smoothness = Math.max(0.2, 1 - Math.abs(signChanges - expectedCycles * 2) / Math.max(4, rrWindow.length));
+      var ampScore = Math.min(1, swing / 180);
+      coherence = Math.min(100, Math.max(0, Math.round((ampScore * 0.65 + smoothness * 0.35) * 100)));
+    }
+
+    function ingestPacket(parsed) {
+      if(!parsed || !parsed.bpm) return;
+      currentBpm = parsed.bpm;
+      if(parsed.rrs && parsed.rrs.length) {
+        parsed.rrs.forEach(function(rr) {
+          if(rr < 300 || rr > 2200) return;
+          if(rrWindow.length > 0) {
+            var prev = rrWindow[rrWindow.length - 1];
+            if(Math.abs(rr - prev) / prev > 0.28) return; /* artifact filter */
+          }
+          rrWindow.push(rr);
+          if(rrWindow.length > 60) rrWindow.shift();
+        });
+        computeHRVMetrics();
+      }
+      if(App.Session && App.Session.isActive && App.Session.isActive()) {
+        sessSamples.push(currentBpm);
+        if(holdActive && currentBpm > 0) {
+          if(holdMinBpm === 0 || currentBpm < holdMinBpm) holdMinBpm = currentBpm;
+        }
+      }
+      updateUI();
+    }
+
+    function onSessionStart() {
+      sessSamples = [];
+      holdActive = false; holdEntryBpm = 0; holdMinBpm = 0; maxHoldDrop = 0;
+      updateUI();
+    }
+    function onHoldStart() {
+      holdActive = true;
+      holdEntryBpm = currentBpm;
+      holdMinBpm = currentBpm;
+      updateUI();
+    }
+    function onHoldEnd() {
+      if(holdActive && holdEntryBpm > 0 && holdMinBpm > 0) {
+        var drop = Math.max(0, holdEntryBpm - holdMinBpm);
+        if(drop > maxHoldDrop) maxHoldDrop = drop;
+      }
+      holdActive = false;
+      updateUI();
+    }
+    function onSessionEnd() {
+      onHoldEnd();
+      if(!sessSamples.length) return null;
+      var sum = 0, minB = Infinity, maxB = 0;
+      for(var i = 0; i < sessSamples.length; i++) {
+        var b = sessSamples[i];
+        sum += b;
+        if(b < minB) minB = b;
+        if(b > maxB) maxB = b;
+      }
+      return {
+        avgBpm: Math.round(sum / sessSamples.length),
+        minBpm: minB === Infinity ? 0 : minB,
+        maxBpm: maxB,
+        maxHoldDrop: Math.round(maxHoldDrop),
+        rmssd: rmssd,
+        coherence: coherence,
+        samples: sessSamples.length
+      };
+    }
+
+    function updateUI() {
+      var btn = document.getElementById('hr-connect-btn');
+      var lbl = document.getElementById('hr-live-bpm');
+      var status = document.getElementById('hr-conn-status');
+      var grid = document.getElementById('hr-metrics-grid');
+      var note = document.getElementById('hr-note');
+      var actBtn = document.getElementById('hr-action-btn');
+      var pBpm = document.getElementById('hr-pop-bpm');
+      var pRmssd = document.getElementById('hr-pop-rmssd');
+      var pCoh = document.getElementById('hr-pop-coh');
+      var holdBadge = document.getElementById('hr-hold-badge');
+
+      if(btn) btn.classList.toggle('connected', connected);
+      if(lbl) lbl.textContent = connected && currentBpm > 0 ? String(currentBpm) : (connected ? 'BLE' : 'HR');
+      if(status) status.textContent = connected ? ('Connected: ' + (deviceName || 'BLE Strap')) : 'Disconnected';
+      if(grid) grid.classList.toggle('hidden', !connected);
+      if(pBpm) pBpm.textContent = currentBpm > 0 ? String(currentBpm) : '–';
+      if(pRmssd) pRmssd.textContent = rmssd > 0 ? (rmssd + 'ms') : '–';
+      if(pCoh) pCoh.textContent = coherence > 0 ? (coherence + '%') : '–';
+      if(actBtn) {
+        if(!isSupported()) {
+          actBtn.textContent = 'Unavailable';
+          actBtn.disabled = true;
+        } else {
+          actBtn.disabled = false;
+          actBtn.textContent = connected ? 'Disconnect' : 'Connect Sensor';
+        }
+      }
+      if(note) {
+        if(!isSupported()) {
+          note.textContent = 'Web Bluetooth requires Chrome, Edge, or Android browser and a standard BLE Heart Rate monitor.';
+        } else if(connected) {
+          note.textContent = 'Live heart rate & RR-interval HRV streaming. Diving-reflex drops are tracked automatically during holds.';
+        } else {
+          note.textContent = 'Pair a Bluetooth Low Energy heart rate strap or watch to track Diving Reflex & HRV.';
+        }
+      }
+      if(holdBadge) {
+        var st = (App.Session && App.Session.getState) ? App.Session.getState() : STATES.IDLE;
+        var showHold = connected && currentBpm > 0 && (st === STATES.HOLD || st === STATES.BOLT_HOLD);
+        holdBadge.classList.toggle('hidden', !showHold);
+        if(showHold) {
+          var dropNow = (holdEntryBpm > 0 && currentBpm < holdEntryBpm) ? (holdEntryBpm - currentBpm) : 0;
+          holdBadge.textContent = '♥ ' + currentBpm + ' BPM' + (dropNow >= 2 ? (' · −' + dropNow + ' Diving Reflex') : '');
+        }
+      }
+    }
+
+    function connect() {
+      if(!isSupported()) { updateUI(); return Promise.resolve(false); }
+      return navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] })
+        .then(function(dev) {
+          device = dev;
+          deviceName = dev.name || 'HR Sensor';
+          dev.addEventListener('gattserverdisconnected', function() {
+            connected = false; currentBpm = 0; updateUI();
+          });
+          return dev.gatt.connect();
+        })
+        .then(function(srv) {
+          server = srv;
+          return srv.getPrimaryService('heart_rate');
+        })
+        .then(function(svc) {
+          return svc.getCharacteristic('heart_rate_measurement');
+        })
+        .then(function(ch) {
+          charac = ch;
+          ch.addEventListener('characteristicvaluechanged', function(ev) {
+            ingestPacket(parseHeartRate(ev.target.value));
+          });
+          return ch.startNotifications();
+        })
+        .then(function() {
+          connected = true;
+          updateUI();
+          return true;
+        })
+        .catch(function() {
+          connected = false;
+          updateUI();
+          return false;
+        });
+    }
+
+    function disconnect() {
+      connected = false;
+      currentBpm = 0; rrWindow = []; rmssd = 0; coherence = 0;
+      try { if(device && device.gatt && device.gatt.connected) device.gatt.disconnect(); } catch(e) {}
+      updateUI();
+    }
+
+    return {
+      isSupported: isSupported,
+      isConnected: function() { return connected; },
+      connect: connect,
+      disconnect: disconnect,
+      parseHeartRate: parseHeartRate,
+      ingestPacket: ingestPacket,
+      onSessionStart: onSessionStart,
+      onHoldStart: onHoldStart,
+      onHoldEnd: onHoldEnd,
+      onSessionEnd: onSessionEnd,
+      updateUI: updateUI,
+      getCurrent: function() { return { connected: connected, bpm: currentBpm, rmssd: rmssd, coherence: coherence }; }
+    };
+  })();
+
   /* ======== App.Bolt ========
      Body Oxygen Level Test (CO2 Tolerance Baseline):
      Resting breath-hold after a gentle nasal exhale until the first definite urge to breathe. */
@@ -4266,6 +5681,20 @@
       }
       return streak;
     }
+    function deleteSession(ts) {
+      var all = loadAll();
+      var idx = -1;
+      for(var i = all.length - 1; i >= 0; i--) {
+        if(all[i] && all[i].ts === ts) { idx = i; break; }
+      }
+      if(idx === -1) return false;
+      all.splice(idx, 1);
+      try { localStorage.setItem(SK, JSON.stringify(all)); } catch(e) {}
+      return true;
+    }
+    function clearAll() {
+      try { localStorage.removeItem(SK); } catch(e) {}
+    }
     function exportData() {
       var all = loadAll();
       var achievements = [];
@@ -4278,15 +5707,25 @@
       try { journeyDone = JSON.parse(localStorage.getItem('whm_journey_done')) || {}; } catch(e) {}
       var boltHistory = [];
       try { boltHistory = JSON.parse(localStorage.getItem('whm_bolt_history')) || []; } catch(e) {}
+      var favorites = [];
+      try { favorites = JSON.parse(localStorage.getItem('whm_favorites')) || []; } catch(e) {}
+      var routines = {};
+      try { routines = JSON.parse(localStorage.getItem('whm_routines')) || {}; } catch(e) {}
+      var theme = (App.Theme && App.Theme.get) ? App.Theme.get() : 'dark';
+      var palette = (App.Config && App.Config.get) ? App.Config.get('palette') : 'ocean';
       var payload = {
-        version: 3,
+        version: 4,
         exportedAt: new Date().toISOString(),
         history: all,
         achievements: achievements,
         config: config,
         customPresets: customPresets,
         journeyDone: journeyDone,
-        boltHistory: boltHistory
+        boltHistory: boltHistory,
+        favorites: favorites,
+        routines: routines,
+        theme: theme,
+        palette: palette
       };
       var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       var url = URL.createObjectURL(blob);
@@ -4298,41 +5737,95 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     }
-    function importData(jsonString) {
+    function mergeByTs(existingArr, incomingArr, maxLen) {
+      var map = {};
+      (existingArr || []).forEach(function(item) { if(item && item.ts) map[item.ts] = item; });
+      (incomingArr || []).forEach(function(item) { if(item && item.ts) map[item.ts] = item; });
+      var out = Object.keys(map).sort(function(a, b) { return Number(a) - Number(b); }).map(function(k) { return map[k]; });
+      return out.slice(-maxLen);
+    }
+    function importData(jsonString, mode) {
       try {
         var data = JSON.parse(jsonString);
-        if(!data || (!data.history && !Array.isArray(data))) throw new Error('Invalid format: missing history data');
+        if(!data || (!Array.isArray(data.history) && !Array.isArray(data))) throw new Error('Invalid format: missing history data');
+        var isMerge = mode === 'merge';
         var hist = Array.isArray(data) ? data : (data.history || []);
-        if(Array.isArray(hist) && hist.length > 0) {
-          localStorage.setItem(SK, JSON.stringify(hist.slice(-MAX)));
+        if(Array.isArray(hist)) {
+          var finalHist = isMerge ? mergeByTs(loadAll(), hist, MAX) : hist.slice(-MAX);
+          localStorage.setItem(SK, JSON.stringify(finalHist));
         }
         if(data.achievements && Array.isArray(data.achievements)) {
-          localStorage.setItem('whm_achievements', JSON.stringify(data.achievements));
+          var ach = data.achievements;
+          if(isMerge) {
+            var curA = [];
+            try { curA = JSON.parse(localStorage.getItem('whm_achievements')) || []; } catch(e) {}
+            ach = curA.slice();
+            data.achievements.forEach(function(id) { if(ach.indexOf(id) === -1) ach.push(id); });
+          }
+          localStorage.setItem('whm_achievements', JSON.stringify(ach));
         }
         if(data.config && typeof data.config === 'object') {
           localStorage.setItem('whm_config', JSON.stringify(data.config));
         }
         if(data.customPresets && typeof data.customPresets === 'object') {
-          localStorage.setItem('whm_custom_presets', JSON.stringify(data.customPresets));
+          var cp = data.customPresets;
+          if(isMerge) {
+            var curCp = {};
+            try { curCp = JSON.parse(localStorage.getItem('whm_custom_presets')) || {}; } catch(e) {}
+            cp = Object.assign({}, curCp, cp);
+          }
+          localStorage.setItem('whm_custom_presets', JSON.stringify(cp));
         }
         if(data.journeyDone && typeof data.journeyDone === 'object') {
-          localStorage.setItem('whm_journey_done', JSON.stringify(data.journeyDone));
+          var jd = data.journeyDone;
+          if(isMerge) {
+            var curJd = {};
+            try { curJd = JSON.parse(localStorage.getItem('whm_journey_done')) || {}; } catch(e) {}
+            jd = Object.assign({}, curJd, jd);
+          }
+          localStorage.setItem('whm_journey_done', JSON.stringify(jd));
         }
         if(data.boltHistory && Array.isArray(data.boltHistory)) {
-          localStorage.setItem('whm_bolt_history', JSON.stringify(data.boltHistory.slice(-100)));
+          var curB = [];
+          try { curB = JSON.parse(localStorage.getItem('whm_bolt_history')) || []; } catch(e) {}
+          var finalB = isMerge ? mergeByTs(curB, data.boltHistory, 100) : data.boltHistory.slice(-100);
+          localStorage.setItem('whm_bolt_history', JSON.stringify(finalB));
+        }
+        if(data.favorites && Array.isArray(data.favorites)) {
+          localStorage.setItem('whm_favorites', JSON.stringify(data.favorites.slice(0, 4)));
+        }
+        if(data.routines && typeof data.routines === 'object') {
+          var rt = data.routines;
+          if(isMerge) {
+            var curRt = {};
+            try { curRt = JSON.parse(localStorage.getItem('whm_routines')) || {}; } catch(e) {}
+            rt = Object.assign({}, curRt, rt);
+          }
+          localStorage.setItem('whm_routines', JSON.stringify(rt));
+        }
+        if(data.theme && App.Theme && App.Theme.apply) {
+          try { localStorage.setItem('pranayama_theme', data.theme); } catch(e) {}
+          App.Theme.apply(data.theme);
         }
         if(App.Config) {
           App.Config.load();
+          if(data.palette) { App.Config.set('palette', data.palette); App.Config.save(); }
           App.Config.populateInputs();
+          if(App.Theme && App.Theme.applyPalette) App.Theme.applyPalette(App.Config.get('palette'));
         }
         if(App.Bolt && App.Bolt.updateSettingsHint) {
           App.Bolt.updateSettingsHint();
+        }
+        if(App.Routines && App.Routines.rebuildSelectOptions) {
+          App.Routines.rebuildSelectOptions();
+          App.Routines.renderBuilderUI();
         }
         if(App.Presets) {
           if(App.Presets.rebuildCustomOptions) App.Presets.rebuildCustomOptions();
           if(App.Presets.updateJourneyLabels) App.Presets.updateJourneyLabels();
           if(App.Presets.updateSelect) App.Presets.updateSelect();
         }
+        if(App.Favorites && App.Favorites.renderBar) App.Favorites.renderBar();
         return { success: true, count: hist.length };
       } catch(e) {
         return { success: false, error: e.message };
@@ -4341,6 +5834,7 @@
     return { record:record, stats:stats, bestHold:bestHold,
              recentBest:recentBest, setLastFeeling:setLastFeeling,
              setLastSleep:setLastSleep, getStreak:getStreak,
+             deleteSession:deleteSession, clearAll:clearAll,
              exportData:exportData, importData:importData };
   })();
 
@@ -4361,7 +5855,8 @@
       { id: 'bolt_high',     title: 'CO2 Resilient',        desc: 'Hold past 40s to first urge (Elite CO2)',icon: '🛡️' },
       { id: 'sessions_10',   title: 'Consistent Warrior',   desc: 'Complete 10 total breathing sessions',   icon: '🥉' },
       { id: 'sessions_50',   title: 'Breath Alchemist',     desc: 'Complete 50 total breathing sessions',   icon: '🥇' },
-      { id: 'night_owl',     title: 'Zen Slumber',          desc: 'Complete a relaxing session in Sleep Mode',icon: '🌙' }
+      { id: 'night_owl',     title: 'Zen Slumber',          desc: 'Complete a relaxing session in Sleep Mode',icon: '🌙' },
+      { id: 'bio_diver',     title: 'Mammalian Diver',      desc: 'Trigger a 10+ BPM diving-reflex drop during a hold', icon: '🐬' }
     ];
 
     function loadUnlocked() {
@@ -4433,6 +5928,7 @@
       tryUnlock('sessions_10', ctx.totalSessions >= 10);
       tryUnlock('sessions_50', ctx.totalSessions >= 50);
       tryUnlock('night_owl', !!ctx.isSleep);
+      tryUnlock('bio_diver', (ctx.maxHoldDrop || 0) >= 10);
 
       return newlyUnlocked;
     }
@@ -4911,8 +6407,17 @@
       if(!enabled) return;
 
       var st = (window.App && App.Session) ? App.Session.getState() : '';
+      var hasModalOpen = ['disclaimer-overlay','stats-overlay','victory-overlay','bolt-overlay'].some(function(id) {
+        var el = document.getElementById(id);
+        return el && !el.classList.contains('hidden');
+      });
+      if(hasModalOpen && (nowMs - lastRenderT) < 400) {
+        rafId = requestAnimationFrame(frame);
+        return;
+      }
       var isStatic = (st === STATES.HOLD || st === STATES.SLEEPING || st === STATES.PAUSED);
-      if(isStatic && (nowMs - lastRenderT) < 33) {
+      var isIdle = (st === STATES.IDLE || st === STATES.SESSION_COMPLETE);
+      if((isStatic && (nowMs - lastRenderT) < 33) || (isIdle && (nowMs - lastRenderT) < 42)) {
         rafId = requestAnimationFrame(frame);
         return;
       }
@@ -5144,7 +6649,7 @@
   App.Session = (function() {
     var state='IDLE', currentRound=0, breathCount=0;
     var holdAchieved=0, holdTarget=0;
-    var stateBeforePause=null, roundHolds=[], roundTargets=[], sessionStartMs=0;
+    var stateBeforePause=null, roundHolds=[], roundTargets=[], roundBreaths=[], sessionStartMs=0;
     var actualBreathsCompleted=0, sipTriggered=false;
     var roundUrges=[], urgeMarked=false, urgeTime=0;
     var prevBestEver=0, prevSessionBest=0, newRecord=false;
@@ -5152,6 +6657,58 @@
     var lastMilestoneSec=0, ghostSec=0;
     var roundGhostOvertaken=false, sessionGhostOvertaken=false;
     var flowInSyncMs=0, flowTotalMs=0, flowTouchActive=false, flowTouchEvents=0;
+    var lastRoundSummary=null, lastSessionEntry=null;
+    var routineObj=null, routineStages=null, routineStageIdx=0, routineStageSummaries=[], savedPreRoutineCfg=null;
+    var stageStartBreaths=0, stageStartHoldIdx=0;
+
+    function isActive() {
+      return state !== STATES.IDLE && state !== STATES.SESSION_COMPLETE;
+    }
+
+    function snapshotConfig() {
+      var keys = ['breathsPerRound','breathStep','holdStartTime','holdIncrement','rounds',
+                  'inhaleDuration','exhaleDuration','pauseAfterInhale','pauseAfterExhale',
+                  'recoveryHold','ramp','holdMode','breathStyle'];
+      var snap = {};
+      keys.forEach(function(k) { snap[k] = App.Config.get(k); });
+      return snap;
+    }
+
+    function applyConfigSnapshot(snap) {
+      if(!snap) return;
+      Object.keys(snap).forEach(function(k) { App.Config.set(k, snap[k]); });
+      App.Config.populateInputs();
+    }
+
+    function applyStageConfig(st) {
+      if(!st) return;
+      var p = (App.Presets && App.Presets.getPreset) ? App.Presets.getPreset(st.preset) : null;
+      if(p) {
+        Object.keys(p).forEach(function(k) { App.Config.set(k, p[k]); });
+      }
+      if(st.rounds !== undefined) App.Config.set('rounds', st.rounds);
+      if(st.breathsPerRound !== undefined) App.Config.set('breathsPerRound', st.breathsPerRound);
+      if(st.holdStartTime !== undefined) {
+        App.Config.set('holdStartTime', st.holdStartTime);
+        if(st.holdStartTime === 0) App.Config.set('holdIncrement', 0);
+      }
+      App.Config.set('holdMode', 'fixed');
+    }
+
+    function restorePreRoutineConfig() {
+      if(savedPreRoutineCfg) {
+        applyConfigSnapshot(savedPreRoutineCfg);
+        savedPreRoutineCfg = null;
+      }
+      routineObj = null; routineStages = null; routineStageIdx = 0; routineStageSummaries = [];
+    }
+
+    function getNostrilPan(isIn) {
+      if(App.Config.get('breathStyle') !== 'alternateNostril') return 0;
+      var isOdd = (breathCount % 2) === 1;
+      if(isIn) return isOdd ? -0.78 : 0.78;
+      return isOdd ? 0.78 : -0.78;
+    }
 
     function requestFullscreen() {
       if(App.Config.get('fullscreen') !== 'on') return;
@@ -5170,17 +6727,40 @@
       } catch(e) {}
     }
 
-    function transition(newState) {
+    function transition(newState, opts) {
       state = newState;
-      App.UI.render(newState);
+      App.UI.render(newState, opts);
       if(App.Ambience && App.Ambience.onStateChange) App.Ambience.onStateChange(newState);
     }
 
-    /* Voice cue for a breath, honoring the configured cue mode */
+    /* Voice cue for a breath, honoring the configured cue mode and protocol */
     function cueBreath(isIn) {
       var mode = App.Config.get('voiceMode');
       if(mode === 'off') return;
+      var style = App.Config.get('breathStyle');
       var n = breathCount, max = App.Config.getBreathsForRound(currentRound);
+
+      if(style === 'kapalabhati') {
+        if(isIn && n === max && holdTarget > 0) { App.Voice.speak('lastBreath'); return; }
+        if(isIn && n === 1) App.Voice.speak('breatheIn');
+        return;
+      }
+      if(style === 'alternateNostril') {
+        if(isIn && n === max && holdTarget > 0) { App.Voice.speak('lastBreath'); return; }
+        var isOdd = (n % 2) === 1;
+        var clip = isIn ? (isOdd ? 'inhaleLeft' : 'inhaleRight') : (isOdd ? 'exhaleRight' : 'exhaleLeft');
+        if(mode === 'every' || (mode === 'smart' && n <= 4) || (mode === 'phases' && isIn && n === 1)) {
+          App.Voice.speak(clip);
+        }
+        return;
+      }
+      if(style === 'bhramari' && !isIn) {
+        if(mode === 'every' || (mode === 'smart' && n <= 3)) {
+          App.Voice.speak('humOut');
+        }
+        return;
+      }
+
       if(isIn && n === max && holdTarget > 0) { App.Voice.speak('lastBreath'); return; }
       if(isIn && n === max - 2 && holdTarget > 0) { App.Voice.speak('threeBreathsLeft'); return; }
       if(mode === 'every') { App.Voice.speak(isIn ? 'breatheIn' : 'breatheOut'); return; }
@@ -5242,25 +6822,35 @@
         if(s !== lastSec) {
           lastSec = s;
           App.Audio.playBreathTick();
-          App.UI.updateGetReadyCountdown(s);
         }
+        App.UI.updateGetReadyCountdown(s);
       });
     }
 
     function beginBreathingIn() {
       breathCount++;
       actualBreathsCompleted++;
+      roundBreaths[currentRound - 1] = (roundBreaths[currentRound - 1] || 0) + 1;
       sipTriggered = false;
       holdTarget = App.Config.getHoldTarget(currentRound);
-      roundTargets[currentRound - 1] = holdTarget;
+      var targetIdx = routineStages ? roundTargets.length : (currentRound - 1);
+      if(!routineStages) roundTargets[targetIdx] = holdTarget;
+      else if(roundTargets[stageStartHoldIdx + currentRound - 1] === undefined) {
+        roundTargets[stageStartHoldIdx + currentRound - 1] = holdTarget;
+      }
       transition(STATES.BREATHING_IN);
       checkFlowSync();
       cueBreath(true);
       App.Haptics.inhale();
-      App.Audio.playBreathTick();
+      var pan = getNostrilPan(true);
+      if(pan !== 0 && App.Audio.playNostrilTick) App.Audio.playNostrilTick(pan);
+      else App.Audio.playBreathTick();
       var durMs = App.Config.get('inhaleDuration') * App.Config.getRampFactor(currentRound) * 1000;
-      var isDouble = App.Config.get('breathStyle') === 'doubleInhale';
-      App.Pacer.play(true, isDouble ? durMs * 0.65 : durMs);
+      var style = App.Config.get('breathStyle');
+      var isDouble = style === 'doubleInhale';
+      if(style !== 'kapalabhati') {
+        App.Pacer.play(true, isDouble ? durMs * 0.65 : durMs, pan);
+      }
       var pauseInhale = App.Config.get('pauseAfterInhale');
       var nextFn = pauseInhale > 0 ? beginPauseAfterInhale : beginBreathingOut;
       var lastElapsed = 0;
@@ -5278,22 +6868,35 @@
       });
     }
 
+    function advanceAfterLastRound() {
+      if(routineStages && routineStageIdx < routineStages.length - 1) {
+        beginStageTransition();
+      } else {
+        beginSessionComplete(false);
+      }
+    }
+
     function beginBreathingOut() {
       transition(STATES.BREATHING_OUT);
       checkFlowSync();
       cueBreath(false);
       App.Haptics.exhale();
+      var pan = getNostrilPan(false);
+      if(pan !== 0 && App.Audio.playNostrilTick) App.Audio.playNostrilTick(pan);
       var last = breathCount >= App.Config.getBreathsForRound(currentRound);
       var durMs = App.Config.get('exhaleDuration') * App.Config.getRampFactor(currentRound) * 1000;
-      App.Pacer.play(false, durMs);
+      var style = App.Config.get('breathStyle');
+      if(style === 'kapalabhati' && App.Pacer.playPump) App.Pacer.playPump(durMs);
+      else if(style === 'bhramari' && App.Pacer.playHum) App.Pacer.playHum(durMs);
+      else App.Pacer.play(false, durMs, pan);
       var pauseExhale = App.Config.get('pauseAfterExhale');
       var nextFn;
       if (last) {
         if (holdTarget > 0) {
           nextFn = beginHold;
         } else {
-          /* zero hold target (e.g. Box / 4-7-8 / Coherent / Sigh / Nadi presets): skip retention + recovery */
-          nextFn = currentRound >= App.Config.get('rounds') ? beginSessionComplete : beginRoundComplete;
+          /* zero hold target (e.g. Box / 4-7-8 / Coherent / Sigh / Nadi / Bhramari presets): skip retention + recovery */
+          nextFn = currentRound >= App.Config.get('rounds') ? advanceAfterLastRound : beginRoundComplete;
         }
       } else if (pauseExhale > 0) {
         nextFn = beginPauseAfterExhale;
@@ -5337,11 +6940,13 @@
       urgeMarked = false; urgeTime = 0;
       lastMilestoneSec = 0; roundGhostOvertaken = false;
       var targetReachedChimed = false;
-      if(roundTargets[currentRound - 1] === undefined) {
-        roundTargets[currentRound - 1] = holdTarget;
+      var tIdx = routineStages ? (stageStartHoldIdx + currentRound - 1) : (currentRound - 1);
+      if(roundTargets[tIdx] === undefined) {
+        roundTargets[tIdx] = holdTarget;
       }
       ghostSec = prevSessionBest > 0 ? prevSessionBest : (prevBestEver > 0 ? prevBestEver : 0);
       App.UI.hideFlowIndicator();
+      if(App.Biofeedback && App.Biofeedback.onHoldStart) App.Biofeedback.onHoldStart();
       transition(STATES.HOLD);
       App.Audio.playHoldStart();
       App.Voice.speak('hold');
@@ -5380,19 +6985,66 @@
       });
     }
 
+    function recordCurrentStageSummary() {
+      if(!routineStages || !routineStages[routineStageIdx]) return;
+      var st = routineStages[routineStageIdx];
+      var stageHolds = roundHolds.slice(stageStartHoldIdx);
+      var bestH = stageHolds.length ? Math.max.apply(null, stageHolds) : 0;
+      routineStageSummaries.push({
+        preset: st.preset,
+        label: App.Presets ? App.Presets.getLabelFor(st.preset) : st.preset,
+        rounds: App.Config.get('rounds'),
+        breaths: actualBreathsCompleted - stageStartBreaths,
+        bestHold: Math.round(bestH * 10) / 10
+      });
+    }
+
+    function beginStageTransition() {
+      recordCurrentStageSummary();
+      routineStageIdx++;
+      stageStartBreaths = actualBreathsCompleted;
+      stageStartHoldIdx = roundHolds.length;
+      var nextStage = routineStages[routineStageIdx];
+      applyStageConfig(nextStage);
+      currentRound = 1; breathCount = 0;
+      holdTarget = App.Config.getHoldTarget(1);
+      roundTargets[stageStartHoldIdx] = holdTarget;
+      var bridgeSec = (routineObj && routineObj.bridgeSec) ? routineObj.bridgeSec : 5;
+      transition(STATES.STAGE_TRANSITION);
+      App.Audio.playMilestoneChime();
+      App.Voice.speak('nextStage');
+      App.UI.updateStageTransitionCountdown(bridgeSec, App.Presets ? App.Presets.getLabelFor(nextStage.preset) : nextStage.preset);
+      App.Timer.startPhase(bridgeSec * 1000, beginBreathingIn, function(elapsed) {
+        var rem = Math.max(1, bridgeSec - Math.floor(elapsed / 1000));
+        App.UI.updateStageTransitionCountdown(rem, App.Presets ? App.Presets.getLabelFor(nextStage.preset) : nextStage.preset);
+      });
+    }
+
     /* Skip remaining breaths in the current round and immediately enter retention hold */
     function holdNow() {
       var isBreathingPhase = (state === STATES.BREATHING_IN || state === STATES.BREATHING_OUT ||
                               state === STATES.PAUSE_AFTER_INHALE || state === STATES.PAUSE_AFTER_EXHALE);
       if(!isBreathingPhase || holdTarget <= 0) return;
       App.Timer.stop();
+      if(App.Pacer && App.Pacer.stop) App.Pacer.stop();
       App.UI.hideFlowIndicator();
       beginHold();
     }
 
+    function canFinish() {
+      if(!isActive()) return false;
+      if(state === STATES.GET_READY || state === STATES.SLEEPING || state === STATES.BOLT_PREP || state === STATES.BOLT_HOLD) return false;
+      if(roundHolds.length > 0 || currentRound > 1 || routineStageIdx > 0) return true;
+      var activeOrPausedHold = (state === STATES.HOLD) || (state === STATES.PAUSED && stateBeforePause === STATES.HOLD);
+      if(activeOrPausedHold && App.Timer.getElapsed() >= 1000) return true;
+      if(actualBreathsCompleted >= 5) return true;
+      return false;
+    }
+
     /* Finish session early and save completed rounds/holds to history */
     function finishAndSave() {
-      if(!this.isActive() || state === STATES.SLEEPING || state === STATES.BOLT_PREP || state === STATES.BOLT_HOLD) return;
+      if(!canFinish()) return;
+      if(App.Pacer && App.Pacer.stop) App.Pacer.stop();
       var activeOrPausedHold = (state === STATES.HOLD) || (state === STATES.PAUSED && stateBeforePause === STATES.HOLD);
       if(activeOrPausedHold) {
         var elSec = App.Timer.getElapsed() / 1000;
@@ -5400,10 +7052,12 @@
           holdAchieved = elSec;
           roundHolds.push(holdAchieved);
           roundUrges.push(urgeMarked ? Math.round(urgeTime*10)/10 : null);
-          if(roundTargets[currentRound - 1] === undefined) {
-            roundTargets[currentRound - 1] = holdTarget;
+          var tIdx = routineStages ? (stageStartHoldIdx + currentRound - 1) : (currentRound - 1);
+          if(roundTargets[tIdx] === undefined) {
+            roundTargets[tIdx] = holdTarget;
           }
         }
+        if(App.Biofeedback && App.Biofeedback.onHoldEnd) App.Biofeedback.onHoldEnd();
       }
       App.Timer.stop();
       stateBeforePause = null;
@@ -5420,6 +7074,7 @@
       App.Audio.playHoldStart();
       App.Voice.speak('hold');
       App.Haptics.holdStart();
+      if(App.Biofeedback && App.Biofeedback.onHoldStart) App.Biofeedback.onHoldStart();
       App.Timer.startPhase(null, null, function(elapsed) {
         var secs = Math.floor(elapsed / 1000);
         App.UI.updateBoltTimer(secs);
@@ -5435,19 +7090,21 @@
       App.Audio.resume();
       App.Voice.init();
       App.Config.setInputsDisabled(true);
-      App.UI.setStartButton('pause');
+      App.UI.setStartButton('bolt_prep');
       currentRound = 0; breathCount = 0; holdTarget = 0;
-      roundHolds = []; roundTargets = []; roundUrges = [];
+      roundHolds = []; roundTargets = []; roundBreaths = []; roundUrges = [];
       stateBeforePause = null;
       App.WakeLock.request();
       transition(STATES.BOLT_PREP);
       App.Audio.playBreathTick();
+      App.Voice.speak('breatheIn');
       App.Pacer.play(true, 4000);
       var exhaleCued = false;
       App.Timer.startPhase(8000, beginBoltHold, function(elapsed) {
         if(!exhaleCued && elapsed >= 4000) {
           exhaleCued = true;
           App.Audio.playBreathTick();
+          App.Voice.speak('breatheOut');
           App.Haptics.exhale();
           App.Pacer.play(false, 4000);
           App.UI.setBoltPrepPhase(false);
@@ -5460,6 +7117,8 @@
       if(state !== STATES.BOLT_HOLD) return;
       var score = Math.max(1, Math.round(App.Timer.getElapsed() / 1000));
       App.Timer.stop();
+      if(App.Pacer && App.Pacer.stop) App.Pacer.stop();
+      if(App.Biofeedback && App.Biofeedback.onHoldEnd) App.Biofeedback.onHoldEnd();
       App.WakeLock.release();
       App.Audio.playHoldEnd();
       App.Haptics.complete();
@@ -5485,9 +7144,11 @@
       holdAchieved = App.Timer.getElapsed() / 1000;
       roundHolds.push(holdAchieved);
       roundUrges.push(urgeMarked ? Math.round(urgeTime*10)/10 : null);
-      if(roundTargets[currentRound - 1] === undefined) {
-        roundTargets[currentRound - 1] = holdTarget;
+      var tIdx = routineStages ? (stageStartHoldIdx + currentRound - 1) : (currentRound - 1);
+      if(roundTargets[tIdx] === undefined) {
+        roundTargets[tIdx] = holdTarget;
       }
+      if(App.Biofeedback && App.Biofeedback.onHoldEnd) App.Biofeedback.onHoldEnd();
       App.Timer.stop();
       App.UI.hideGhostTarget();
       App.UI.hideHoldMilestone();
@@ -5510,12 +7171,13 @@
       transition(STATES.RECOVERY_HOLD);
       App.Ambience.setCalm();
       var holdSec = App.Config.get('recoveryHold');
+      var durMs = holdSec * 1000;
       App.Timer.startPhase(
-        holdSec * 1000,
+        durMs,
         beginRecoveryOut,
         function(elapsed) {
           var rem = Math.max(0, holdSec - Math.floor(elapsed/1000));
-          App.UI.updateRecoveryCountdown(rem);
+          App.UI.updateRecoveryCountdown(rem, elapsed, durMs);
         }
       );
     }
@@ -5527,7 +7189,7 @@
       var last = currentRound >= App.Config.get('rounds');
       var durMs = RECOVERY_BREATH_DUR * 1000;
       App.Pacer.play(false, durMs);
-      App.Timer.startPhase(durMs, last ? beginSessionComplete : beginRoundComplete, function(elapsed) {
+      App.Timer.startPhase(durMs, last ? advanceAfterLastRound : beginRoundComplete, function(elapsed) {
         App.UI.updateBreathingProgress(elapsed, durMs, false);
       });
     }
@@ -5537,12 +7199,14 @@
         roundNumber:  currentRound,
         holdAchieved: holdAchieved,
         holdTarget:   holdTarget,
-        urge:         roundUrges.length ? roundUrges.length && roundUrges[roundUrges.length-1] : null,
+        urge:         roundUrges.length ? roundUrges[roundUrges.length-1] : null,
         totalRounds:  App.Config.get('rounds')
       };
+      lastRoundSummary = summary;
       currentRound++; breathCount=0;
       holdTarget = App.Config.getHoldTarget(currentRound);
-      roundTargets[currentRound - 1] = holdTarget;
+      if(!routineStages) roundTargets[currentRound - 1] = holdTarget;
+      else roundTargets[stageStartHoldIdx + currentRound - 1] = holdTarget;
       transition(STATES.ROUND_COMPLETE);
       App.Voice.speak('roundComplete');
       App.UI.showRoundSummary(summary);
@@ -5552,7 +7216,8 @@
         beginBreathingIn,
         function(elapsed) {
           var s = Math.max(0, ROUND_SUMMARY_DUR - Math.floor(elapsed/1000));
-          if(s !== lastSec) { lastSec=s; App.UI.updateSummaryCountdown(s, currentRound, App.Config.get('rounds')); }
+          if(s !== lastSec) { lastSec=s; }
+          App.UI.updateSummaryCountdown(s, currentRound, App.Config.get('rounds'));
         }
       );
     }
@@ -5579,30 +7244,35 @@
           urges: roundUrges,
           rounds: sessionEntry.rounds || App.Config.get('rounds'),
           breaths: App.Config.get('breathsPerRound'),
+          roundBreaths: roundBreaths.slice(),
           totalBreaths: sessionEntry.totalBreaths,
           newRecord: newRecord,
           streak: streak || App.History.getStreak(),
           flowScore: sessionEntry.flowScore,
           durationSec: sessionEntry.durationSec,
           ghostOvertaken: sessionGhostOvertaken,
-          journeyDay: sessionEntry.journeyDay || 0
+          journeyDay: sessionEntry.journeyDay || 0,
+          isRoutine: sessionEntry.isRoutine,
+          stages: sessionEntry.stages,
+          hr: sessionEntry.hr
         });
       }
     }
 
     function computeSessionTotalBreaths() {
-      if(actualBreathsCompleted > 0) return actualBreathsCompleted;
-      var rCount = App.Config.get('rounds');
-      var sum = 0;
-      for(var r = 1; r <= rCount; r++) sum += App.Config.getBreathsForRound(r);
-      return sum;
+      return actualBreathsCompleted;
     }
 
     function beginSessionComplete(isEarly) {
       App.Timer.stop();
-      var completedRounds = isEarly
-        ? Math.max(1, roundHolds.length > 0 ? roundHolds.length : currentRound)
-        : App.Config.get('rounds');
+      if(App.Pacer && App.Pacer.stop) App.Pacer.stop();
+      var isRoutine = !!(routineStages && routineStages.length);
+      if(isRoutine) recordCurrentStageSummary();
+      var completedRounds = isRoutine
+        ? Math.max(1, roundHolds.length || currentRound)
+        : (isEarly
+            ? Math.max(1, roundHolds.length > 0 ? roundHolds.length : currentRound)
+            : App.Config.get('rounds'));
       var targetsSnapshot = [];
       for(var r = 1; r <= completedRounds; r++) {
         targetsSnapshot.push(roundTargets[r - 1] !== undefined ? roundTargets[r - 1] : App.Config.getHoldTarget(r));
@@ -5616,18 +7286,26 @@
         ? Math.min(100, Math.round((flowInSyncMs / flowTotalMs) * 100))
         : null;
 
-      var journeyDay = (!isEarly && App.Presets && App.Presets.getActiveJourneyDay) ? App.Presets.getActiveJourneyDay() : 0;
+      var journeyDay = (!isRoutine && !isEarly && App.Presets && App.Presets.getActiveJourneyDay) ? App.Presets.getActiveJourneyDay() : 0;
       if(journeyDay > 0 && App.Presets.markJourneyDay) {
         App.Presets.markJourneyDay(journeyDay);
       }
 
       var totalBreaths = computeSessionTotalBreaths();
+      var hrStats = (App.Biofeedback && App.Biofeedback.onSessionEnd) ? App.Biofeedback.onSessionEnd() : null;
+      var presetLabel = isRoutine && routineObj ? routineObj.name : App.Presets.getCurrentLabel();
+      var stagesCopy = isRoutine ? routineStageSummaries.slice() : null;
+      var breathsCfg = App.Config.get('breathsPerRound');
+
+      if(isRoutine) restorePreRoutineConfig();
 
       var sessionEntry = {
         ts: Date.now(),
-        preset: App.Presets.getCurrentLabel(),
+        preset: presetLabel,
+        isRoutine: isRoutine,
+        stages: stagesCopy,
         rounds: completedRounds,
-        breaths: App.Config.get('breathsPerRound'),
+        breaths: breathsCfg,
         totalBreaths: totalBreaths,
         holds: roundHolds.map(function(h) { return Math.round(h*10)/10; }),
         targets: targetsSnapshot,
@@ -5635,8 +7313,10 @@
         durationSec: Math.round((performance.now() - sessionStartMs) / 1000),
         flowScore: flowScore,
         ghostOvertaken: sessionGhostOvertaken,
-        journeyDay: journeyDay
+        journeyDay: journeyDay,
+        hr: hrStats
       };
+      lastSessionEntry = sessionEntry;
       App.History.record(sessionEntry);
 
       var currentStreak = App.History.getStreak();
@@ -5651,7 +7331,8 @@
         ghostOvertaken: sessionGhostOvertaken,
         flowScore: flowScore || 0,
         isSleep: App.Config.get('sleepMode') === 'on',
-        maxUrge: maxUrge
+        maxUrge: maxUrge,
+        maxHoldDrop: hrStats ? hrStats.maxHoldDrop : 0
       });
 
       App.UI.updateStreakBadge();
@@ -5673,26 +7354,42 @@
       lastSleepSec = Math.round((Date.now() - sleepStartTs) / 1000);
       App.History.setLastSleep(lastSleepSec);
       App.UI.exitSleep();
+      var entry = lastSessionEntry || {};
       var sessionBest = roundHolds.length ? Math.max.apply(null, roundHolds) : 0;
-      var dur = Math.round((performance.now() - sessionStartMs) / 1000);
+      var dur = entry.durationSec || Math.round((performance.now() - sessionStartMs) / 1000);
       var streak = App.History.getStreak();
-      var journeyDay = App.Presets && App.Presets.getActiveJourneyDay ? App.Presets.getActiveJourneyDay() : 0;
-      var totalBreaths = computeSessionTotalBreaths();
-      showComplete(true, { sessionBest: sessionBest, durationSec: dur, flowScore: null, totalBreaths: totalBreaths, journeyDay: journeyDay, targets: roundTargets.slice() }, streak);
+      var journeyDay = entry.journeyDay || 0;
+      var totalBreaths = entry.totalBreaths !== undefined ? entry.totalBreaths : computeSessionTotalBreaths();
+      showComplete(true, {
+        sessionBest: sessionBest,
+        durationSec: dur,
+        flowScore: entry.flowScore !== undefined ? entry.flowScore : null,
+        totalBreaths: totalBreaths,
+        journeyDay: journeyDay,
+        targets: entry.targets || roundTargets.slice(),
+        isRoutine: entry.isRoutine,
+        stages: entry.stages,
+        hr: entry.hr,
+        rounds: entry.rounds || App.Config.get('rounds')
+      }, streak);
       App.UI.showVictoryModal({
         sessionBest: sessionBest,
         holds: roundHolds,
-        targets: roundTargets.slice(),
+        targets: entry.targets || roundTargets.slice(),
         urges: roundUrges,
-        rounds: App.Config.get('rounds'),
+        rounds: entry.rounds || App.Config.get('rounds'),
         breaths: App.Config.get('breathsPerRound'),
+        roundBreaths: roundBreaths.slice(),
         totalBreaths: totalBreaths,
         newRecord: newRecord,
         streak: streak,
-        flowScore: null,
+        flowScore: entry.flowScore !== undefined ? entry.flowScore : null,
         durationSec: dur,
         ghostOvertaken: sessionGhostOvertaken,
-        journeyDay: journeyDay
+        journeyDay: journeyDay,
+        isRoutine: entry.isRoutine,
+        stages: entry.stages,
+        hr: entry.hr
       });
     }
 
@@ -5704,8 +7401,23 @@
       getRoundHolds: function() { return roundHolds.slice(); },
       getRoundTargets: function() { return roundTargets.slice(); },
       getRoundUrges: function() { return roundUrges.slice(); },
+      isUrgeMarked: function() { return urgeMarked; },
+      getUrgeTime: function() { return urgeTime; },
+      isRoundGhostOvertaken: function() { return roundGhostOvertaken; },
+      getGhostSec: function() { return ghostSec; },
+      getLastRoundSummary: function() { return lastRoundSummary; },
+      getRoutineProgress: function() {
+        if(!routineStages || !routineObj) return null;
+        return {
+          name: routineObj.name,
+          stageIndex: routineStageIdx,
+          totalStages: routineStages.length,
+          stageLabel: App.Presets ? App.Presets.getLabelFor(routineStages[routineStageIdx].preset) : ''
+        };
+      },
       isNewRecord: function() { return newRecord; },
       getPrevSessionBest: function() { return prevSessionBest; },
+      canFinish: canFinish,
       markUrge: markUrge,
       holdNow: holdNow,
       finishAndSave: finishAndSave,
@@ -5713,20 +7425,33 @@
       endBolt: endBolt,
       onFlowPointerDown: onFlowPointerDown,
       onFlowPointerUp: onFlowPointerUp,
-      isActive: function() {
-        return state !== STATES.IDLE && state !== STATES.SESSION_COMPLETE;
-      },
+      isFlowTouchActive: function() { return flowTouchActive; },
+      isActive: isActive,
       start: function() {
         App.Audio.init();
         App.Audio.resume();
         App.Voice.init();
-        App.Config.readFromInputs();
-        App.Config.save();
+        var actRoutine = (App.Routines && App.Routines.getActive) ? App.Routines.getActive() : null;
+        if(actRoutine && actRoutine.stages && actRoutine.stages.length) {
+          savedPreRoutineCfg = snapshotConfig();
+          routineObj = actRoutine;
+          routineStages = actRoutine.stages.slice();
+          routineStageIdx = 0;
+          routineStageSummaries = [];
+          stageStartBreaths = 0;
+          stageStartHoldIdx = 0;
+          applyStageConfig(routineStages[0]);
+        } else {
+          restorePreRoutineConfig();
+          App.Config.readFromInputs();
+          App.Config.save();
+        }
         App.Config.setInputsDisabled(true);
         App.UI.setStartButton('pause');
         currentRound=1; breathCount=0; holdAchieved=0;
         actualBreathsCompleted=0; sipTriggered=false;
-        roundHolds=[]; roundTargets=[]; roundUrges=[]; stateBeforePause=null;
+        roundHolds=[]; roundTargets=[]; roundBreaths=[]; roundUrges=[]; stateBeforePause=null;
+        lastRoundSummary=null; lastSessionEntry=null;
         newRecord=false; sleepStartTs=0; lastSleepSec=0;
         lastMilestoneSec=0; ghostSec=0;
         roundGhostOvertaken=false; sessionGhostOvertaken=false;
@@ -5736,6 +7461,7 @@
         sessionStartMs = performance.now();
         holdTarget = App.Config.getHoldTarget(1);
         roundTargets[0] = holdTarget;
+        if(App.Biofeedback && App.Biofeedback.onSessionStart) App.Biofeedback.onSessionStart();
         App.WakeLock.request();
         App.Ambience.start();
         requestFullscreen();
@@ -5745,6 +7471,7 @@
         if(!this.isActive() || state === STATES.PAUSED || state === STATES.SLEEPING || state === STATES.BOLT_PREP || state === STATES.BOLT_HOLD) return;
         stateBeforePause = state;
         App.Timer.pause();
+        if(App.Pacer && App.Pacer.stop) App.Pacer.stop();
         App.Voice.speak('pause');
         App.Ambience.pause();
         transition(STATES.PAUSED);
@@ -5754,7 +7481,7 @@
         if(state !== STATES.PAUSED) return;
         state = stateBeforePause;
         stateBeforePause = null;
-        App.UI.render(state);
+        App.UI.render(state, { resuming: true });
         App.UI.setStartButton('pause');
         App.Timer.resume();
         App.WakeLock.request();
@@ -5767,12 +7494,16 @@
           App.UI.exitSleep();
         }
         App.Timer.stop();
+        if(App.Pacer && App.Pacer.stop) App.Pacer.stop();
+        if(App.Biofeedback && App.Biofeedback.onHoldEnd) App.Biofeedback.onHoldEnd();
+        restorePreRoutineConfig();
         App.WakeLock.release();
         App.Ambience.stop(true);
         exitFullscreen();
         currentRound=0; breathCount=0; holdAchieved=0;
         actualBreathsCompleted=0; sipTriggered=false;
-        roundHolds=[]; roundTargets=[]; roundUrges=[]; stateBeforePause=null;
+        roundHolds=[]; roundTargets=[]; roundBreaths=[]; roundUrges=[]; stateBeforePause=null;
+        lastRoundSummary=null; lastSessionEntry=null;
         App.UI.hideGhostTarget();
         App.UI.hideHoldMilestone();
         App.UI.hideFlowIndicator();
@@ -5849,8 +7580,9 @@
     function setStartButton(mode) {
       var btn = document.getElementById('btn-start');
       if(!btn) return;
-      btn.disabled = false;
+      btn.disabled = (mode === 'bolt_prep');
       if(mode === 'end_bolt') btn.textContent = 'FIRST URGE (DONE)';
+      else if(mode === 'bolt_prep') btn.textContent = 'PREPARING…';
       else btn.textContent = mode === 'pause' ? 'PAUSE' : (mode === 'resume' ? 'RESUME' : 'START');
     }
 
@@ -5930,7 +7662,9 @@
       }
     }
 
-    function render(state) {
+    function render(state, opts) {
+      if(!e.circleWrapper) return;
+      opts = opts || {};
       var cfg   = App.Config;
       var round = App.Session.getCurrentRound();
       var total = cfg.get('rounds');
@@ -5939,6 +7673,21 @@
       e.circleWrapper.classList.remove('hold-target-reached');
       e.circleGlow.classList.remove('glow-pause');
       e.circleGlow.classList.remove('glow-complete');
+
+      /* Favorite chips only in IDLE */
+      if(App.Favorites && App.Favorites.renderBar) App.Favorites.renderBar();
+
+      /* Routine stage pill */
+      var stagePill = document.getElementById('routine-stage-pill');
+      if(stagePill) {
+        var rp = (App.Session.getRoutineProgress && App.Session.isActive()) ? App.Session.getRoutineProgress() : null;
+        if(rp) {
+          stagePill.textContent = 'Stage ' + (rp.stageIndex + 1) + '/' + rp.totalStages + ' · ' + rp.stageLabel;
+          stagePill.classList.remove('hidden');
+        } else {
+          stagePill.classList.add('hidden');
+        }
+      }
 
       /* Zen mode: hide chrome while actively practicing */
       var zen = state !== STATES.IDLE && state !== STATES.SESSION_COMPLETE
@@ -5967,27 +7716,29 @@
         holdNowBtn.classList.toggle('hidden', !canHoldNow);
       }
 
-      /* FINISH & SAVE button: visible when PAUSED or after at least 1 round/hold */
+      /* FINISH & SAVE button: guarded by App.Session.canFinish() (B5) */
       var finishBtn = document.getElementById('btn-finish');
       if(finishBtn) {
-        var canFinish = state === STATES.PAUSED ||
-          ((state !== STATES.IDLE && state !== STATES.SESSION_COMPLETE &&
-            state !== STATES.SLEEPING && state !== STATES.BOLT_PREP && state !== STATES.BOLT_HOLD) &&
-           (round > 1 || App.Session.getRoundHolds().length > 0));
-        finishBtn.classList.toggle('hidden', !canFinish);
+        var canFin = App.Session.canFinish ? App.Session.canFinish() : false;
+        finishBtn.classList.toggle('hidden', !canFin);
       }
 
-      /* Urge-to-breathe button only during retention holds */
+      /* Urge-to-breathe button only during retention holds; preserve marked state on resume (B3) */
       var urgeBtn = document.getElementById('urge-btn');
       if(urgeBtn) {
         urgeBtn.classList.toggle('hidden', state !== STATES.HOLD);
         if(state === STATES.HOLD) {
-          urgeBtn.textContent = 'FIRST URGE? TAP';
-          urgeBtn.classList.remove('marked');
-          urgeBtn.disabled = false;
+          if(opts.resuming && App.Session.isUrgeMarked && App.Session.isUrgeMarked()) {
+            showUrgeMarked(App.Session.getUrgeTime());
+          } else {
+            urgeBtn.textContent = 'FIRST URGE? TAP';
+            urgeBtn.classList.remove('marked');
+            urgeBtn.disabled = false;
+          }
         }
       }
 
+      if(App.Biofeedback && App.Biofeedback.updateUI) App.Biofeedback.updateUI();
       updateNostrilUI(state);
 
       /* Auto-dim: fade to black during long retention holds */
@@ -6016,12 +7767,27 @@
           setScale('scale-idle');
           showOnly(['phase-label','pause-countdown']);
           e.phaseLabel.textContent = 'GET READY';
-          e.pauseCountdown.textContent = GET_READY_DUR;
+          var grRem = opts.resuming
+            ? Math.max(1, GET_READY_DUR - Math.floor(App.Timer.getElapsed() / 1000))
+            : GET_READY_DUR;
+          e.pauseCountdown.textContent = grRem;
           e.roundIndicator.textContent = roundText;
           setRingProgress(0);
           makeTappable(false);
           App.Liquid.set(COLORS.GET_READY, {mode:'drift', scale:0.5, amp:0.04, speed:0.3, agitation:0.45});
-          announce('Get ready. Starting in ' + GET_READY_DUR + ' seconds.');
+          if(!opts.resuming) announce('Get ready. Starting in ' + GET_READY_DUR + ' seconds.');
+          break;
+
+        case STATES.STAGE_TRANSITION:
+          setPhaseColor(COLORS.STAGE_TRANSITION);
+          css('--phase-duration', '1.2s');
+          setScale('scale-idle');
+          showOnly(['phase-label','pause-countdown','idle-subtitle']);
+          e.phaseLabel.textContent = 'NEXT STAGE';
+          e.roundIndicator.textContent = '';
+          setRingProgress(0);
+          makeTappable(false);
+          App.Liquid.set(COLORS.STAGE_TRANSITION, {mode:'drift', scale:0.52, amp:0.05, speed:0.2, agitation:0.35});
           break;
 
         case STATES.BOLT_PREP:
@@ -6071,18 +7837,24 @@
         case STATES.BREATHING_IN:
           var breath1 = App.Session.getBreathCount();
           var max1    = cfg.getBreathsForRound(round);
-          var isDoubleIn = cfg.get('breathStyle') === 'doubleInhale';
+          var bStyle1 = cfg.get('breathStyle');
+          var isDoubleIn = bStyle1 === 'doubleInhale';
           setPhaseColor( COLORS.BREATHING_IN);
           css('--phase-duration', (cfg.get('inhaleDuration') * cfg.getRampFactor(round)) + 's');
           setScale('scale-inhale');
           showOnly(['phase-label','breath-counter','breath-time-remaining']);
-          e.phaseLabel.textContent    = isDoubleIn ? 'INHALE 1/2' : 'INHALE';
+          e.phaseLabel.textContent    = isDoubleIn ? 'INHALE 1/2' : (bStyle1 === 'kapalabhati' ? 'PASSIVE IN' : 'INHALE');
           e.breathCounter.textContent = breath1 + ' / ' + max1;
           e.roundIndicator.textContent = roundText;
-          setRingProgress(0);
+          if(opts.resuming) {
+            var dInMs = cfg.get('inhaleDuration') * cfg.getRampFactor(round) * 1000;
+            updateBreathingProgress(App.Timer.getElapsed(), dInMs, true);
+          } else {
+            setRingProgress(0);
+          }
           makeTappable(false);
           App.Liquid.set(COLORS.BREATHING_IN, {mode:'breath', agitation:0.85});
-          if(breath1 === 1 || breath1 % 10 === 0) {
+          if(!opts.resuming && (breath1 === 1 || breath1 % 10 === 0)) {
             announce('Inhale. Breath ' + breath1 + ' of ' + max1);
           }
           break;
@@ -6090,16 +7862,22 @@
         case STATES.BREATHING_OUT:
           var breath2 = App.Session.getBreathCount();
           var max2    = cfg.getBreathsForRound(round);
+          var bStyle2 = cfg.get('breathStyle');
           setPhaseColor( COLORS.BREATHING_OUT);
           css('--phase-duration', (cfg.get('exhaleDuration') * cfg.getRampFactor(round)) + 's');
           setScale('scale-exhale');
           showOnly(['phase-label','breath-counter','breath-time-remaining']);
-          e.phaseLabel.textContent    = 'EXHALE';
+          e.phaseLabel.textContent    = bStyle2 === 'bhramari' ? 'HUM OUT' : (bStyle2 === 'kapalabhati' ? 'PUMP OUT' : 'EXHALE');
           e.breathCounter.textContent = breath2 + ' / ' + max2;
           e.roundIndicator.textContent = roundText;
-          setRingProgress(1);
+          if(opts.resuming) {
+            var dOutMs = cfg.get('exhaleDuration') * cfg.getRampFactor(round) * 1000;
+            updateBreathingProgress(App.Timer.getElapsed(), dOutMs, false);
+          } else {
+            setRingProgress(1);
+          }
           makeTappable(false);
-          App.Liquid.set(COLORS.BREATHING_OUT, {mode:'breath', agitation:0.75});
+          App.Liquid.set(COLORS.BREATHING_OUT, {mode:'breath', agitation: bStyle2 === 'kapalabhati' ? 0.95 : 0.75});
           break;
 
         case STATES.PAUSE_AFTER_INHALE:
@@ -6108,13 +7886,14 @@
           setScale('scale-pause-inhale');
           showOnly(['phase-label','pause-countdown']);
           e.phaseLabel.innerHTML = 'PAUSE<br><span style="font-size:0.5em;letter-spacing:0.1em">LUNGS FULL</span>';
-          e.pauseCountdown.textContent = cfg.get('pauseAfterInhale').toFixed(1) + 's';
+          var piDurMs = cfg.get('pauseAfterInhale') * 1000;
+          if(opts.resuming) updatePauseCountdown(App.Timer.getElapsed(), piDurMs);
+          else { e.pauseCountdown.textContent = cfg.get('pauseAfterInhale').toFixed(1) + 's'; setRingProgress(0); }
           e.roundIndicator.textContent = roundText;
-          setRingProgress(0);
           makeTappable(false);
           e.circleGlow.classList.add('glow-pause');
           App.Liquid.set(COLORS.PAUSE_AFTER_INHALE, {mode:'fixed', scale:1, agitation:0.2});
-          announce('Pause. Hold with lungs full.');
+          if(!opts.resuming) announce('Pause. Hold with lungs full.');
           break;
 
         case STATES.PAUSE_AFTER_EXHALE:
@@ -6123,13 +7902,14 @@
           setScale('scale-pause-exhale');
           showOnly(['phase-label','pause-countdown']);
           e.phaseLabel.innerHTML = 'PAUSE<br><span style="font-size:0.5em;letter-spacing:0.1em">LUNGS EMPTY</span>';
-          e.pauseCountdown.textContent = cfg.get('pauseAfterExhale').toFixed(1) + 's';
+          var peDurMs = cfg.get('pauseAfterExhale') * 1000;
+          if(opts.resuming) updatePauseCountdown(App.Timer.getElapsed(), peDurMs);
+          else { e.pauseCountdown.textContent = cfg.get('pauseAfterExhale').toFixed(1) + 's'; setRingProgress(0); }
           e.roundIndicator.textContent = roundText;
-          setRingProgress(0);
           makeTappable(false);
           e.circleGlow.classList.add('glow-pause');
           App.Liquid.set(COLORS.PAUSE_AFTER_EXHALE, {mode:'fixed', scale:0, agitation:0.2});
-          announce('Pause. Hold with lungs empty.');
+          if(!opts.resuming) announce('Pause. Hold with lungs empty.');
           break;
 
         case STATES.HOLD:
@@ -6139,17 +7919,27 @@
           setScale('scale-hold');
           showOnly(['phase-label','hold-timer','hold-target-display','tap-prompt']);
           e.phaseLabel.textContent       = 'HOLD';
-          e.holdTimer.textContent        = '0';
-          e.holdTimer.classList.remove('hold-bloom');
-          void e.holdTimer.offsetWidth;
-          e.holdTimer.classList.add('hold-bloom');
+          if(opts.resuming) {
+            var curHoldSec = Math.floor(App.Timer.getElapsed() / 1000);
+            updateHoldTimer(curHoldSec, target);
+            var gSec = App.Session.getGhostSec ? App.Session.getGhostSec() : 0;
+            setupGhostTarget(gSec, target);
+            if(App.Session.isRoundGhostOvertaken && App.Session.isRoundGhostOvertaken()) {
+              showGhostOvertaken(gSec);
+            }
+          } else {
+            e.holdTimer.textContent = '0';
+            e.holdTimer.classList.remove('hold-bloom');
+            void e.holdTimer.offsetWidth;
+            e.holdTimer.classList.add('hold-bloom');
+            setRingProgress(0);
+          }
           e.holdTargetDisplay.textContent = 'Target: ' + target + 's';
           e.tapPrompt.textContent        = 'TAP TO BREATHE';
           e.roundIndicator.textContent    = roundText;
-          setRingProgress(0);
           makeTappable(true);
           App.Liquid.set(COLORS.HOLD, {mode:'fixed', scale:0.12, agitation:0.12});
-          announce('Hold your breath. Tap or press Space to breathe. Target: ' + target + ' seconds.');
+          if(!opts.resuming) announce('Hold your breath. Tap or press Space to breathe. Target: ' + target + ' seconds.');
           break;
 
         case STATES.RECOVERY_IN:
@@ -6159,10 +7949,11 @@
           showOnly(['phase-label']);
           e.phaseLabel.innerHTML = 'RECOVERY<br><span style="font-size:0.62em;letter-spacing:0.1em">INHALE</span>';
           e.roundIndicator.textContent = roundText;
-          setRingProgress(0);
+          if(opts.resuming) updateBreathingProgress(App.Timer.getElapsed(), RECOVERY_BREATH_DUR * 1000, true);
+          else setRingProgress(0);
           makeTappable(false);
           App.Liquid.set(COLORS.RECOVERY_IN, {mode:'breath', agitation:0.5});
-          announce('Recovery inhale. Breathe in deeply.');
+          if(!opts.resuming) announce('Recovery inhale. Breathe in deeply.');
           break;
 
         case STATES.RECOVERY_HOLD:
@@ -6170,12 +7961,19 @@
           css('--phase-duration', '0.5s');
           setScale('scale-recovery-hold');
           showOnly(['phase-label','recovery-countdown']);
-          e.phaseLabel.textContent        = 'HOLD';
-          e.recoveryCountdown.textContent = cfg.get('recoveryHold');
+          e.phaseLabel.textContent = 'HOLD';
+          var rhSec = cfg.get('recoveryHold');
+          if(opts.resuming) {
+            var rhEl = App.Timer.getElapsed();
+            updateRecoveryCountdown(Math.max(0, rhSec - Math.floor(rhEl/1000)), rhEl, rhSec * 1000);
+          } else {
+            e.recoveryCountdown.textContent = rhSec;
+            setRingProgress(1);
+          }
           e.roundIndicator.textContent    = roundText;
           makeTappable(false);
           App.Liquid.set(COLORS.RECOVERY_HOLD, {mode:'fixed', scale:1, agitation:0.15});
-          announce('Hold your breath for ' + cfg.get('recoveryHold') + ' seconds.');
+          if(!opts.resuming) announce('Hold your breath for ' + rhSec + ' seconds.');
           break;
 
         case STATES.RECOVERY_OUT:
@@ -6185,9 +7983,10 @@
           showOnly(['phase-label']);
           e.phaseLabel.innerHTML = 'RECOVERY<br><span style="font-size:0.62em;letter-spacing:0.1em">EXHALE</span>';
           e.roundIndicator.textContent = roundText;
+          if(opts.resuming) updateBreathingProgress(App.Timer.getElapsed(), RECOVERY_BREATH_DUR * 1000, false);
           makeTappable(false);
           App.Liquid.set(COLORS.RECOVERY_OUT, {mode:'breath', agitation:0.4});
-          announce('Recovery exhale. Breathe out slowly.');
+          if(!opts.resuming) announce('Recovery exhale. Breathe out slowly.');
           break;
 
         case STATES.ROUND_COMPLETE:
@@ -6195,6 +7994,11 @@
           css('--phase-duration', '0.5s');
           setScale('scale-complete');
           showOnly(['round-summary']);
+          if(opts.resuming && App.Session.getLastRoundSummary && App.Session.getLastRoundSummary()) {
+            showRoundSummary(App.Session.getLastRoundSummary());
+            var rcRem = Math.max(0, ROUND_SUMMARY_DUR - Math.floor(App.Timer.getElapsed() / 1000));
+            updateSummaryCountdown(rcRem, round, total);
+          }
           e.roundIndicator.textContent = '';
           makeTappable(false);
           App.Liquid.set(COLORS.ROUND_COMPLETE, {mode:'drift', scale:0.55, amp:0.05, speed:0.15, agitation:0.35});
@@ -6353,15 +8157,19 @@
         advEl.innerHTML = '<strong>' + res.tierInfo.summary + '</strong><br>' + res.tierInfo.advice;
       }
       ov.classList.remove('hidden');
+      if(App.ModalFocus) App.ModalFocus.trap(ov);
     }
 
     function hideBoltModal() {
       var ov = document.getElementById('bolt-overlay');
-      if(ov) ov.classList.add('hidden');
+      if(ov && !ov.classList.contains('hidden')) {
+        ov.classList.add('hidden');
+        if(App.ModalFocus) App.ModalFocus.release(ov);
+      }
     }
 
     function updateHoldTimer(secs, target) {
-      if(e.holdTimer) e.holdTimer.textContent = secs;
+      if(e.holdTimer) e.holdTimer.textContent = String(secs);
       App.Liquid.setPressure(target > 0 ? Math.min(1.2, secs / Math.max(1, target)) : 0.35);
       /* Fill ring toward target (guard: target can be 0 for no-hold presets) */
       if(target > 0) {
@@ -6379,8 +8187,14 @@
       if(e.pauseCountdown) e.pauseCountdown.textContent = secs;
     }
 
-    function updateRecoveryCountdown(rem) {
+    function updateRecoveryCountdown(rem, elapsed, durMs) {
       if(e.recoveryCountdown) e.recoveryCountdown.textContent = rem;
+      if(durMs && durMs > 0) setRingProgress(1 - Math.min(1, Math.max(0, (elapsed || 0) / durMs)));
+    }
+
+    function updateStageTransitionCountdown(rem, nextLabel) {
+      if(e.pauseCountdown) e.pauseCountdown.textContent = rem;
+      if(e.idleSubtitle) e.idleSubtitle.textContent = 'Up next: ' + (nextLabel || 'Next Stage');
     }
 
     function updatePauseCountdown(elapsed, durationMs) {
@@ -6418,7 +8232,9 @@
     }
 
     function estimateText() {
-      var mins = Math.round(App.Config.estimateSeconds() / 60);
+      var actR = (App.Routines && App.Routines.getActive) ? App.Routines.getActive() : null;
+      var secs = actR ? App.Routines.estimateSeconds(actR) : App.Config.estimateSeconds();
+      var mins = Math.round(secs / 60);
       return 'Est. ~' + (mins < 1 ? '<1' : mins) + ' min · press START';
     }
 
@@ -6716,7 +8532,7 @@
           var colorCls = actual >= target ? 'bar-success' : (actual >= target * 0.75 ? 'bar-good' : 'bar-mid');
           var valTxt = target > 0
             ? ((actual >= 60 ? formatTimeMinSec(actual) : (Math.round(actual) + 's')) + ' / ' + (target >= 60 ? formatTimeMinSec(target) : (target + 's')))
-            : (App.Config.getBreathsForRound(r) + ' breaths');
+            : (((data.roundBreaths && data.roundBreaths[r-1] !== undefined) ? data.roundBreaths[r-1] : App.Config.getBreathsForRound(r)) + ' breaths');
           row.innerHTML =
             '<span class="v-round-bar-lbl">R' + r + '</span>' +
             '<div class="v-round-bar-track">' +
@@ -6759,6 +8575,34 @@
         }
       }
 
+      var stagesWrap = document.getElementById('victory-stages-wrap');
+      var stagesList = document.getElementById('victory-stages-list');
+      if(stagesWrap && stagesList) {
+        if(data.isRoutine && data.stages && data.stages.length) {
+          stagesList.innerHTML = data.stages.map(function(st, i) {
+            return (i + 1) + '. ' + st.label + ' (' + st.breaths + ' br' + (st.bestHold > 0 ? (', ' + Math.round(st.bestHold) + 's best') : '') + ')';
+          }).join(' · ');
+          stagesWrap.classList.remove('hidden');
+        } else {
+          stagesWrap.classList.add('hidden');
+        }
+      }
+
+      var hrWrap = document.getElementById('victory-hr-wrap');
+      var hrText = document.getElementById('victory-hr-text');
+      if(hrWrap && hrText) {
+        if(data.hr && data.hr.samples > 0) {
+          var parts = ['Avg ' + data.hr.avgBpm + ' BPM', 'Min ' + data.hr.minBpm + ' BPM'];
+          if(data.hr.maxHoldDrop > 0) parts.push('Diving Reflex −' + data.hr.maxHoldDrop + ' BPM');
+          if(data.hr.rmssd > 0) parts.push('HRV RMSSD ' + data.hr.rmssd + 'ms');
+          if(data.hr.coherence > 0) parts.push('Coherence ' + data.hr.coherence + '%');
+          hrText.textContent = parts.join(' · ');
+          hrWrap.classList.remove('hidden');
+        } else {
+          hrWrap.classList.add('hidden');
+        }
+      }
+
       overlay._shareData = {
         archetype: archetype,
         sessionBest: sessionBest,
@@ -6769,16 +8613,21 @@
       };
 
       overlay.classList.remove('hidden');
+      if(App.ModalFocus) App.ModalFocus.trap(overlay);
     }
 
     function hideVictoryModal() {
       var overlay = document.getElementById('victory-overlay');
-      if(overlay) overlay.classList.add('hidden');
+      if(overlay && !overlay.classList.contains('hidden')) {
+        overlay.classList.add('hidden');
+        if(App.ModalFocus) App.ModalFocus.release(overlay);
+      }
     }
 
     return { init:init, render:render, updateHoldTimer:updateHoldTimer,
              updateBreathingProgress:updateBreathingProgress,
              updateRecoveryCountdown:updateRecoveryCountdown,
+             updateStageTransitionCountdown:updateStageTransitionCountdown,
              updatePauseCountdown:updatePauseCountdown,
              updateGetReadyCountdown:updateGetReadyCountdown,
              showRoundSummary:showRoundSummary, updateSummaryCountdown:updateSummaryCountdown,
@@ -6878,7 +8727,18 @@
         ? Math.floor(s.durationSec/60) + ':' + String(s.durationSec%60).padStart(2,'0') + ' min' : '–';
       var lines = [];
       lines.push(when + '  ·  ' + (s.preset || 'Custom') + '  ·  '
-        + (s.rounds || '–') + ' rounds × ' + (s.breaths || '–') + ' breaths  ·  ' + durTxt);
+        + (s.rounds || '–') + ' rounds × ' + (s.breaths || '–') + ' breaths'
+        + (s.totalBreaths ? (' (' + s.totalBreaths + ' total)') : '') + '  ·  ' + durTxt);
+      if(s.isRoutine && s.stages && s.stages.length) {
+        lines.push('Stages: ' + s.stages.map(function(st) {
+          return st.label + ' (' + st.breaths + ' br' + (st.bestHold > 0 ? ', ' + Math.round(st.bestHold) + 's' : '') + ')';
+        }).join(' → '));
+      }
+      if(s.hr && s.hr.samples > 0) {
+        lines.push('Heart Rate: Avg ' + s.hr.avgBpm + ' BPM · Min ' + s.hr.minBpm + ' BPM'
+          + (s.hr.maxHoldDrop > 0 ? (' · Diving Reflex −' + s.hr.maxHoldDrop + ' BPM') : '')
+          + (s.hr.rmssd > 0 ? (' · RMSSD ' + s.hr.rmssd + 'ms') : ''));
+      }
       if(s.urges && s.urges.some(function(u) { return u > 0; })) {
         lines.push('First urge: ' + s.urges.map(function(u) {
           return u > 0 ? Math.round(u) + 's' : '–';
@@ -7064,6 +8924,97 @@
       return wrap;
     }
 
+    function buildHeatmap(allSessions) {
+      var wrap = el('div', 'heatmap-wrap');
+      var W = 532, H = 90, padL = 22, padT = 14, cell = 7.5, gap = 2;
+      var step = cell + gap;
+      var dayTotals = {};
+      var dayCounts = {};
+      (allSessions || []).forEach(function(s) {
+        if(!s || !s.ts) return;
+        var d = new Date(s.ts);
+        var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        dayTotals[key] = (dayTotals[key] || 0) + (s.durationSec || 60);
+        dayCounts[key] = (dayCounts[key] || 0) + 1;
+      });
+      var svg = svgEl('svg', { 'class':'heatmap-svg', viewBox:'0 0 ' + W + ' ' + H, role:'img', 'aria-label':'52-week practice consistency heatmap' });
+      var tip = el('div'); tip.id = 'heatmap-tooltip';
+      tip.style.cssText = 'position:absolute;pointer-events:none;display:none;background:var(--color-surface-raised);border:1px solid var(--color-border);border-radius:6px;padding:3px 8px;font-size:0.7rem;color:var(--color-text-primary);white-space:nowrap;z-index:10;transform:translate(-50%,-120%);';
+
+      var today = new Date();
+      today.setHours(12, 0, 0, 0);
+      var todayDow = today.getDay(); /* 0=Sun */
+      var endSunday = new Date(today.getTime());
+      endSunday.setDate(today.getDate() - todayDow);
+      var startDate = new Date(endSunday.getTime());
+      startDate.setDate(endSunday.getDate() - 51 * 7);
+
+      var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      var lastMonth = -1;
+      ['M','W','F'].forEach(function(lblTxt, idx) {
+        var rowIdx = idx * 2 + 1;
+        var dl = svgEl('text', { class:'chart-label', x:padL - 4, y:padT + rowIdx * step + 6.5, 'text-anchor':'end', style:'font-size:8px;' });
+        dl.textContent = lblTxt;
+        svg.appendChild(dl);
+      });
+
+      for(var w = 0; w < 52; w++) {
+        var colDate = new Date(startDate.getTime());
+        colDate.setDate(startDate.getDate() + w * 7);
+        if(colDate.getMonth() !== lastMonth) {
+          lastMonth = colDate.getMonth();
+          var ml = svgEl('text', { class:'chart-label', x:padL + w * step, y:10, style:'font-size:8px;' });
+          ml.textContent = MONTHS[lastMonth];
+          svg.appendChild(ml);
+        }
+        for(var dIdx = 0; dIdx < 7; dIdx++) {
+          var cur = new Date(colDate.getTime());
+          cur.setDate(colDate.getDate() + dIdx);
+          if(cur > today) continue;
+          var key = cur.getFullYear() + '-' + String(cur.getMonth() + 1).padStart(2, '0') + '-' + String(cur.getDate()).padStart(2, '0');
+          var sec = dayTotals[key] || 0;
+          var cnt = dayCounts[key] || 0;
+          var mins = Math.round(sec / 60);
+          var lvl = sec === 0 ? 0 : (mins < 5 ? 1 : (mins < 15 ? 2 : (mins < 30 ? 3 : 4)));
+          var rect = svgEl('rect', {
+            class: 'hm-cell hm-lvl-' + lvl,
+            x: padL + w * step, y: padT + dIdx * step,
+            width: cell, height: cell
+          });
+          (function(k, c, m, rEl) {
+            function showTip() {
+              var rr = rEl.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
+              tip.style.left = (rr.left + rr.width/2 - wr.left) + 'px';
+              tip.style.top = (rr.top - wr.top) + 'px';
+              tip.textContent = k + ': ' + c + (c === 1 ? ' session' : ' sessions') + (m > 0 ? (' · ' + m + 'm') : '');
+              tip.style.display = 'block';
+            }
+            function hideTip() { tip.style.display = 'none'; }
+            rEl.addEventListener('mouseenter', showTip);
+            rEl.addEventListener('mouseleave', hideTip);
+            rEl.addEventListener('touchstart', showTip, { passive: true });
+            rEl.addEventListener('touchend', hideTip);
+          })(key, cnt, mins, rect);
+          svg.appendChild(rect);
+        }
+      }
+      wrap.appendChild(svg);
+      var leg = el('div', 'heatmap-legend');
+      leg.innerHTML = '<span>Less</span>' +
+        '<span class="hm-swatch hm-lvl-0"></span>' +
+        '<span class="hm-swatch hm-lvl-1"></span>' +
+        '<span class="hm-swatch hm-lvl-2"></span>' +
+        '<span class="hm-swatch hm-lvl-3"></span>' +
+        '<span class="hm-swatch hm-lvl-4"></span>' +
+        '<span>More</span>';
+      wrap.appendChild(leg);
+      wrap.appendChild(tip);
+      return wrap;
+    }
+
+    var historyFilter = 'all';
+    var historyLimit = 15;
+
     function build() {
       body.innerHTML = '';
 
@@ -7145,6 +9096,10 @@
           body.appendChild(tiles3);
         }
 
+        /* 52-Week Consistency Heatmap (F3) */
+        body.appendChild(el('div', 'stats-chart-title', '52-Week Practice Consistency'));
+        body.appendChild(buildHeatmap(st.all));
+
         var series = st.all
           .filter(function(s) { return App.History.bestHold(s) > 0; })
           .slice(-30)
@@ -7176,30 +9131,97 @@
           body.appendChild(buildRoundChart(roundAvgs));
         }
 
+        /* Filter & Responsive History Table (E4) */
+        var histCtrl = el('div', 'stats-history-controls');
+        histCtrl.appendChild(el('div', 'stats-chart-title', 'Session History'));
+        var filterSel = document.createElement('select');
+        filterSel.id = 'stats-filter';
+        filterSel.setAttribute('aria-label', 'Filter sessions by protocol type');
+        [['all','All Sessions'],['retention','Retention Holds'],['cadence','Cadence / Breath'],['routine','Routines']].forEach(function(opt) {
+          var o = document.createElement('option');
+          o.value = opt[0]; o.textContent = opt[1];
+          filterSel.appendChild(o);
+        });
+        filterSel.value = historyFilter;
+        filterSel.addEventListener('change', function() {
+          historyFilter = filterSel.value;
+          historyLimit = 15;
+          build();
+        });
+        histCtrl.appendChild(filterSel);
+        body.appendChild(histCtrl);
+
+        var filtered = st.all.slice().reverse().filter(function(s) {
+          var hasHolds = App.History.bestHold(s) > 0;
+          if(historyFilter === 'retention') return hasHolds;
+          if(historyFilter === 'cadence') return !hasHolds && !s.isRoutine;
+          if(historyFilter === 'routine') return !!s.isRoutine;
+          return true;
+        });
+
         var listWrap = el('div', 'stats-list');
+        var tblWrap = el('div', 'table-wrapper');
+        tblWrap.setAttribute('tabindex', '0');
+        tblWrap.setAttribute('role', 'region');
+        tblWrap.setAttribute('aria-label', 'Session history');
         var table = document.createElement('table');
         var thead = document.createElement('thead');
         var hr = document.createElement('tr');
-        ['Date','Preset','Rounds','Feel','Best hold'].forEach(function(h) {
+        ['Date','Preset','Rnds','Feel','Peak / Dur',''].forEach(function(h) {
           var th = document.createElement('th'); th.textContent = h; hr.appendChild(th);
         });
         thead.appendChild(hr); table.appendChild(thead);
         var FEELS = {1:'😌', 2:'✨', 3:'⚡', 4:'🎯', 5:'😵'};
         var tbody = document.createElement('tbody');
-        st.all.slice(-10).reverse().forEach(function(s) {
+        filtered.slice(0, historyLimit).forEach(function(s) {
           var tr = document.createElement('tr');
           tr.className = 'session-row';
           var best = App.History.bestHold(s);
+          var metricTxt = best > 0
+            ? (Math.round(best) + 's')
+            : (s.durationSec ? (Math.floor(s.durationSec/60) + ':' + String(s.durationSec%60).padStart(2,'0')) : ((s.totalBreaths || s.breaths || '–') + ' br'));
           [fmtDate(s.ts), s.preset || 'Custom', String(s.rounds || '–'),
-           FEELS[s.feeling] || '–',
-           best ? Math.round(best) + 's' : '–'].forEach(function(c) {
+           FEELS[s.feeling] || '–', metricTxt].forEach(function(c) {
             var td = document.createElement('td'); td.textContent = c; tr.appendChild(td);
           });
+          var delTd = document.createElement('td');
+          var delBtn = document.createElement('button');
+          delBtn.type = 'button'; delBtn.className = 'btn-del-session';
+          delBtn.textContent = '🗑'; delBtn.title = 'Delete session';
+          delBtn.setAttribute('aria-label', 'Delete session from ' + fmtDate(s.ts));
+          delBtn.addEventListener('click', function(ev) {
+            ev.stopPropagation();
+            App.ConfirmDialog.open({
+              title: 'Delete Session',
+              message: 'Delete "' + (s.preset || 'Custom') + '" session from ' + fmtDate(s.ts) + '?',
+              okLabel: 'Delete',
+              onResult: function(res) {
+                if(res === 'confirm') {
+                  App.History.deleteSession(s.ts);
+                  build();
+                  App.UI.updateStreakBadge();
+                }
+              }
+            });
+          });
+          delTd.appendChild(delBtn);
+          tr.appendChild(delTd);
           tr.addEventListener('click', function() { toggleDetail(tr, s); });
           tbody.appendChild(tr);
         });
         table.appendChild(tbody);
-        listWrap.appendChild(table);
+        tblWrap.appendChild(table);
+        listWrap.appendChild(tblWrap);
+        if(filtered.length > historyLimit) {
+          var moreBtn = document.createElement('button');
+          moreBtn.type = 'button'; moreBtn.className = 'stats-more-btn';
+          moreBtn.textContent = 'Show more (' + (filtered.length - historyLimit) + ' remaining)';
+          moreBtn.addEventListener('click', function() {
+            historyLimit += 15;
+            build();
+          });
+          listWrap.appendChild(moreBtn);
+        }
         body.appendChild(listWrap);
       }
 
@@ -7270,13 +9292,37 @@
         if(!file) return;
         var reader = new FileReader();
         reader.onload = function(e2) {
-          var res = App.History.importData(e2.target.result);
-          if (res.success) {
-            alert('Backup restored successfully (' + res.count + ' sessions loaded)!');
-            build();
-            App.UI.updateStreakBadge();
+          var rawJson = e2.target.result;
+          function applyImport(mode) {
+            var res = App.History.importData(rawJson, mode);
+            if(res.success) {
+              build();
+              App.UI.updateStreakBadge();
+              var toast = document.getElementById('copy-toast');
+              if(toast) {
+                toast.textContent = 'Backup restored (' + res.count + ' sessions)!';
+                toast.classList.remove('hidden');
+                setTimeout(function() { toast.classList.add('hidden'); toast.textContent = 'Copied summary to clipboard!'; }, 2400);
+              }
+            } else if(typeof alert === 'function') {
+              alert('Import failed: ' + res.error);
+            }
+          }
+          if(App.History.stats().sessions > 0 && App.ConfirmDialog) {
+            App.ConfirmDialog.open({
+              title: 'Import Backup',
+              message: 'You already have saved sessions. Merge new entries with existing data, or replace all data?',
+              buttons: [
+                { label: 'Cancel', value: 'cancel', cls: 'btn btn-secondary', autofocus: true },
+                { label: 'Replace All', value: 'replace', cls: 'btn btn-secondary' },
+                { label: 'Merge (Keep Both)', value: 'merge', cls: 'btn btn-primary' }
+              ],
+              onResult: function(mode) {
+                if(mode === 'merge' || mode === 'replace') applyImport(mode);
+              }
+            });
           } else {
-            alert('Import failed: ' + res.error);
+            applyImport('replace');
           }
         };
         reader.readAsText(file);
@@ -7287,11 +9333,32 @@
       dataActions.appendChild(btnExport);
       dataActions.appendChild(btnImport);
       dataActions.appendChild(fileInput);
+      if(st.sessions > 0) {
+        var btnClear = document.createElement('button');
+        btnClear.type = 'button';
+        btnClear.className = 'btn btn-reset';
+        btnClear.textContent = 'Clear History';
+        btnClear.addEventListener('click', function() {
+          App.ConfirmDialog.open({
+            title: 'Clear All History',
+            message: 'Permanently delete all ' + st.sessions + ' recorded sessions?',
+            okLabel: 'Clear All',
+            onResult: function(res) {
+              if(res === 'confirm') {
+                App.History.clearAll();
+                build();
+                App.UI.updateStreakBadge();
+              }
+            }
+          });
+        });
+        dataActions.appendChild(btnClear);
+      }
       body.appendChild(dataActions);
     }
 
-    function open()  { build(); overlay.classList.remove('hidden'); }
-    function close() { overlay.classList.add('hidden'); }
+    function open()  { build(); overlay.classList.remove('hidden'); if(App.ModalFocus) App.ModalFocus.trap(overlay); }
+    function close() { if(!overlay.classList.contains('hidden')) { overlay.classList.add('hidden'); if(App.ModalFocus) App.ModalFocus.release(overlay); } }
     function isOpen() { return !overlay.classList.contains('hidden'); }
 
     function init() {
@@ -7319,6 +9386,14 @@
       var breathsEl = document.getElementById('pill-breaths');
       var holdEl    = document.getElementById('pill-hold');
       var roundsEl  = document.getElementById('pill-rounds');
+      var actR = (App.Routines && App.Routines.getActive) ? App.Routines.getActive() : null;
+      if(actR) {
+        var mins = Math.max(1, Math.round(App.Routines.estimateSeconds(actR) / 60));
+        if(breathsEl) breathsEl.textContent = actR.stages.length + ' stages';
+        if(holdEl)    holdEl.textContent = '~' + mins + ' min';
+        if(roundsEl)  roundsEl.textContent = 'Routine';
+        return;
+      }
       var bStart    = App.Config.get('breathsPerRound');
       var bStep     = App.Config.get('breathStep');
       var rCount    = App.Config.get('rounds');
@@ -7329,8 +9404,21 @@
           breathsEl.textContent = bStart + ' breaths';
         }
       }
-      if(holdEl)    holdEl.textContent    = App.Config.get('holdStartTime') + 's hold';
-      if(roundsEl)  roundsEl.textContent  = rCount + ' rounds';
+      if(holdEl) {
+        var t1 = App.Config.getHoldTarget(1);
+        var tN = App.Config.getHoldTarget(rCount);
+        if(App.Config.get('holdMode') === 'adaptive') {
+          holdEl.textContent = (rCount > 1 && t1 !== tN) ? ('Adaptive ' + t1 + '→' + tN + 's') : ('Adaptive ' + t1 + 's');
+        } else if(t1 === 0 && tN === 0) {
+          var inh = App.Config.get('inhaleDuration'), pi = App.Config.get('pauseAfterInhale');
+          var exh = App.Config.get('exhaleDuration'), pe = App.Config.get('pauseAfterExhale');
+          holdEl.textContent = inh + (pi > 0 ? '-' + pi : '') + '-' + exh + (pe > 0 ? '-' + pe : '') + 's pace';
+        } else {
+          holdEl.textContent = t1 + 's hold';
+        }
+      }
+      if(roundsEl) roundsEl.textContent = rCount + (rCount === 1 ? ' round' : ' rounds');
+      if(App.Config.updateAdaptiveUI) App.Config.updateAdaptiveUI();
     }
 
     function updatePresetBadge() {
@@ -7345,6 +9433,10 @@
         var isMatch = btn.getAttribute('data-tab') === tabName;
         btn.classList.toggle('active', isMatch);
         btn.setAttribute('aria-selected', isMatch ? 'true' : 'false');
+        btn.setAttribute('tabindex', isMatch ? '0' : '-1');
+        if(isMatch && btn.scrollIntoView) {
+          try { btn.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch(e) {}
+        }
       });
       tabPanels.forEach(function(panel) {
         var isMatch = panel.id === 'panel-' + tabName;
@@ -7415,9 +9507,22 @@
       tabBtns   = Array.prototype.slice.call(document.querySelectorAll('.settings-tab-bar .tab-btn'));
       tabPanels = Array.prototype.slice.call(document.querySelectorAll('.drawer-body .tab-panel'));
 
-      tabBtns.forEach(function(btn) {
+      tabBtns.forEach(function(btn, idx) {
+        btn.setAttribute('tabindex', btn.classList.contains('active') ? '0' : '-1');
         btn.addEventListener('click', function() {
           selectTab(btn.getAttribute('data-tab'));
+        });
+        btn.addEventListener('keydown', function(ev) {
+          if(ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft') return;
+          ev.preventDefault();
+          var nextIdx = ev.key === 'ArrowRight'
+            ? (idx + 1) % tabBtns.length
+            : (idx - 1 + tabBtns.length) % tabBtns.length;
+          var nextBtn = tabBtns[nextIdx];
+          if(nextBtn) {
+            selectTab(nextBtn.getAttribute('data-tab'));
+            if(nextBtn.focus) nextBtn.focus();
+          }
         });
       });
 
@@ -7506,8 +9611,11 @@
     App.Theme.init();
     App.UI.init();
     App.Config.populateInputs();
+    if(App.Routines && App.Routines.init) App.Routines.init();
     App.Presets.init();
+    if(App.Favorites && App.Favorites.init) App.Favorites.init();
     if(App.Bolt && App.Bolt.updateSettingsHint) App.Bolt.updateSettingsHint();
+    if(App.Biofeedback && App.Biofeedback.updateUI) App.Biofeedback.updateUI();
     App.Liquid.init();
     App.Scene.init();
     Stats.init();
@@ -7529,13 +9637,21 @@
     /* Settings input listeners */
     ['cfg-breaths','cfg-breath-step','cfg-hold-start','cfg-hold-incr','cfg-rounds','cfg-inhale','cfg-exhale',
      'cfg-pause-inhale','cfg-pause-exhale','cfg-recovery-hold','cfg-ramp','cfg-hold-mode','cfg-breath-style',
-     'cfg-voice','cfg-vibration','cfg-ambience','cfg-ambience2','cfg-pacer','cfg-material',
+     'cfg-voice','cfg-vibration','cfg-ambience','cfg-ambience2','cfg-pacer','cfg-material','cfg-palette',
      'cfg-fullscreen','cfg-autodim','cfg-sleep','cfg-night-oled','cfg-flow']
       .forEach(function(id) {
         var el = document.getElementById(id);
         if(el) el.addEventListener('change', function() {
+          if(id !== 'cfg-palette' && id !== 'cfg-material' && id !== 'cfg-ambience' && id !== 'cfg-ambience2' &&
+             id !== 'cfg-voice' && id !== 'cfg-vibration' && id !== 'cfg-pacer' && id !== 'cfg-fullscreen' &&
+             id !== 'cfg-autodim' && id !== 'cfg-sleep' && id !== 'cfg-night-oled' && id !== 'cfg-flow') {
+            if(App.Routines && App.Routines.clearActive) App.Routines.clearActive(true);
+          }
           App.Config.readFromInputs();
           App.Config.save();
+          if(id === 'cfg-palette' && App.Theme && App.Theme.applyPalette) {
+            App.Theme.applyPalette(App.Config.get('palette'));
+          }
           App.Presets.updateSelect();
           App.Ambience.sync();
           if(App.Ambience && App.Ambience.preload) App.Ambience.preload();
@@ -7564,6 +9680,29 @@
     if(streakBadgeBtn) {
       streakBadgeBtn.addEventListener('click', function() {
         Stats.open();
+      });
+    }
+
+    /* BLE Heart Rate Popover (F5) */
+    var hrBtn = document.getElementById('hr-connect-btn');
+    var hrPop = document.getElementById('hr-popover');
+    var hrActBtn = document.getElementById('hr-action-btn');
+    if(hrBtn && hrPop) {
+      hrBtn.addEventListener('click', function(ev) {
+        ev.stopPropagation();
+        if(App.Biofeedback && App.Biofeedback.updateUI) App.Biofeedback.updateUI();
+        hrPop.classList.toggle('hidden');
+      });
+      document.addEventListener('click', function(ev) {
+        var wrap = ev.target && ev.target.closest ? ev.target.closest('.hr-wrap') : null;
+        if(!hrPop.classList.contains('hidden') && !wrap) hrPop.classList.add('hidden');
+      });
+    }
+    if(hrActBtn) {
+      hrActBtn.addEventListener('click', function() {
+        if(!App.Biofeedback) return;
+        if(App.Biofeedback.isConnected()) App.Biofeedback.disconnect();
+        else App.Biofeedback.connect();
       });
     }
 
@@ -7757,10 +9896,17 @@
     var boltCloseBtn     = document.getElementById('btn-bolt-close');
     if(boltCalibrateBtn) {
       boltCalibrateBtn.addEventListener('click', function() {
+        if(App.Routines && App.Routines.clearActive) App.Routines.clearActive(true);
+        if(App.Config.get('holdStartTime') === 0 && App.Config.get('holdIncrement') === 0) {
+          App.Config.set('holdStartTime', 60);
+          var hsEl = document.getElementById('cfg-hold-start');
+          if(hsEl) hsEl.value = '60';
+        }
         App.Config.set('holdMode', 'adaptive');
         var hmEl = document.getElementById('cfg-hold-mode');
         if(hmEl) hmEl.value = 'adaptive';
         App.Config.save();
+        if(App.Config.updateAdaptiveUI) App.Config.updateAdaptiveUI();
         App.Presets.updateSelect();
         if(App.SettingsDrawer) App.SettingsDrawer.updateSummaryPill();
         App.UI.hideBoltModal();
@@ -7841,6 +9987,21 @@
         }
       });
     }
+    window.addEventListener('pointerup', function() {
+      if(App.Session.isFlowTouchActive && App.Session.isFlowTouchActive()) {
+        App.Session.onFlowPointerUp();
+      }
+    });
+    window.addEventListener('pointercancel', function() {
+      if(App.Session.isFlowTouchActive && App.Session.isFlowTouchActive()) {
+        App.Session.onFlowPointerUp();
+      }
+    });
+    window.addEventListener('blur', function() {
+      if(App.Session.isFlowTouchActive && App.Session.isFlowTouchActive()) {
+        App.Session.onFlowPointerUp();
+      }
+    });
 
     /* HOLD NOW & Urge-to-breathe buttons */
     var holdNowBtn = document.getElementById('hold-now-btn');
@@ -7955,7 +10116,7 @@
           } else if(!ev.repeat) {
             App.Session.pause();
           }
-        } else if(!ev.repeat) {
+        } else if(st !== STATES.BOLT_PREP && !ev.repeat) {
           App.Session.pause();
         }
         return;
@@ -7986,7 +10147,7 @@
     /* Render initial IDLE state */
     App.UI.render(STATES.IDLE);
 
-    /* Register service worker for PWA; announce updates with a reload toast */
+    /* Register service worker for PWA; announce updates & warm audio cache once active */
     if('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js').then(function(reg) {
         function watch(worker) {
@@ -8003,6 +10164,11 @@
         if(reg.installing) watch(reg.installing);
         reg.addEventListener('updatefound', function() { watch(reg.installing); });
       }).catch(function() {});
+      if(navigator.serviceWorker.ready) {
+        navigator.serviceWorker.ready.then(function() {
+          if(App.Ambience && App.Ambience.earlyFetch) App.Ambience.earlyFetch(true);
+        }).catch(function() {});
+      }
       document.getElementById('btn-reload').addEventListener('click', function() {
         location.reload();
       });

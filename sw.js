@@ -1,4 +1,4 @@
-var CACHE_NAME = 'pranayama-v25';
+var CACHE_NAME = 'pranayama-v30';
 var ASSETS = [
   './',
   './index.html',
@@ -49,6 +49,7 @@ function buildRangeResponse(rangeHeader, fullResponse) {
     if (isNaN(end) || end >= total) end = total - 1;
     var sliced = ab.slice(start, end + 1);
     var headers = new Headers(fullResponse.headers);
+    headers.delete('Content-Encoding');
     headers.set('Content-Range', 'bytes ' + start + '-' + end + '/' + total);
     headers.set('Content-Length', String(sliced.byteLength));
     headers.set('Accept-Ranges', 'bytes');
@@ -69,7 +70,20 @@ self.addEventListener('fetch', function(event) {
   if (req.mode === 'navigate' || url.pathname.endsWith('index.html') || url.pathname.endsWith('/')) {
     event.respondWith(
       caches.open(CACHE_NAME).then(function(cache) {
-        return cache.match(req).then(function(cachedResponse) {
+        return cache.match(req, { ignoreSearch: true }).then(function(cachedResponse) {
+          if (!cachedResponse) {
+            return cache.match('./index.html').then(function(fallbackCached) {
+              var fetchPromise = fetch(req).then(function(networkResponse) {
+                if (networkResponse && networkResponse.status === 200) {
+                  cache.put(req, networkResponse.clone());
+                }
+                return networkResponse;
+              }).catch(function() {
+                return fallbackCached;
+              });
+              return fallbackCached || fetchPromise;
+            });
+          }
           var fetchPromise = fetch(req).then(function(networkResponse) {
             if (networkResponse && networkResponse.status === 200) {
               cache.put(req, networkResponse.clone());

@@ -31,18 +31,30 @@ assert(html.includes('id="bolt-overlay"'), 'HTML must include #bolt-overlay');
 assert(html.includes('id="cfg-breath-style"'), 'HTML must include #cfg-breath-style');
 
 const swCode = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
-assert(swCode.includes("CACHE_NAME = 'pranayama-v25'"), 'sw.js must use pranayama-v25 cache');
+assert(swCode.includes("CACHE_NAME = 'pranayama-v30'"), 'sw.js must use pranayama-v30 cache');
+assert(swCode.includes('ignoreSearch: true'), 'sw.js must match navigation with ignoreSearch');
 
 const genVoiceCode = fs.readFileSync(path.join(ROOT, 'docs/voice/gen_voice.py'), 'utf8');
 assert(genVoiceCode.includes('Path(__file__).resolve().parent'), 'gen_voice.py must use portable Path');
 assert(genVoiceCode.includes('"threeBreathsLeft"'), 'gen_voice.py must include threeBreathsLeft');
 assert(genVoiceCode.includes('"newRecord"'), 'gen_voice.py must include newRecord');
+assert(genVoiceCode.includes('"inhaleLeft"'), 'gen_voice.py must include inhaleLeft');
+assert(genVoiceCode.includes('"humOut"'), 'gen_voice.py must include humOut');
+assert(genVoiceCode.includes('"nextStage"'), 'gen_voice.py must include nextStage');
 
 const compressVoiceCode = fs.readFileSync(path.join(ROOT, 'docs/voice/compress_voice.py'), 'utf8');
 assert(compressVoiceCode.includes('Path(__file__).resolve().parent'), 'compress_voice.py must use portable Path');
 assert(compressVoiceCode.includes('"threeBreathsLeft"'), 'compress_voice.py must include threeBreathsLeft');
 assert(compressVoiceCode.includes('"newRecord"'), 'compress_voice.py must include newRecord');
-console.log('✓ Static HTML, CSS, Service Worker, and Voice scripts verified.');
+assert(compressVoiceCode.includes('"inhaleLeft"'), 'compress_voice.py must include inhaleLeft');
+assert(compressVoiceCode.includes('"humOut"'), 'compress_voice.py must include humOut');
+assert(compressVoiceCode.includes('"nextStage"'), 'compress_voice.py must include nextStage');
+
+const voiceDataCode = fs.readFileSync(path.join(ROOT, 'docs/voice/voice_data.js'), 'utf8');
+['inhaleLeft', 'exhaleRight', 'inhaleRight', 'exhaleLeft', 'humOut', 'nextStage'].forEach(k => {
+  assert(voiceDataCode.includes('"' + k + '"'), 'voice_data.js must contain clip ' + k);
+});
+console.log('✓ Static HTML, CSS, Service Worker, and 20 Voice clips verified.');
 
 // 2. Build Lightweight DOM & Browser Mock for VM Execution
 function createMockDOM(htmlSource) {
@@ -102,6 +114,10 @@ function createMockDOM(htmlSource) {
       addEventListener: (ev, fn) => {
         if (!listeners[ev]) listeners[ev] = [];
         listeners[ev].push(fn);
+      },
+      removeEventListener: (ev, fn) => {
+        if (!listeners[ev]) return;
+        listeners[ev] = listeners[ev].filter(f => f !== fn);
       },
       dispatchEvent: (evObj) => {
         const list = listeners[evObj.type] || [];
@@ -503,5 +519,179 @@ assert.deepStrictEqual(Array.from(App.Session.getRoundHolds()), [20], 'Finish & 
 App.UI.hideVictoryModal();
 App.Session.reset();
 console.log('✓ Keyboard shortcuts (P, H, F) verified.');
+
+// 9. Test v3.0 Bugfixes (B1 BOLT Adaptive from 0s Preset, B2 Summary Pill, B3 Pause/Resume Urge Preservation, B4 BOLT_PREP, B5 Finish Guard)
+console.log('--- v3.0 Bugfixes (B1-B5, B10) ---');
+localStorage.removeItem('whm_history');
+localStorage.removeItem('whm_bolt_history');
+App.Presets.apply('box'); // 0s hold preset
+assert.strictEqual(App.Config.getHoldTarget(1), 0, 'Box preset fixed hold must be 0s');
+App.Session.startBolt();
+assert.strictEqual(App.Session.getState(), STATES.BOLT_PREP, 'Should be in BOLT_PREP');
+assert.strictEqual(elementsById['btn-start'].disabled, true, 'B4: #btn-start must be disabled during BOLT_PREP');
+assert.strictEqual(elementsById['btn-start'].textContent, 'PREPARING…', 'B4: #btn-start must show PREPARING…');
+stepTimer(8500);
+assert.strictEqual(App.Session.getState(), STATES.BOLT_HOLD, 'Should enter BOLT_HOLD');
+stepTimer(30000);
+App.Session.endBolt();
+elementsById['btn-bolt-calibrate'].click();
+assert.strictEqual(App.Config.get('holdMode'), 'adaptive', 'B1: Adaptive holdMode must be enabled');
+assert.strictEqual(App.Config.getHoldTarget(1), 71, 'B1: BOLT calibration after 0s Box preset must yield 71s adaptive target');
+assert(elementsById['pill-hold'].textContent.includes('Adaptive'), 'B2: Summary pill must display Adaptive hold label');
+App.UI.hideBoltModal();
+
+// B3: Pause/Resume during HOLD preserves marked urge
+App.Presets.apply('pranayama');
+App.Session.start();
+stepTimer(3500);
+assert.strictEqual(App.Session.canFinish(), false, 'B5: Finish & Save must be blocked on Breath 1 with 0 holds');
+App.Session.finishAndSave();
+assert.strictEqual(App.Session.getState(), STATES.BREATHING_IN, 'B5: finishAndSave() on Breath 1 with 0 holds must no-op');
+App.Session.holdNow();
+stepTimer(15000);
+App.Session.markUrge();
+assert(elementsById['urge-btn'].classList.contains('marked'), 'Urge button must be marked at 15s');
+App.Session.pause();
+assert.strictEqual(App.Session.getState(), STATES.PAUSED);
+App.Session.resume();
+assert.strictEqual(App.Session.getState(), STATES.HOLD);
+assert(elementsById['urge-btn'].classList.contains('marked'), 'B3: #urge-btn must remain marked after Pause/Resume');
+assert.strictEqual(elementsById['hold-timer'].textContent, '15', 'B3: #hold-timer must preserve 15s on Resume');
+App.Session.reset();
+console.log('✓ v3.0 Bugfixes B1-B5 verified.');
+
+// 10. Test New Protocols (Kapalabhati, Bhramari, Sleep Wind-Down, Quick Energize) & 30s Pause Range
+console.log('--- v3.0 Protocols (F4) & Palettes (E5) & Favorites (E2) ---');
+App.Presets.apply('kapalabhati');
+assert.strictEqual(App.Config.get('breathStyle'), 'kapalabhati');
+assert.strictEqual(App.Config.get('inhaleDuration'), 0.6);
+assert.strictEqual(App.Config.get('exhaleDuration'), 0.4);
+assert.strictEqual(App.Config.get('holdStartTime'), 45);
+App.Session.start();
+stepTimer(3500);
+assert.strictEqual(elementsById['phase-label'].textContent, 'PASSIVE IN', 'Kapalabhati inhale must display PASSIVE IN');
+stepTimer(700);
+assert.strictEqual(elementsById['phase-label'].textContent, 'PUMP OUT', 'Kapalabhati exhale must display PUMP OUT');
+App.Session.reset();
+
+App.Presets.apply('bhramari');
+assert.strictEqual(App.Config.get('breathStyle'), 'bhramari');
+App.Session.start();
+stepTimer(3500);
+stepTimer(4100);
+assert.strictEqual(elementsById['phase-label'].textContent, 'HUM OUT', 'Bhramari exhale must display HUM OUT');
+App.Session.reset();
+
+App.Presets.apply('sleep_winddown');
+assert.strictEqual(App.Config.get('ramp'), 'slowdown');
+App.Presets.apply('energize');
+assert.strictEqual(App.Config.get('inhaleDuration'), 1.2);
+
+App.Config.set('pauseAfterInhale', 25);
+assert.strictEqual(App.Config.get('pauseAfterInhale'), 25, 'Pause after inhale must support up to 30s');
+
+App.Theme.applyPalette('ember');
+assert.strictEqual(App.Theme.getPalette(), 'ember');
+assert.strictEqual(sandbox.COLORS.BREATHING_IN, '#FB923C', 'Ember palette must update COLORS.BREATHING_IN');
+App.Theme.applyPalette('ocean');
+
+assert(App.Favorites.isPinned('pranayama'), 'Pranayama must be pinned by default');
+assert.strictEqual(App.Favorites.pin('bhramari'), true, '4th favorite pin must succeed');
+assert.strictEqual(App.Favorites.pin('kapalabhati'), false, '5th favorite pin must be capped at 4');
+App.Favorites.unpin('bhramari');
+console.log('✓ New protocols, 30s pause range, Palettes, and Favorites verified.');
+
+// 11. Test Multi-Phase Routine Sequencer (F2)
+console.log('--- Multi-Phase Routine Sequencer (F2) ---');
+localStorage.removeItem('whm_history');
+const customRoutine = App.Routines.saveCustom({
+  name: 'Mini Test Chain',
+  bridgeSec: 3,
+  stages: [
+    { preset: 'coherent', rounds: 1, breathsPerRound: 3, holdStartTime: 0 },
+    { preset: 'physio_sigh', rounds: 1, breathsPerRound: 3, holdStartTime: 0 }
+  ]
+});
+assert(customRoutine && customRoutine.id.startsWith('r:c_'), 'Custom routine must save');
+App.Routines.activate(customRoutine.id);
+App.Session.start();
+stepTimer(3500); // Stage 1 Breath 1 In
+for (let b = 0; b < 3; b++) {
+  stepTimer(5600); // Exhale
+  stepTimer(5600); // Next inhale / stage transition
+}
+assert.strictEqual(App.Session.getState(), STATES.STAGE_TRANSITION, 'Routine must enter STAGE_TRANSITION after Stage 1');
+stepTimer(3500); // Stage 2 Breath 1 In (Physio Sigh: 3.5s in + 6.5s out + 1s pause = 11s)
+assert.strictEqual(App.Session.getState(), STATES.BREATHING_IN, 'Routine must auto-advance into Stage 2');
+for (let b = 0; b < 3; b++) {
+  stepTimer(3600); // In -> Out
+  stepTimer(6600); // Out -> Pause (or complete on last)
+  if (b < 2) stepTimer(1100);
+}
+assert.strictEqual(App.Session.getState(), STATES.SESSION_COMPLETE, 'Routine must complete after Stage 2');
+const rHist = App.History.stats().all;
+assert.strictEqual(rHist.length, 1, 'Routine must save 1 consolidated session');
+assert.strictEqual(rHist[0].isRoutine, true, 'Routine history entry must have isRoutine=true');
+assert.strictEqual(rHist[0].stages.length, 2, 'Routine history entry must contain 2 stage summaries');
+App.Routines.clearActive();
+App.UI.hideVictoryModal();
+App.Session.reset();
+console.log('✓ Multi-Phase Routine Sequencer verified.');
+
+// 12. Test Web Bluetooth HR & HRV Biofeedback (F5)
+console.log('--- Web Bluetooth HR & HRV Biofeedback (F5) ---');
+const pktBuf = new ArrayBuffer(6);
+const pktView = new DataView(pktBuf);
+pktView.setUint8(0, 0x10); // 8-bit BPM + RR-interval flag
+pktView.setUint8(1, 74);   // 74 BPM
+pktView.setUint16(2, 820, true); // ~800ms RR
+pktView.setUint16(4, 860, true); // ~840ms RR
+const parsedHr = App.Biofeedback.parseHeartRate(pktView);
+assert.strictEqual(parsedHr.bpm, 74, 'parseHeartRate must decode 8-bit BPM');
+assert.strictEqual(parsedHr.rrs.length, 2, 'parseHeartRate must decode RR-intervals');
+
+// Simulate session with Diving-Reflex drop during HOLD
+localStorage.removeItem('whm_achievements');
+App.Presets.apply('pranayama');
+App.Session.start();
+stepTimer(3500);
+App.Biofeedback.ingestPacket({ bpm: 75, rrs: [800, 810, 830] });
+App.Session.holdNow();
+App.Biofeedback.ingestPacket({ bpm: 72, rrs: [840, 860] });
+App.Biofeedback.ingestPacket({ bpm: 58, rrs: [1020, 1040] }); // -14 BPM diving reflex drop
+stepTimer(5000);
+App.Session.endHold();
+const hrSummary = App.Biofeedback.onSessionEnd();
+assert(hrSummary && hrSummary.maxHoldDrop >= 12, 'Biofeedback must detect Diving-Reflex BPM drop');
+assert(hrSummary.rmssd > 0, 'Biofeedback must compute RMSSD HRV');
+App.Session.finishAndSave();
+assert(App.Achievements.isUnlocked('bio_diver'), '10+ BPM diving reflex drop must unlock bio_diver badge');
+App.UI.hideVictoryModal();
+App.Session.reset();
+console.log('✓ BLE HR/HRV packet parsing, RMSSD, and Diving Reflex verified.');
+
+// 13. Test Stats 52-Week Heatmap (F3), Session Delete (E4), and Backup v4 Merge (B10)
+console.log('--- Heatmap (F3), History Delete (E4) & Backup v4 Merge (B10) ---');
+const statsCountBefore = App.History.stats().sessions;
+assert(statsCountBefore >= 1, 'Should have at least 1 session before delete test');
+const firstTs = App.History.stats().all[0].ts;
+elementsById['stats-toggle'].click();
+assert(elementsById['stats-body'].innerHTML.includes('52-Week Practice Consistency'), 'Stats must render 52-week heatmap');
+assert(App.History.deleteSession(firstTs), 'deleteSession must remove matching timestamp');
+assert.strictEqual(App.History.stats().sessions, statsCountBefore - 1, 'Session count must decrement after delete');
+elementsById['stats-close'].click();
+
+const mergeRes = App.History.importData(JSON.stringify({
+  version: 4,
+  history: [{ ts: 999999999, rounds: 1, holds: [88], preset: 'Imported' }],
+  boltHistory: [{ ts: 999999999, score: 38 }]
+}), 'merge');
+assert(mergeRes.success, 'Backup v4 merge import must succeed');
+assert(App.History.stats().all.some(s => s.ts === 999999999), 'Merge import must preserve and add imported session');
+assert.strictEqual(App.Ambience.preview('ocean'), true, 'Ambience preview must activate cleanly');
+assert.strictEqual(App.Ambience.isPreviewing('ocean'), true, 'isPreviewing must report active preview');
+App.Ambience.stopPreview();
+assert.strictEqual(App.Ambience.isPreviewing(), false, 'stopPreview must clear preview state');
+console.log('✓ 52-Week Heatmap, Session Delete, Backup v4 Merge, and Ambience Preview verified.');
 
 console.log('\nALL TESTS PASSED SUCCESSFULLY!');

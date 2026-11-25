@@ -1,119 +1,92 @@
 # Pranayama Breathing Exercise — Software Architecture
 
-**Version:** 2.5
-**Date:** 2026-11-14
+**Version:** 3.0
+**Date:** 2026-11-25
 **Type:** Single-file Progressive Web Application (HTML + embedded CSS + JavaScript + Service Worker)
-**Dependencies:** Local `three.module.min.js` (3D particle sphere) & `docs/voice/voice_data.js` (offline neural TTS clips); zero external network runtime dependencies.
+**Dependencies:** Local `three.module.min.js` (3D liquid-metal sphere) & `docs/voice/voice_data.js` (20 offline neural TTS clips); zero external network runtime dependencies.
 
 ---
 
 ## 1. Overview
 
-The application uses a state-machine-driven architecture contained in a single `index.html` file organized into IIFE modules on a global `App` namespace, backed by an offline-first Service Worker (`sw.js` — `pranayama-v25`).
+The application uses a state-machine-driven architecture contained in a single `index.html` file organized into IIFE modules on a global `App` namespace, backed by an offline-first Service Worker (`sw.js` — `pranayama-v30`).
 
 ```
-+-----------------------------------------------------------------------+
-|                              index.html                               |
-|                                                                       |
-|  +-------------+  +---------------+  +------------+  +-------------+  |
-|  | App.Config  |  |  App.Presets  |  |  App.Bolt  |  | App.History |  |
-|  | (Settings & |--| (10 Built-in  |--| (CO2 Test  |--| & Stats /   |  |
-|  |  Validation)|  |  & Custom)    |  |  & Tiers)  |  | Achievements|  |
-|  +------+------+  +-------+-------+  +-----+------+  +------+------+  |
-|         |                 |                |                |         |
-|         +-----------------+--------+-------+----------------+         |
-|                                    |                                  |
-|                           +--------v--------+                         |
-|                           |   App.Session   |                         |
-|                           | (14-State FSM)  |                         |
-|                           +--------+--------+                         |
-|                                    |                                  |
-|     +---------------+--------------+--------------+---------------+   |
-|     |               |              |              |               |   |
-| +---v--------+ +----v-----+ +------v------+ +-----v------+ +------v-+ |
-| | App.Timer  | |  App.UI  | |  App.Audio  | | App.Liquid | |App.Wake| |
-| | (rAF loop) | |  & Scene | | Pacer/Voice | | (3D Three/ | |  Lock  | |
-| |            | |          | |  /Ambience  | |  WebGL)    | |        | |
-| +------------+ +----------+ +-------------+ +------------+ +--------+ |
-+-----------------------------------------------------------------------+
++-----------------------------------------------------------------------------+
+|                                 index.html                                  |
+|                                                                             |
+|  +-------------+  +---------------+  +---------------+  +----------------+  |
+|  | App.Config  |  |  App.Presets  |  | App.Routines  |  | App.Favorites  |  |
+|  | & Validation|--| (20 Built-in  |--| (2-6 Stage    |--| (4 Pinned Home |  |
+|  +------+------+  |  & Custom)    |  |  Sequencer)   |  |  Chips)        |  |
+|         |         +-------+-------+  +-------+-------+  +--------+-------+  |
+|         +-----------------+------------------+-------------------+          |
+|                                     |                                       |
+|                            +--------v--------+                              |
+|                            |   App.Session   |                              |
+|                            | (17-State FSM)  |                              |
+|                            +--------+--------+                              |
+|                                     |                                       |
+|   +------------+------------+-------+-----+---------------+--------------+  |
+|   |            |            |             |               |              |  |
+| +-v--------+ +-v--------+ +-v-----------+ +-v----------+ +v------------+ +v-+
+| |App.Timer | | App.UI   | |App.Audio /  | |App.Liquid  | |App.Biofeed- | |S |
+| |(rAF+tOut)| |& Palettes| |Pacer/Voice/ | |(Three.js   | |back (BLE    | |t |
+| |          | |& Dialog  | |Ambience     | | throttled) | | 0x180D/2A37)| |a |
+| +----------+ +----------+ +-------------+ +------------+ +-------------+ |ts|
++-----------------------------------------------------------------------------+
 ```
 
 ---
 
 ## 2. State Machine Design
 
-### 2.1 States (14 Total)
+### 2.1 States (17 Total)
 
 | State | Description | Exit Condition |
 |-------|-------------|----------------|
-| `IDLE` | Waiting for START or BOLT test | User clicks Start or Measure BOLT |
-| `PREPARE` | Optional countdown before Round 1 (`prepareDuration`) | Countdown elapsed |
-| `BREATHING_IN` | Inhale phase (Standard, 2-stage Double Inhale, or Alternate Nostril) | `inhaleDuration` elapsed, Flow release, `Hold Now`, or `Finish & Save` |
-| `PAUSE_AFTER_INHALE` | Box/4-7-8/Nadi Shodhana top hold | `pauseAfterInhale` elapsed or `Hold Now` |
-| `BREATHING_OUT` | Exhale phase | `exhaleDuration` elapsed, Flow release, or `Hold Now` |
-| `PAUSE_AFTER_EXHALE` | Bottom pause between breaths | `pauseAfterExhale` elapsed or `Hold Now` |
-| `HOLD` | Breath retention after final exhale (or early `Hold Now`) | User tap/click/Space, or auto-expire in Box mode |
-| `RECOVERY_IN` | Deep recovery inhale | 3s elapsed |
-| `RECOVERY_HOLD` | Hold recovery breath (`recoveryHoldDuration`) | Configured duration elapsed |
-| `RECOVERY_OUT` | Recovery exhale | 3s elapsed |
-| `ROUND_COMPLETE` | Brief pause & round summary | 3s auto-advance |
+| `IDLE` | Waiting for START or BOLT test; shows pinned favorite chips | User clicks Start or Measure BOLT |
+| `GET_READY` | Countdown before Round 1 (`3s`) | Countdown elapsed |
+| `BREATHING_IN` | Inhale phase (`standard`, `doubleInhale`, `alternateNostril`, `kapalabhati`, `bhramari`) | `inhaleDuration` elapsed, `Hold Now`, or `Finish & Save` |
+| `PAUSE_AFTER_INHALE` | Top hold (`0–30s`) | `pauseAfterInhale` elapsed or `Hold Now` |
+| `BREATHING_OUT` | Exhale phase (standard, nostril-panned, Kapalabhati pump, or Bhramari 136.1 Hz hum) | `exhaleDuration` elapsed or `Hold Now` |
+| `PAUSE_AFTER_EXHALE` | Bottom pause (`0–30s`) | `pauseAfterExhale` elapsed or `Hold Now` |
+| `HOLD` | Breath retention after final exhale (or early `Hold Now`) | User tap/click/Space, or `Finish & Save` |
+| `RECOVERY_IN` | Deep recovery inhale (`3s`) | `3s` elapsed |
+| `RECOVERY_HOLD` | Hold recovery breath (`5–60s`) with live SVG ring countdown | Configured duration elapsed |
+| `RECOVERY_OUT` | Recovery exhale (`3s`) | `3s` elapsed |
+| `ROUND_COMPLETE` | Brief pause & round summary (`3s`) | Auto-advance |
+| `STAGE_TRANSITION` | Calm singing-bowl bridge (`3–10s`) between Multi-Phase Routine stages | Bridge elapsed |
 | `SESSION_COMPLETE` | Session finished (full or via `Finish & Save`) | Victory modal shown; Reset returns to `IDLE` |
-| `SLEEPING` | Gentle post-session sleep wind-down | User clicks/taps to wake |
-| `BOLT_PREP` | Guided 8-second normal inhale/exhale before BOLT hold | 8s elapsed |
+| `PAUSED` | Suspended active phase; preserves marked urge, elapsed hold, and stops active pacer audio | `Resume` or `Finish & Save` |
+| `SLEEPING` | Gentle post-session sleep wind-down | User clicks End Sleep |
+| `BOLT_PREP` | Guided `8s` normal inhale/exhale with voice cues before BOLT hold (`PREPARING…` lock) | `8s` elapsed |
 | `BOLT_HOLD` | Count-up CO₂ tolerance hold until first definite urge to breathe | User tap/click/Space |
 
 ---
 
 ## 3. Module Structure
 
-### 3.1 `App.Events`
-- Lightweight pub/sub bus (`on`, `off`, `emit`) decoupling state transitions from UI/audio reactions.
+### 3.1 `App.ModalFocus` & `App.ConfirmDialog`
+- **`App.ModalFocus`**: Traps `Tab` / `Shift+Tab` inside visible overlays (`Stats`, `Victory`, `BOLT`) and restores previous focus on close.
+- **`App.ConfirmDialog`**: Uses native `<dialog id="app-confirm-dialog">` (`showModal()`, `method="dialog"`, `returnValue` reset) for delete confirmations and `Merge` vs. `Replace` backup imports.
 
-### 3.2 `App.Config`
-- Manages 30+ user-configurable parameters with range clamping and `localStorage` persistence (`whm_config`).
-- Supports `breathsPerRound`, `holdStartTime`, `holdIncrement`, `holdMode` (`fixed` | `adaptive`), `rounds`, `inhaleDuration` (`0.5–15s`), `exhaleDuration` (`0.5–15s`), `pauseAfterInhale`, `pauseAfterExhale`, `recoveryHoldDuration`, `prepareDuration`, `breathStyle` (`standard` | `doubleInhale` | `alternateNostril`), audio/ambience mixes, and visual theme settings.
-- `getHoldTarget(round)`: computes target hold per round. In `adaptive` mode, combines `App.History.recentBest(5)` and `App.Bolt.latest()` (`Math.round(boltScore * 2.2)`) to calibrate Round 1 at 80% of baseline with +15% per subsequent round.
+### 3.2 `App.Config` & `App.Theme`
+- Manages 31 parameters with range clamping (`inhale/exhale 0.3–15s`, `pauses 0–30s`, `holdStart 0–600s`, `holdIncrement 0–120s`, `palette`, etc.) in `whm_config`.
+- `getHoldTarget(round)`: Evaluates `holdMode === 'adaptive'` first so BOLT calibration works regardless of previous preset (`0s` holds), combining `App.History.recentBest(5)` and `App.Bolt.getLatest()`.
+- `App.Theme`: Manages `dark | light | oled` display modes (`prefers-color-scheme` live listener + Night OLED) orthogonally from 5 accent color palettes (`ocean`, `ember`, `forest`, `amethyst`, `monochrome`), syncing CSS tokens and `COLORS`.
 
-### 3.3 `App.Presets`
-- Built-in protocols:
-  - `standard` (Standard Pranayama)
-  - `beginner` (Gentle Start)
-  - `deep` (Deep Retention)
-  - `energize` (Quick Energize)
-  - `box` (Box Breathing 4-4-4-4)
-  - `relax478` (4-7-8 Relax)
-  - `sleep` (Sleep Wind-Down)
-  - `coherent` (Coherent Breathing 5.5s / 5.5s Resonance)
-  - `physio_sigh` (Physiological Sigh — 2-stage `doubleInhale` + long exhale)
-  - `nadi_shodhana` (Nadi Shodhana — `alternateNostril` 4-4-4 cycle)
-  - `custom` (User-saved configurations)
+### 3.3 `App.Presets`, `App.Favorites` & `App.Routines`
+- **`App.Presets`**: 20 built-in presets (`pranayama`, `energize`, `box`, `fourSevenEight`, `a52`, `coherent`, `physio_sigh`, `nadi_shodhana`, `kapalabhati`, `bhramari`, `sleep_winddown`, `journey_d1..7`, `apnea_co2`, `apnea_o2`) + custom presets (`whm_custom_presets`).
+- **`App.Favorites`**: Manages up to 4 pinned chips (`whm_favorites`, default `['pranayama', 'coherent', 'physio_sigh']`) rendered in `#favorite-chips-bar`.
+- **`App.Routines`**: 3 signature routines (`r:morning_charge`, `r:deep_reset`, `r:evening_slumber`) + custom 2–6 stage routines (`whm_routines`).
 
-### 3.4 `App.Bolt`
-- Manages BOLT (Body Oxygen Level Test) CO₂ tolerance score history in `localStorage` (`whm_bolt_history`).
-- Methods: `load()`, `record(scoreSec)`, `latest()`, `best()`, `getTier(score)`, `replaceAll(arr)`.
-- Tiers: `<15s` Developing, `15–24s` Functional, `25–39s` Advanced, `40s+` Elite.
+### 3.4 `App.Biofeedback`
+- Connects via Web Bluetooth (`navigator.bluetooth.requestDevice` filtering service `heart_rate` `0x180D`, characteristic `heart_rate_measurement` `0x2A37`).
+- `parseHeartRate(dataView)` decodes 8-bit/16-bit BPM and `1/1024s` RR-intervals; `ingestPacket()` filters ectopic/motion artifacts (`300–2200ms`, `<28%` jump), tracks rolling RMSSD (ms), RSA Coherence (`%`), and Diving-Reflex hold drops (`maxHoldDrop`), unlocking `bio_diver` at `≥10 BPM` drop.
 
-### 3.5 `App.History` & `App.Achievements` & `Stats`
-- Stores completed sessions in `whm_history` (up to 200 entries), tracking `rounds`, `holds`, `roundTargets`, `totalBreaths`, `preset`, and `feeling`.
-- Export/Import JSON backup (`version: 3`) bundles `history`, `config`, `customPreset`, `favorites`, and `boltHistory`.
-- Renders the Statistics modal: summary KPIs, 52-week consistency heatmap, 7-day Guided Journey tracker, 10 achievement badges, BOLT score progression chart, and recent session hold chart.
-
-### 3.6 `App.Timer`
-- `requestAnimationFrame` loop using `performance.now()` deltas with pause/resume support (`pause()`, `resume()`, `isPaused()`).
-
-### 3.7 `App.Audio`, `App.Pacer`, `App.Voice`, `App.Ambience`, `App.Haptics`
-- **`App.Audio`**: Web Audio API singing-bowl synthesizer with harmonic partials, singing-bowl resonance, and milestone chimes.
-- **`App.Pacer`**: Filtered pink-noise breath pacer (`playInhale`, `playExhale`, `playSip` for 2-stage Physiological Sigh).
-- **`App.Voice`**: Offline neural TTS playback via `VOICE_CLIPS` base64 MP3 map with Web Speech API fallback.
-- **`App.Ambience`**: Dual-layer soundscape engine mixing procedural Web Audio generators (`drone`, `binaural`, `brown`, `wind`) and streamed/cached MP3 nature/music loops (`amb1` + `amb2`).
-
-### 3.8 `App.Liquid` & `App.Scene`
-- **`App.Liquid`**: Three.js 3D particle sphere (`three.module.min.js`) with custom vertex/fragment shaders and Fibonacci sphere distribution that morphs with breathing phases, hold turbulence, and audio reactivity.
-- **`App.Scene`**: Procedural Canvas2D background renderer (`aurora`, `stars`, `ripples`, `geometry`, `fireflies`, `mist`).
-
-### 3.9 `App.Session`
-- Central state machine orchestrating breathing rounds, Flow Mode (hold-to-inhale, release-to-exhale), `holdNow()` (early transition from breathing to retention), `finishAndSave()` (early session completion saving completed rounds/holds), and `startBolt()` / `endBolt()` (guided CO₂ tolerance test).
-- Preserves exact per-round hold targets in `roundTargets[]` so post-session Victory analytics match in-session targets even after `App.History.record()` updates adaptive baselines.
-
-### 3.10 `App.UI`
-- Master DOM & SVG renderer (`render(state)`), handling the SVG progress ring (`stroke-dashoffset`), 2-stage Physiological Sigh progress (`INHALE 1/2` → `SIP IN 2/2`), Nadi Shodhana nostril indicator badge (`#nostril-indicator`) and directional SVG arc (`#nostril-arc`), Victory Modal (`showVictoryModal`), and BOLT Result Modal (`showBoltModal`).
+### 3.5 `App.History`, `App.Achievements`, `Stats`, Audio & Visuals
+- **`App.History`**: Stores up to 200 sessions (`whm_history`), supports `deleteSession(ts)`, `clearAll()`, and Backup `version: 4` export/import (`merge` deduplicating by `ts`, or `replace`).
+- **`Stats`**: Renders BOLT card + chart, KPI summary tiles, **52-week consistency SVG heatmap** (`buildHeatmap`), peak hold/urge chart, round averages, protocol-filtered & paginated sticky-header history table, 7-Day Journey tracker, and 15 achievement badges.
+- **`App.Audio` / `App.Pacer` / `App.Voice` / `App.Ambience`**: Stereo-panned ticks & pacer (`StereoPannerNode`), `playPump()`, `playHum(136.1 Hz)`, `App.Pacer.stop()`, 20 embedded `en-US-JennyNeural` clips + `SpeechSynthesis` fallback, post-SW audio cache warming (`earlyFetch(true)`), and non-destructive preview ducking.
+- **`App.Liquid`**: Three.js WebGL sphere throttled to ~24fps in `IDLE`/`SESSION_COMPLETE` and paused behind open modals.

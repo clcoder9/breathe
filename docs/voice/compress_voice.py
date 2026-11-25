@@ -1,5 +1,5 @@
 """Trim silence + re-encode voice clips to 32kbps mono MP3, then emit base64 JS map."""
-import base64, json, os, subprocess
+import base64, json, os, subprocess, sys
 from pathlib import Path
 import imageio_ffmpeg
 
@@ -7,22 +7,25 @@ FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
 VOICE_DIR = Path(__file__).resolve().parent
 
 names = ["breatheIn","breatheOut","lastBreath","threeBreathsLeft","hold","recoveryIn","recoveryOut",
-         "roundComplete","wellDone","getReady","ten","twenty","pause","newRecord"]
+         "roundComplete","wellDone","getReady","ten","twenty","pause","newRecord",
+         "inhaleLeft","exhaleRight","inhaleRight","exhaleLeft","humOut","nextStage"]
 
 total = 0
 data = {}
+force = "--force" in sys.argv
 for name in names:
     src = os.path.join(VOICE_DIR, f"{name}.mp3")
     dst = os.path.join(VOICE_DIR, f"{name}.min.mp3")
-    # Trim leading/trailing silence, mono 22.05kHz, 32kbps
-    cmd = [FFMPEG, "-y", "-i", src,
-           "-af", "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.05,"
-                  "areverse,silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.1,areverse",
-           "-ar", "22050", "-ac", "1", "-b:a", "32k", dst]
-    r = subprocess.run(cmd, capture_output=True, text=True)
-    if r.returncode != 0:
-        print(name, "FFMPEG ERROR:", r.stderr[-400:])
-        raise SystemExit(1)
+    if force or not (os.path.exists(dst) and os.path.getsize(dst) > 0 and os.path.getmtime(dst) >= os.path.getmtime(src)):
+        # Trim leading/trailing silence, mono 22.05kHz, 32kbps
+        cmd = [FFMPEG, "-y", "-i", src,
+               "-af", "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.05,"
+                      "areverse,silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.1,areverse",
+               "-ar", "22050", "-ac", "1", "-b:a", "32k", dst]
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        if r.returncode != 0:
+            print(name, "FFMPEG ERROR:", r.stderr[-400:])
+            raise SystemExit(1)
     size = os.path.getsize(dst)
     total += size
     with open(dst, "rb") as f:

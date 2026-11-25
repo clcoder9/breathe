@@ -3,7 +3,7 @@
 Regeneration:  python gen_voice.py  (requires: pip install edge-tts, internet)
 Output: ./docs/voice/*.mp3 + voice_data.js (base64 map)
 """
-import asyncio, base64, json, os
+import asyncio, base64, json, os, sys
 from pathlib import Path
 import edge_tts
 
@@ -26,10 +26,18 @@ CLIPS = {
     "twenty":           "Twenty",
     "pause":            "Pause",
     "newRecord":        "New record",
+    "inhaleLeft":       "Inhale left",
+    "exhaleRight":      "Exhale right",
+    "inhaleRight":      "Inhale right",
+    "exhaleLeft":       "Exhale left",
+    "humOut":           "Hum out",
+    "nextStage":        "Next stage",
 }
 
 async def gen(name, text):
     path = os.path.join(OUT_DIR, f"{name}.mp3")
+    if os.path.exists(path) and os.path.getsize(path) > 0 and "--force" not in sys.argv:
+        return path
     communicate = edge_tts.Communicate(text, VOICE, rate=RATE)
     await communicate.save(path)
     return path
